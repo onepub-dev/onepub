@@ -7,4 +7,4 @@ environment:
 dev_dependencies: 
   lints: ^1.0.0
 executables: 
-  onpub: 
+  onepub: 
