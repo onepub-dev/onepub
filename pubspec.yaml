@@ -1,12 +1,14 @@
 name: onepub
 version: 0.0.1
-homepage: https://onepub.dev
+homepage: https://github.com/noojee/onepub.dev
 description: Command line tools for onepub.dev
 environment: 
   sdk: '>=2.14.0 <3.0.0'
+dependencies: 
+  dcli: ^1.15.5
 dev_dependencies: 
   lints: ^1.0.0
 executables: 
   onepub: 
-dependencies: 
-  dcli: ^1.15.5
+  pub: 
+  pubd: 
