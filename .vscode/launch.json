@@ -1,0 +1,18 @@
+{
+    "configurations": [
+        {
+            "name": "onepub doctor",
+            "type": "dart",
+            "request": "launch",
+            "program": "bin/onepub.dart",
+            "args": ["doctor"]
+        },
+        {
+            "name": "onepub team create",
+            "type": "dart",
+            "request": "launch",
+            "program": "bin/onepub.dart",
+            "args": ["team", "create", "one"]
+        }
+    ]
+}

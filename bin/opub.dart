@@ -3,9 +3,16 @@
 import 'dart:io';
 
 import 'package:dcli/dcli.dart';
+import 'package:onepub/src/onepub_settings.dart';
 
 void main(List<String> arguments) {
-  final pubspec = DartProject.fromPath('.').pubSpec;
+  final dartProject = DartProject.findProject('.');
+  if (dartProject == null) {
+    printerr(
+        red('The current directory ${truepath(pwd)} is not in a dart project'));
+    exit(1);
+  }
+  final pubspec = dartProject.pubSpec;
   final isFlutter = pubspec.dependencies.containsKey('flutter');
 
   if (isFlutter) {
@@ -24,6 +31,11 @@ void main(List<String> arguments) {
       printerr(red('Add dart to your PATH and try again.'));
       exit(1);
     }
-    DartSdk().runPub(args: arguments, nothrow: true);
+
+    withEnvironment(() {
+      DartSdk().runPub(args: arguments, nothrow: true);
+    }, environment: {
+      OnepubSettings.pubHostedUrlKey: OnepubSettings().onepubApiUrl
+    });
   }
 }
