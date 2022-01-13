@@ -14,5 +14,21 @@
             "program": "bin/onepub.dart",
             "args": ["team", "create", "one"]
         }
+        ,
+        {
+            "name": "onepub login",
+            "type": "dart",
+            "request": "launch",
+            "program": "bin/onepub.dart",
+            "args": ["login"]
+        },
+        {
+            "name": "onepub logout",
+            "type": "dart",
+            "request": "launch",
+            "program": "bin/onepub.dart",
+            "args": ["logout"]
+        }
+
     ]
 }

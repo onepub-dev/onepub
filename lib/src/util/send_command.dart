@@ -16,6 +16,8 @@ Future<void> getCommand({
   try {
     final resolvedEndpoint = '${OnepubSettings().onepubApiUrl}$endpoint';
 
+    final _headers = <String, String>{}..addAll(headers);
+
     if (authorised) {
       if (!isLoggedIn) {
         throw ExitException(exitCode: 1, message: '''
@@ -26,16 +28,24 @@ run:
       }
       final onepubToken = OnepubSettings().onepubToken;
 
-      headers.addAll({'authorization': onepubToken});
+      _headers.addAll({'authorization': onepubToken});
     }
 
     final url = Uri.parse(resolvedEndpoint);
-    final response = await http.get(url, headers: headers);
+    final response = await http.get(url, headers: _headers);
     final decodedResponse = bodyAsJsonMap(response.body);
-    final status = (decodedResponse['success']
-        as Map<String, dynamic>)['message'] as String;
-    print('Status: ${green('${response.statusCode}')} '
-        '${green(status)}');
+
+    if (response.statusCode < 400) {
+      final status = (decodedResponse['success']
+          as Map<String, dynamic>)['message'] as String;
+      print('Status: ${green('${response.statusCode}')} '
+          '${green(status)}');
+    } else {
+      final status = (decodedResponse['error']
+          as Map<String, dynamic>)['message'] as String;
+      print('Status: ${green('${response.statusCode}')} '
+          '${green(status)}');
+    }
   } on IOException catch (e) {
     printerr(red(e.toString()));
   } finally {}
@@ -58,6 +68,8 @@ Future<PostResponse> postCommand({
   try {
     final resolvedEndpoint = '${OnepubSettings().onepubApiUrl}$endpoint';
 
+    final _headers = <String, String>{}..addAll(headers);
+
     if (authorised) {
       if (!isLoggedIn) {
         throw ExitException(exitCode: 1, message: '''
@@ -68,11 +80,11 @@ run:
       }
       final onepubToken = OnepubSettings().onepubToken;
 
-      headers.addAll({'authorization': onepubToken});
+      _headers.addAll({'authorization': onepubToken});
     }
 
     final url = Uri.parse(resolvedEndpoint);
-    final response = await http.post(url, headers: headers, body: body);
+    final response = await http.post(url, headers: _headers, body: body);
 
     return PostResponse(response.statusCode, response.body);
   } on IOException catch (e) {

@@ -5,7 +5,11 @@ import 'package:dcli/dcli.dart';
 
 import 'commands/config.dart';
 import 'commands/doctor.dart';
+import 'commands/export.dart';
+import 'commands/import.dart';
 import 'commands/install.dart';
+import 'commands/login.dart';
+import 'commands/logout.dart';
 import 'commands/team.dart';
 import 'exceptions.dart';
 import 'util/log.dart';
@@ -59,7 +63,11 @@ You can alter the config by running 'onepub config' or by modifying ~/.onepub/on
       ..addCommand(ConfigCommand())
       ..addCommand(InstallCommand())
       ..addCommand(TeamCommand())
-      ..addCommand(DoctorCommand());
+      ..addCommand(DoctorCommand())
+      ..addCommand(LoginCommand())
+      ..addCommand(LogoutCommand())
+      ..addCommand(ImportCommand())
+      ..addCommand(ExportCommand());
   }
 
   void parse() {
