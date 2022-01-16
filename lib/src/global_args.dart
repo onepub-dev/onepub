@@ -43,7 +43,8 @@ You can alter the config by running 'onepub config' or by modifying ~/.onepub/on
   late final String logfile;
 
   void build() {
-    runner.argParser.addFlag('debug', help: 'Enable versbose logging');
+    runner.argParser
+        .addFlag('debug', abbr: 'd', help: 'Enable versbose logging');
     runner.argParser.addFlag('colour',
         abbr: 'c',
         defaultsTo: true,
@@ -51,10 +52,6 @@ You can alter the config by running 'onepub config' or by modifying ~/.onepub/on
             'when using the console to log.');
     runner.argParser.addOption('logfile',
         abbr: 'l', help: 'If set all output is sent to the provided logifile');
-    runner.argParser.addFlag('quiet',
-        abbr: 'q',
-        help: "Don't output each directory scanned just "
-            'log the totals and errors.');
 
     runner.argParser
         .addFlag('version', help: 'Displays the onepub version no. and exits.');
@@ -80,7 +77,6 @@ You can alter the config by running 'onepub config' or by modifying ~/.onepub/on
       exit(0);
     }
 
-    quiet = results['quiet'] as bool == true;
     colour = results['colour'] as bool == true;
 
     if (results.wasParsed('logfile')) {
