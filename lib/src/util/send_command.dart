@@ -7,91 +7,6 @@ import 'package:dcli/dcli.dart';
 import '../exceptions.dart';
 import '../onepub_settings.dart';
 
-// Future<void> getCommand({
-//   required String endpoint,
-//   bool authorised = true,
-//   Map<String, String> headers = const {},
-// }) async {
-//   try {
-//     final resolvedEndpoint = '${OnepubSettings().onepubApiUrl}$endpoint';
-
-//     final _headers = <String, String>{}..addAll(headers);
-
-//     if (authorised) {
-//       if (!isLoggedIn) {
-//         throw ExitException(exitCode: 1, message: '''
-// You must be logged in to run this command.
-// run:
-//   onepub login
-//   ''');
-//       }
-//       final onepubToken = OnepubSettings().onepubToken;
-
-//       _headers.addAll({'authorization': onepubToken});
-//     }
-
-//     final url = Uri.parse(resolvedEndpoint);
-//     final response = await http.get(url, headers: _headers);
-//     final decodedResponse = bodyAsJsonMap(response.body);
-
-//     if (response.statusCode < 400) {
-//       final status = (decodedResponse['success']
-//           as Map<String, dynamic>)['message'] as String;
-//       print('Status: ${green('${response.statusCode}')} '
-//           '${green(status)}');
-//     } else {
-//       final status = (decodedResponse['error']
-//           as Map<String, dynamic>)['message'] as String;
-//       print('Status: ${green('${response.statusCode}')} '
-//           '${green(status)}');
-//     }
-//   } on IOException catch (e) {
-//     printerr(red(e.toString()));
-//   } finally {}
-// }
-
-// class PostResponse {
-//   PostResponse(this.status, this.body);
-//   int status;
-//   String body;
-
-//   Map<String, Object?> asJsonMap() => bodyAsJsonMap(body);
-// }
-
-// Future<PostResponse> postCommand({
-//   required String endpoint,
-//   required String body,
-//   bool authorised = true,
-//   Map<String, String> headers = const {},
-// }) async {
-//   try {
-//     final resolvedEndpoint = '${OnepubSettings().onepubApiUrl}$endpoint';
-
-//     final _headers = <String, String>{}..addAll(headers);
-
-//     if (authorised) {
-//       if (!isLoggedIn) {
-//         throw ExitException(exitCode: 1, message: '''
-// You must be logged in to run this command.
-// run:
-//   onepub login
-//   ''');
-//       }
-//       final onepubToken = OnepubSettings().onepubToken;
-
-//       _headers.addAll({'authorization': onepubToken});
-//     }
-
-//     final url = Uri.parse(resolvedEndpoint);
-//     final response = await http.post(url, headers: _headers, body: body);
-
-//     return PostResponse(response.statusCode, response.body);
-//   } on IOException catch (e) {
-//     logerr(red(e.toString()));
-//     throw ExitException(exitCode: 1, message: e.toString());
-//   } finally {}
-// }
-
 /// Takes the body, assumes its a json string and
 /// converts it to a map.
 Map<String, dynamic> bodyAsJsonMap(String body) =>
@@ -107,10 +22,18 @@ Future<EndpointResponse> sendCommand(
     Method method = Method.get}) async {
   final resolvedEndpoint = '${OnepubSettings().onepubApiUrl}$endpoint';
 
+  verbose(() => 'Sending command to $resolvedEndpoint');
+
   final uri = Uri.parse(resolvedEndpoint);
 
   try {
     final client = HttpClient()..connectionTimeout = const Duration(seconds: 5);
+
+    /// allow self signed/staged certs in dev
+    if (OnepubSettings().allowBadCertificates) {
+      client.badCertificateCallback = (cert, host, port) => true;
+    }
+
     final response =
         await _startRequest(client, method, uri, headers, body, authorised);
 
@@ -167,7 +90,6 @@ void _addHeaders(Map<String, String> _headers, HttpClientRequest request) {
     }
   }
 }
-
 
 Future<EndpointResponse> _processData(
   HttpClient client,

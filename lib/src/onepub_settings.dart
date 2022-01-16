@@ -57,9 +57,15 @@ class OnepubSettings {
   static late final String pathToSettings =
       join(OnepubPaths().pathToSettingsDir, 'onepub.yaml');
 
-  String get onepubApiUrl => 'http://$host:$port';
+  String get onepubApiUrl => 'https://$host:$port';
 
   static const String onepubWebUrl = 'https://onepub.dev';
+
+  /// allowBadCertificates
+  /// During dev if we are using self signed cert we need to set this
+  static String allowBadCertificatesKey = 'allowBadCertificates';
+  bool get allowBadCertificates =>
+      settings.asBool(allowBadCertificatesKey, defaultValue: false);
 
   ///
   String get host => settings.asString('host', defaultValue: 'onepub.dev');
@@ -75,7 +81,6 @@ class OnepubSettings {
   bool get hasToken => settings.validString(onepubTokenKey);
   String get onepubToken => settings.asString(onepubTokenKey);
   set onepubToken(String token) => settings[onepubTokenKey] = token;
-
 
   bool get isLoggedIn => hasToken;
 
