@@ -9,6 +9,10 @@ class CredentialsException extends OnepubCliException {
   CredentialsException({required String message}) : super(message);
 }
 
+class UnexpectedHttpResponseException extends OnepubCliException {
+  UnexpectedHttpResponseException({required String message}) : super(message);
+}
+
 class OnepubCliException implements Exception {
   OnepubCliException(this.message);
 

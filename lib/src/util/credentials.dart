@@ -37,7 +37,7 @@ class Credentials {
   static late final String pathToCredentials =
       join(OnepubPaths().pathToSettingsDir, credentialsFileName);
 
-  static const onpubSecretEnvKey = 'ONEPUB_SECRET';
+  static const onepubSecretEnvKey = 'ONEPUB_SECRET';
 
   /// oauth2
   static String oauth2TokenKey = 'oauth2Token';

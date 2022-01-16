@@ -3,6 +3,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:dcli/dcli.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_multi_server/http_multi_server.dart';
 import 'package:oauth2/oauth2.dart' as oauth2;
@@ -17,25 +18,13 @@ const _scopes = ['openid', 'https://www.googleapis.com/auth/userinfo.email'];
 String get _identifier =>
     '135837931136-kellgulhcooog2fcff38u448gib2ctkd.apps.googleusercontent.com';
 
-// utf8.decode(base64.decode(
-// // ignore: lines_longer_than_80_chars
-//     '135837931136-kellgulhcooog2fcff38u448gib2ctkd' // .apps.googleusercontent.com'));
-//     ));
-
 /// gconsole oauth2 client secret for onepub.dev
 String get _secret => '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';
-// utf8.decode(base64.decode('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'));
 
 Future<oauth2.Credentials> doAuth() async {
   final client = await _clientWithAuthorization();
-  // writeNewCredentials(client.credentials);
   return client.credentials;
 }
-
-// /// Write the new credentials file to unpub-credentials.json
-// void writeNewCredentials(oauth2.Credentials credentials) {
-//   Credentials.pathToCredentials.write(credentials.toJson());
-// }
 
 int _port = 42666;
 
@@ -55,12 +44,18 @@ Future<oauth2.Client> _clientWithAuthorization() async {
       '${grant.getAuthorizationUrl(Uri.parse(localBaseUrl), scopes: _scopes)}'
       '&access_type=offline&approval_prompt=force';
 
-  print('To login to Onepub.\n'
-      'From a web browser, go to $authUrl\n'
-      'When prompted click "Allow access".\n\n'
-      'Waiting for your authorisation...');
+  print('''
+To login to Onepub.
+From a web browser, go to 
+
+${blue(authUrl)}
+
+When prompted click "Allow access".
+
+Waiting for your authorisation...''');
 
   final client = await completer.future;
+  client.close();
 
   return client;
 }

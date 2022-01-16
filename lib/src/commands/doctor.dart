@@ -1,13 +1,12 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
 import 'package:dcli/dcli.dart';
-import 'package:http/http.dart' as http;
 
 import '../onepub_settings.dart';
 import '../util/log.dart';
+import '../util/send_command.dart';
 
 ///
 class DoctorCommand extends Command<void> {
@@ -28,47 +27,88 @@ class DoctorCommand extends Command<void> {
     }
     OnepubSettings.load();
 
-    print('Web app via: '
-        '${blue(OnepubSettings.onepubWebUrl)}');
+    print(blue('Dart'));
+    print('Dart version: ${DartSdk().version}');
+    print('Dart path: ${DartSdk().pathToDartExe}');
 
-    if (Env().exists(OnepubSettings.pubHostedUrlKey)) {
-      print('${OnepubSettings.pubHostedUrlKey}='
-          '${env[OnepubSettings.pubHostedUrlKey]}');
-    } else {
-      print('');
-      print(orange(
-          'Environment variable ${OnepubSettings.pubHostedUrlKey} not found!'));
-    }
+    print(blue('\nURLs'));
+    print('Web site: ${OnepubSettings.onepubWebUrl}');
+    print('Repository: ${OnepubSettings().onepubApiUrl}');
+
+    print(blue('\nEnvironment'));
+    envStatus(OnepubSettings.pubHostedUrlKey);
+    envStatus('PUB_CACHE');
+
+    tokenStatus();
 
     print('');
     _status();
   }
 
+  void envStatus(String key) {
+    if (Env().exists(key)) {
+      print('$key=${env[key]}');
+    } else {
+      print('$key not found.');
+    }
+  }
+
   Future<void> _status() async {
-    StreamSubscription<String>? client;
+    print(blue('\nStatus'));
+    if (OnepubSettings().isLoggedIn) {
+      print('Logged In: true');
+    } else {
+      print(orange('''
+You are not logged into onepub.
+run:
+onepub login'''));
+    }
     try {
-      // client = await HttpClient()
-      //     .getUrl(Uri.parse(
-      //         '${OnepubSettings().onepubApiUrl}/api/status')) // produces a request object
-      //     .then((request) => request.close()) // sends the request
-      //     .then((response) => response
-      //         .transform(const Utf8Decoder())
-      //         .listen(print)); // transforms and prints the response
+      const endpoint = '/api/status';
 
-      final endpoint = '${OnepubSettings().onepubApiUrl}/api/status';
+      echo('checking status...  ');
 
-      final url = Uri.parse(endpoint);
-      final response = await http.get(url);
-      final decodedResponse = jsonDecode(response.body) as Map;
-      final status = (decodedResponse['success']
-          as Map<String, dynamic>)['message'] as String;
-      print('Status: ${green('${response.statusCode}')} '
-          '${green(status)}');
+      final response = await sendCommand(endpoint: endpoint);
+
+      if (response.status == 200) {
+        print(green(response.data['message']! as String));
+      } else {
+        print(red(response.data['error']! as String));
+      }
     } on IOException catch (e) {
       printerr(red(e.toString()));
-    } finally {
-      if (client != null) {
-        await client.cancel();
+    } finally {}
+  }
+}
+
+void tokenStatus() {
+  print(blue('\nRepository tokens'));
+  final progress =
+      DartSdk().runPub(args: ['token', 'list'], progress: Progress.capture());
+
+  if (progress.exitCode != 0) {
+    printerr(red(progress.toParagraph()));
+  } else {
+    final tokenLines = progress.toList().skip(1);
+    if (tokenLines.isEmpty) {
+      print(red('Onepub has not been added to the pub token list.'));
+      print('''
+run:
+onepub login''');
+    } else {
+      var found = false;
+      for (final line in tokenLines) {
+        if (line == OnepubSettings().onepubApiUrl) {
+          print(green(line));
+          found = true;
+        } else {
+          print(line);
+        }
+      }
+      if (!found) {
+        print(red('\nOnepub has not been added to the pub token list.'));
+        print('''
+run: onepub login''');
       }
     }
   }

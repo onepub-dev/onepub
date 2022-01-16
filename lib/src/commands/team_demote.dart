@@ -31,6 +31,6 @@ class TeamDemoteCommand extends Command<void> {
 
     final team = argResults!.rest[0];
 
-    await getCommand(endpoint: '/api/team/demote/$team');
+    await sendCommand(endpoint: '/api/team/demote/$team');
   }
 }

@@ -29,21 +29,21 @@ class LoginCommand extends Command<void> {
 
     print('Successfully authorised.\n');
 
-    final response = await postCommand(
+    final response = await sendCommand(
         endpoint: '/api/login',
         authorised: false,
         headers: {'authorization': oauth2AccessToken},
-        body: credentials.toJson());
+        body: credentials.toJson(),
+        method: Method.post);
 
     if (response.status != 200) {
-      throw ExitException(
-          exitCode: 1,
-          message: 'Login to onpub.dev failed: '
-              '${(response.asJsonMap()['error']! as Map)['message']!}');
+      throw ExitException(exitCode: 1, message: '''
+Login to onepub.dev failed: 
+${response.data['message']}''');
     }
 
-    final map = response.asJsonMap();
-    final onepubToken = (map['success']! as Map)['authToken'] as String?;
+    final map = response.data;
+    final onepubToken = map['authToken'] as String?;
     if (onepubToken == null) {
       throw ExitException(
           exitCode: 1, message: 'Invalid response. authToken missing');
@@ -53,12 +53,18 @@ class LoginCommand extends Command<void> {
       ..save();
 
     withEnvironment(() {
-      DartSdk().runPub(args: [
+      final progress = DartSdk().runPub(args: [
         'token',
         'add',
-        '--env-var=${Credentials.onpubSecretEnvKey}',
-        OnepubSettings.onepubWebUrl
-      ]);
-    }, environment: {Credentials.onpubSecretEnvKey: onepubToken});
+        '--env-var=${Credentials.onepubSecretEnvKey}',
+        OnepubSettings().onepubApiUrl
+      ], nothrow: true, progress: Progress.capture());
+      if (progress.exitCode != 0) {
+        printerr(red('Failed to add the authorisation token to dart pub.'));
+        printerr(progress.toParagraph());
+      } else {
+        print('dart pub configured.');
+      }
+    }, environment: {Credentials.onepubSecretEnvKey: onepubToken});
   }
 }

@@ -10,7 +10,7 @@ class ImportCommand extends Command<void> {
   ImportCommand() : super() {
     argParser.addFlag('secret',
         abbr: 's',
-        help: 'Imports the secret from the ${Credentials.onpubSecretEnvKey}'
+        help: 'Imports the secret from the ${Credentials.onepubSecretEnvKey}'
             'environment variable');
   }
 
@@ -40,9 +40,9 @@ Import onepub secret.
     } else {
       oauth2Token = fromFile();
     }
-    env[Credentials.onpubSecretEnvKey] = oauth2Token;
+    env[Credentials.onepubSecretEnvKey] = oauth2Token;
 
-    'dart pub token add https://onepub.dev --env-var ${Credentials.onpubSecretEnvKey}'
+    'dart pub token add https://onepub.dev --env-var ${Credentials.onepubSecretEnvKey}'
         .run;
   }
 
@@ -68,14 +68,14 @@ Found: ${argResults!.rest.join(',')}''');
   /// pull the secret from an env var
   String fromSecret() {
     print(orange(
-        'Importing Onepub secret from ${Credentials.onpubSecretEnvKey}'));
+        'Importing Onepub secret from ${Credentials.onepubSecretEnvKey}'));
 
-    if (!Env().exists(Credentials.onpubSecretEnvKey)) {
+    if (!Env().exists(Credentials.onepubSecretEnvKey)) {
       throw ExitException(exitCode: 1, message: '''
-    The onepub environment variable ${Credentials.onpubSecretEnvKey} doesn't exist.
+    The onepub environment variable ${Credentials.onepubSecretEnvKey} doesn't exist.
     Have you added it to your CI/CD secrets?.''');
     }
 
-    return env[Credentials.onpubSecretEnvKey]!;
+    return env[Credentials.onepubSecretEnvKey]!;
   }
 }

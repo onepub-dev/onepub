@@ -31,6 +31,6 @@ class TeamDeleteCommand extends Command<void> {
 
     final team = argResults!.rest[0];
 
-    await getCommand(endpoint: '/api/team/delete/$team');
+    await sendCommand(endpoint: '/api/team/delete/$team');
   }
 }
