@@ -57,7 +57,11 @@ class OnepubSettings {
   static late final String pathToSettings =
       join(OnepubPaths().pathToSettingsDir, 'onepub.yaml');
 
-  String get onepubApiUrl => 'https://$host:$port';
+  /// pub token add strips the port if its 443 so we must as well
+  /// so our process of checking that the url has been added to the
+  /// token list works.
+  String get onepubApiUrl =>
+      port == '443' ? 'https://$host' : 'https://$host:$port';
 
   static const String onepubWebUrl = 'https://onepub.dev';
 

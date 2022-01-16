@@ -52,6 +52,7 @@ ${response.data['message']}''');
       ..onepubToken = onepubToken
       ..save();
 
+    print(OnepubSettings().onepubApiUrl);
     withEnvironment(() {
       final progress = DartSdk().runPub(args: [
         'token',
