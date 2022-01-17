@@ -44,9 +44,11 @@ ${response.data['message']}''');
 
     final map = response.data;
     final onepubToken = map['authToken'] as String?;
-    if (onepubToken == null) {
+    final firstLogin = map['firstLogin'] as bool?;
+    if (onepubToken == null || firstLogin == null) {
       throw ExitException(
-          exitCode: 1, message: 'Invalid response. authToken missing');
+          exitCode: 1,
+          message: 'Invalid response. authToken or firstLogin missing');
     }
     OnepubSettings()
       ..onepubToken = onepubToken
@@ -64,8 +66,21 @@ ${response.data['message']}''');
         printerr(red('Failed to add the authorisation token to dart pub.'));
         printerr(progress.toParagraph());
       } else {
-        print('dart pub configured.');
+        showWelcome(firstLogin: firstLogin);
       }
     }, environment: {Credentials.onepubSecretEnvKey: onepubToken});
+  }
+}
+
+void showWelcome({required bool firstLogin}) {
+  print('Successfully logged in.');
+
+  if (firstLogin) {
+    print('''
+
+Welcome to onepub.dev.
+Read the getting started guide at:
+${blue('https://onepub.dev/getting-started')}
+''');
   }
 }
