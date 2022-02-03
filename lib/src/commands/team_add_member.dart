@@ -33,6 +33,6 @@ onepub team add <team> <email>
 
     final team = argResults!.rest[0];
 
-    await sendCommand(endpoint: '/api/team/Add/$team');
+    await sendCommand(command: 'team/Add/$team');
   }
 }

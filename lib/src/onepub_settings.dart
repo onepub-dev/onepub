@@ -57,13 +57,13 @@ class OnepubSettings {
   static late final String pathToSettings =
       join(OnepubPaths().pathToSettingsDir, 'onepub.yaml');
 
-  /// pub token add strips the port if its 443 so we must as well
-  /// so our process of checking that the url has been added to the
-  /// token list works.
-  String get onepubApiUrl =>
-      port == '443' ? 'https://$host' : 'https://$host:$port';
+  static const String defaultOnepubWebUrl = 'https://onepub.dev';
+  static const String defaultOnepubApiUrl = 'https://onepub.dev';
 
-  static const String onepubWebUrl = 'https://onepub.dev';
+  static const String defaultApiBasePath = 'api';
+
+  ///static const String defaultWebBasePath = 'ui';
+  static const String defaultWebBasePath = '';
 
   /// allowBadCertificates
   /// During dev if we are using self signed cert we need to set this
@@ -71,13 +71,19 @@ class OnepubSettings {
   bool get allowBadCertificates =>
       settings.asBool(allowBadCertificatesKey, defaultValue: false);
 
-  ///
-  String get host => settings.asString('host', defaultValue: 'onepub.dev');
-  set host(String host) => settings['host'] = host;
+  /// pub token add strips the port if its 443 so we must as well
+  /// so our process of checking that the url has been added to the
+  /// token list works.
+  String get onepubApiUrl => join(
+      settings.asString('apiUrl', defaultValue: defaultOnepubApiUrl),
+      defaultApiBasePath);
+
+  set onepubApiUrl(String url) => settings['apiUrl'] = url;
 
   ///
-  String get port => settings.asString('port', defaultValue: '443');
-  set port(String port) => settings['port'] = port;
+  String get onepubWebUrl => join(
+      settings.asString('webUrl', defaultValue: defaultOnepubWebUrl),
+      defaultWebBasePath);
 
   static String onepubTokenKey = 'onepubToken';
 
@@ -89,6 +95,24 @@ class OnepubSettings {
   bool get isLoggedIn => hasToken;
 
   void save() => settings.save();
+
+  String resolveApiEndPoint(String command, {String? queryParams}) {
+    var endpoint = join(OnepubSettings().onepubApiUrl, command);
+
+    if (queryParams != null) {
+      endpoint += '?$queryParams';
+    }
+    return endpoint;
+  }
+
+  String resolveWebEndPoint(String command, {String? queryParams}) {
+    var endpoint = join(OnepubSettings().onepubWebUrl, command);
+
+    if (queryParams != null) {
+      endpoint += '?$queryParams';
+    }
+    return endpoint;
+  }
 }
 
 bool get isLoggedIn => OnepubSettings().isLoggedIn;

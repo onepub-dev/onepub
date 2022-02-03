@@ -29,6 +29,14 @@
             "program": "bin/onepub.dart",
             "args": ["logout"]
         }
+        ,
+        {
+            "name": "onepub doctor",
+            "type": "dart",
+            "request": "launch",
+            "program": "bin/onepub.dart",
+            "args": ["doctor"]
+        }
 
     ]
 }

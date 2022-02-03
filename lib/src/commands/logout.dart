@@ -29,7 +29,7 @@ The logout command takes no arguments. Found ${argResults!.rest.join(',')}.
 '''));
     }
 
-    await sendCommand(endpoint: '/api/logout');
+    await sendCommand(command: 'logout');
 
     final progress = 'dart pub token remove ${OnepubSettings().onepubApiUrl}'
         .start(nothrow: true, progress: Progress.capture());

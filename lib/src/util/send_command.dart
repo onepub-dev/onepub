@@ -15,12 +15,12 @@ Map<String, dynamic> bodyAsJsonMap(String body) =>
 enum Method { get, post }
 
 Future<EndpointResponse> sendCommand(
-    {required String endpoint,
+    {required String command,
     bool authorised = true,
     Map<String, String> headers = const <String, String>{},
     String? body,
     Method method = Method.get}) async {
-  final resolvedEndpoint = '${OnepubSettings().onepubApiUrl}$endpoint';
+  final resolvedEndpoint = OnepubSettings().resolveApiEndPoint(command);
 
   verbose(() => 'Sending command to $resolvedEndpoint');
 

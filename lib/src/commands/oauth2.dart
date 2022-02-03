@@ -4,89 +4,68 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:dcli/dcli.dart';
-import 'package:http/http.dart' as http;
 import 'package:http_multi_server/http_multi_server.dart';
-import 'package:oauth2/oauth2.dart' as oauth2;
 import 'package:shelf/shelf.dart' as shelf;
 import 'package:shelf/shelf_io.dart' as shelf_io;
 
-const _tokenEndpoint = 'https://oauth2.googleapis.com/token';
-const _authEndpoint = 'https://accounts.google.com/o/oauth2/auth';
-const _scopes = ['openid', 'https://www.googleapis.com/auth/userinfo.email'];
-
-/// gconsole oauth2 client id for onepub.dev
-String get _identifier =>
-    '135837931136-kellgulhcooog2fcff38u448gib2ctkd.apps.googleusercontent.com';
-
-/// gconsole oauth2 client secret for onepub.dev
-String get _secret => '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';
-
-Future<oauth2.Credentials> doAuth() async {
-  final client = await _clientWithAuthorization();
-  return client.credentials;
-}
+import '../onepub_settings.dart';
 
 int _port = 42666;
 
-/// Create a client with authorization.
-Future<oauth2.Client> _clientWithAuthorization() async {
-  final grant = oauth2.AuthorizationCodeGrant(
-      _identifier, Uri.parse(_authEndpoint), Uri.parse(_tokenEndpoint),
-      secret: _secret, basicAuth: false, httpClient: http.Client());
+/// Return the auth token or null if the auth failed.
+Future<String?> doAuth() async {
+  final callbackUrl = 'http://localhost:$_port';
 
-  final completer = Completer<oauth2.Client>();
+  final onepubUrl = OnepubSettings.load().onepubWebUrl;
+  final authUrl = OnepubSettings()
+      .resolveWebEndPoint('clilogin', queryParams: 'callback=$callbackUrl');
 
-  final localBaseUrl = 'http://localhost:$_port';
-
-  await _waitForResponse(localBaseUrl, completer, grant);
-
-  final authUrl =
-      '${grant.getAuthorizationUrl(Uri.parse(localBaseUrl), scopes: _scopes)}'
-      '&access_type=offline&approval_prompt=force';
+  final encodedUrl = Uri.encodeFull(authUrl);
 
   print('''
 To login to Onepub.
 From a web browser, go to 
 
-${blue(authUrl)}
+${blue(encodedUrl)}
 
-When prompted click "Allow access".
+When prompted Sign in.
 
 Waiting for your authorisation...''');
 
-  final client = await completer.future;
-  client.close();
-
-  return client;
+  return _waitForResponse(onepubUrl);
 }
 
-//
-Future<void> _waitForResponse(
-    String localBaseUrl,
-    Completer<oauth2.Client> completer,
-    oauth2.AuthorizationCodeGrant grant) async {
+/// Returns the token
+Future<String?> _waitForResponse(
+  String onepubWebUrl,
+
+  // oauth2.AuthorizationCodeGrant grant
+) async {
+  final completer = Completer<String?>();
   final server = await bindServer(_port);
   shelf_io.serveRequests(server, (request) {
-    if (request.url.path == 'authorised') {
-      server.close();
-      return shelf.Response.ok('Onepub successfully authorised.');
-    }
+    server.close();
+    if (request.url.queryParameters.keys.contains('app_id') &&
+        request.url.queryParameters.keys.contains('authentication_token')) {
+      print('Authorisation received, processing...');
 
-    if (request.url.path.isNotEmpty) {
+      final token = request.url.queryParameters['authentication_token']!;
+
+      completer.complete(token);
+
+      /// Redirect to authorised page.
+      return shelf.Response.found('$onepubWebUrl/cliauthorised');
+
+      //return shelf.Response.ok('Onepub successfully authorised.');
+    } else {
+      completer.complete(null);
+
       /// Forbid all other requests.
       return shelf.Response.notFound('Invalid Request.');
     }
-
-    print('Authorisation received, processing...');
-
-    /// Redirect to authorised page.
-    final resp = shelf.Response.found('$localBaseUrl/authorised');
-
-    completer.complete(
-        grant.handleAuthorizationResponse(queryToMap(request.url.query)));
-
-    return resp;
   });
+
+  return completer.future;
 }
 
 /// Bind local server to handle oauth redirect

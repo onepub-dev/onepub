@@ -32,6 +32,6 @@ onepub package create <Package> <Team>
     final package = argResults!.rest[0];
     final team = argResults!.rest[1];
 
-    await sendCommand(endpoint: '/api/package/create/$package/team/$team');
+    await sendCommand(command: 'package/create/$package/team/$team');
   }
 }

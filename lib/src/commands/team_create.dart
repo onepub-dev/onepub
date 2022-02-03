@@ -31,6 +31,6 @@ class TeamCreateCommand extends Command<void> {
 
     final team = argResults!.rest[0];
 
-    await sendCommand(endpoint: '/api/team/create/$team');
+    await sendCommand(command: 'team/create/$team');
   }
 }

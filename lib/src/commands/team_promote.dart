@@ -35,6 +35,6 @@ If they are not aready a team member then they are also added as a team member
     final team = argResults!.rest[0];
     final email = argResults!.rest[1];
 
-    await sendCommand(endpoint: '/api/team/premote/$team/member/$email');
+    await sendCommand(command: 'team/premote/$team/member/$email');
   }
 }

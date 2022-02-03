@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:args/command_runner.dart';
 import 'package:dcli/dcli.dart';
+import 'package:validators2/validators.dart';
 import '../onepub_settings.dart';
 import '../util/log.dart';
 
@@ -13,7 +14,7 @@ class ConfigCommand extends Command<void> {
         abbr: 'd',
         hide: true,
         help: 'Allows for configuration of localhost for '
-            'use in a development enviornment.');
+            'use in a development environment.');
   }
 
   @override
@@ -42,22 +43,25 @@ class ConfigCommand extends Command<void> {
   }
 
   void promptForConfig({required bool dev}) {
-    var port = OnepubSettings().port;
-    var host = OnepubSettings().host;
-
+    var url = OnepubSettings.defaultOnepubApiUrl;
     if (dev) {
-      host = ask('Onepub host:',
-          validator: Ask.any([
-            Ask.fqdn,
-            Ask.ipAddress(),
-            Ask.inList(['localhost'])
-          ]),
-          defaultValue: host);
-      port = ask('Onepub port:', validator: Ask.integer, defaultValue: port);
+      url =
+          ask('Onepub Api URL:', validator: UrlValidator(), defaultValue: url);
     }
 
-    OnepubSettings().port = port;
-    OnepubSettings().host = host;
+    OnepubSettings().onepubApiUrl = url;
     OnepubSettings().save();
+  }
+}
+
+class UrlValidator extends AskValidator {
+  @override
+  String validate(String line) {
+    final finalLine = line.trim().toLowerCase();
+
+    if (!isFQDN(finalLine)) {
+      throw AskValidatorException(red('Invalid FQDN.'));
+    }
+    return finalLine;
   }
 }

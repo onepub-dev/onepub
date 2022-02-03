@@ -24,16 +24,18 @@ class LoginCommand extends Command<void> {
   Future<void> run() async {
     loadSettings();
 
-    final credentials = await doAuth();
-    final oauth2AccessToken = credentials.accessToken;
+    final oauth2AccessToken = await doAuth();
+    if (oauth2AccessToken == null) {
+      throw ExitException(
+          exitCode: 1, message: 'Invalid response. onePubToken not returned');
+    }
 
     print('Successfully authorised.\n');
 
     final response = await sendCommand(
-        endpoint: '/api/login',
+        command: 'login',
         authorised: false,
         headers: {'authorization': oauth2AccessToken},
-        body: credentials.toJson(),
         method: Method.post);
 
     if (response.status != 200) {
@@ -43,7 +45,7 @@ ${response.data['message']}''');
     }
 
     final map = response.data;
-    final onepubToken = map['authToken'] as String?;
+    final onepubToken = map['onePubToken'] as String?;
     final firstLogin = map['firstLogin'] as bool?;
     if (onepubToken == null || firstLogin == null) {
       throw ExitException(

@@ -32,7 +32,7 @@ class DoctorCommand extends Command<void> {
     print('Dart path: ${DartSdk().pathToDartExe}');
 
     print(blue('\nURLs'));
-    print('Web site: ${OnepubSettings.onepubWebUrl}');
+    print('Web site: ${OnepubSettings().onepubWebUrl}');
     print('Repository: ${OnepubSettings().onepubApiUrl}');
 
     print(blue('\nEnvironment'));
@@ -68,7 +68,7 @@ onepub login'''));
 
       echo('checking status...  ');
 
-      final response = await sendCommand(endpoint: endpoint);
+      final response = await sendCommand(command: endpoint);
 
       if (response.status == 200) {
         print(green(response.data['message']! as String));
