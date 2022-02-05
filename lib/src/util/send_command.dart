@@ -163,7 +163,7 @@ class EndpointResponse {
 
   void _parse() {
     if (!_parsed) {
-      final decodedResponse = bodyAsJsonMap(_body);
+      final decodedResponse = _bodyAsJsonMap(_body);
 
       if (decodedResponse.keys.contains('success')) {
         _data = decodedResponse['success'] as Map<String, Object?>;
@@ -180,7 +180,7 @@ class EndpointResponse {
 
   /// Takes the body, assumes its a json string and
   /// converts it to a map.
-  Map<String, dynamic> bodyAsJsonMap(String body) =>
+  Map<String, dynamic> _bodyAsJsonMap(String body) =>
       jsonDecode(body) as Map<String, dynamic>;
 
   @override

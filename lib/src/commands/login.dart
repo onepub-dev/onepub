@@ -6,16 +6,28 @@ import 'package:dcli/dcli.dart';
 import '../exceptions.dart';
 import '../onepub_settings.dart';
 import '../util/credentials.dart';
-import '../util/send_command.dart';
-import 'oauth2.dart';
+import 'bbauthv2.dart';
 
 /// onepub login
+/// We trigger oauth by showing url
+// We then do a long poll to the server and wait for oauth to complete
+// The long poll adds a pending request to a guava cache (with expiry)
+
+// The oath completes on the server
+// The server checks if there is an existing onepub token for the member
+// If so we return the token as this allows mulitple devices to be authed.
+// If not we create a new onepub token
+// We return the onpub token to the cli and it stores it.
+// The cli then passed the onepub token each time it needs to interact.
+// No oauth is required we just check the onepub token is invalid.
+// A logout on any device will invalidate the token.
+// A manager can invalidate the token from the web site.
 class LoginCommand extends Command<void> {
   ///
   LoginCommand();
 
   @override
-  String get description => 'Logins a person into onepub.dev.';
+  String get description => 'Log in to onepub.dev.';
 
   @override
   String get name => 'login';
@@ -24,53 +36,45 @@ class LoginCommand extends Command<void> {
   Future<void> run() async {
     loadSettings();
 
-    final oauth2AccessToken = await doAuth();
-    if (oauth2AccessToken == null) {
-      throw ExitException(
-          exitCode: 1, message: 'Invalid response. onePubToken not returned');
-    }
-
-    print('Successfully authorised.\n');
-
-    final response = await sendCommand(
-        command: 'login',
-        authorised: false,
-        headers: {'authorization': oauth2AccessToken},
-        method: Method.post);
-
-    if (response.status != 200) {
-      throw ExitException(exitCode: 1, message: '''
-Login to onepub.dev failed: 
-${response.data['message']}''');
-    }
-
-    final map = response.data;
-    final onepubToken = map['onePubToken'] as String?;
-    final firstLogin = map['firstLogin'] as bool?;
-    if (onepubToken == null || firstLogin == null) {
-      throw ExitException(
-          exitCode: 1,
-          message: 'Invalid response. authToken or firstLogin missing');
-    }
-    OnepubSettings()
-      ..onepubToken = onepubToken
-      ..save();
-
-    print(OnepubSettings().onepubApiUrl);
-    withEnvironment(() {
-      final progress = DartSdk().runPub(args: [
-        'token',
-        'add',
-        '--env-var=${Credentials.onepubSecretEnvKey}',
-        OnepubSettings().onepubApiUrl
-      ], nothrow: true, progress: Progress.capture());
-      if (progress.exitCode != 0) {
-        printerr(red('Failed to add the authorisation token to dart pub.'));
-        printerr(progress.toParagraph());
-      } else {
-        showWelcome(firstLogin: firstLogin);
+    try {
+      final responseData = await bbAuth2();
+      if (responseData == null) {
+        throw ExitException(
+            exitCode: 1, message: 'Invalid response. onePubToken not returned');
       }
-    }, environment: {Credentials.onepubSecretEnvKey: onepubToken});
+
+      print('Successfully authorised.\n');
+
+      final onepubToken = responseData['onePubToken'] as String?;
+      final firstLogin = responseData['firstLogin'] as bool?;
+      if (onepubToken == null || firstLogin == null) {
+        throw ExitException(
+            exitCode: 1,
+            message: 'Invalid response. authToken or firstLogin missing');
+      }
+      OnepubSettings()
+        ..onepubToken = onepubToken
+        ..save();
+
+      print(OnepubSettings().onepubApiUrl);
+      withEnvironment(() {
+        final progress = DartSdk().runPub(args: [
+          'token',
+          'add',
+          '--env-var=${Credentials.onepubSecretEnvKey}',
+          OnepubSettings().onepubApiUrl
+        ], nothrow: true, progress: Progress.capture());
+        if (progress.exitCode != 0) {
+          printerr(red('Failed to add the authorisation token to dart pub.'));
+          printerr(progress.toParagraph());
+        } else {
+          showWelcome(firstLogin: firstLogin);
+        }
+      }, environment: {Credentials.onepubSecretEnvKey: onepubToken});
+    } on FetchException {
+      printerr(red('Unable to connect to the onepub.dev server. '
+          'Check your internet connection.'));
+    }
   }
 }
 
