@@ -24,14 +24,19 @@ class LogoutCommand extends Command<void> {
     loadSettings();
 
     if (argResults!.rest.isNotEmpty) {
-      throw ExitException(exitCode: -1, message: red('''
+      throw ExitException(exitCode: 1, message: red('''
 The logout command takes no arguments. Found ${argResults!.rest.join(',')}.
 '''));
     }
 
-    await sendCommand(command: 'logout');
+    final results = await sendCommand(command: 'logout');
 
-    final progress = 'dart pub token remove ${OnepubSettings().onepubApiUrl}'
+    if (!results.success) {
+      throw ExitException(
+          exitCode: 1, message: results.data['message']! as String);
+    }
+
+    final progress = 'dart pub token remove ${OnepubSettings().onepubWebUrl}'
         .start(nothrow: true, progress: Progress.capture());
 
     /// 65 means no token was found so we were probably already logged out.
@@ -39,6 +44,6 @@ The logout command takes no arguments. Found ${argResults!.rest.join(',')}.
       print(progress.toParagraph());
       return;
     }
-    print('You have been logged out.');
+    print(green('You have been logged out.'));
   }
 }

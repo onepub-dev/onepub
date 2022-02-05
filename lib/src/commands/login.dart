@@ -5,8 +5,11 @@ import 'package:dcli/dcli.dart';
 
 import '../exceptions.dart';
 import '../onepub_settings.dart';
-import '../util/credentials.dart';
-import 'bbauthv2.dart';
+import '../token_store/credential.dart';
+import '../token_store/hosted.dart';
+import '../token_store/io.dart';
+import '../token_store/token_store.dart';
+import 'bbauth.dart';
 
 /// onepub login
 /// We trigger oauth by showing url
@@ -37,7 +40,7 @@ class LoginCommand extends Command<void> {
     loadSettings();
 
     try {
-      final responseData = await bbAuth2();
+      final responseData = await bbAuth();
       if (responseData == null) {
         throw ExitException(
             exitCode: 1, message: 'Invalid response. onePubToken not returned');
@@ -56,21 +59,27 @@ class LoginCommand extends Command<void> {
         ..onepubToken = onepubToken
         ..save();
 
-      print(OnepubSettings().onepubApiUrl);
-      withEnvironment(() {
-        final progress = DartSdk().runPub(args: [
-          'token',
-          'add',
-          '--env-var=${Credentials.onepubSecretEnvKey}',
-          OnepubSettings().onepubApiUrl
-        ], nothrow: true, progress: Progress.capture());
-        if (progress.exitCode != 0) {
-          printerr(red('Failed to add the authorisation token to dart pub.'));
-          printerr(progress.toParagraph());
-        } else {
-          showWelcome(firstLogin: firstLogin);
-        }
-      }, environment: {Credentials.onepubSecretEnvKey: onepubToken});
+//       withEnvironment(() {
+      final store = TokenStore(dartConfigDir);
+      final hostedUrl =
+          validateAndNormalizeHostedUrl(OnepubSettings().onepubWebUrl);
+      store.addCredential(Credential.token(hostedUrl, onepubToken));
+      showWelcome(firstLogin: firstLogin);
+
+      //   final progress = DartSdk().runPub(args: [
+      //     'token',
+      //     'add',
+      //     '--env-var=${Credentials.onepubSecretEnvKey}',
+      //     OnepubSettings().onepubWebUrl
+      //   ], nothrow: true, progress: Progress.capture());
+      //   if (progress.exitCode != 0) {
+      //     printerr(red('Failed to add the authorisation token '
+      //'to dart pub.'));
+      //     printerr(progress.toParagraph());
+      //   } else {
+      //     showWelcome(firstLogin: firstLogin);
+      //   }
+      // }, environment: {Credentials.onepubSecretEnvKey: onepubToken});
     } on FetchException {
       printerr(red('Unable to connect to the onepub.dev server. '
           'Check your internet connection.'));

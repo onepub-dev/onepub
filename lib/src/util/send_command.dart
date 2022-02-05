@@ -107,7 +107,7 @@ Future<EndpointResponse> _processData(
   subscription = response.listen(
     (newBytes) async {
       /// if we don't pause we get overlapping calls from listen
-      /// which causes the [writeFrom] to fail as you can't
+      /// which causes the [write] to fail as you can't
       /// do overlapping io.
       subscription.pause();
 
@@ -144,7 +144,7 @@ class EndpointResponse {
   int status;
   final String _body;
 
-  var _success = false;
+  late final bool? _success;
   var _parsed = false;
   late final Map<String, Object?> _data;
 
@@ -154,7 +154,10 @@ class EndpointResponse {
     return _data;
   }
 
-  bool get success => _success;
+  bool get success {
+    _parse();
+    return _success!;
+  }
 
   /// We expect a response of the form:
   /// {"success":{"message":"Onepub.dev status normal."}}
