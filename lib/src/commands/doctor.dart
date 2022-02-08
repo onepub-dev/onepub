@@ -64,7 +64,7 @@ run:
 onepub login'''));
     }
     try {
-      const endpoint = '/api/status';
+      const endpoint = '/status';
 
       echo('checking status...  ');
 
@@ -73,7 +73,7 @@ onepub login'''));
       if (response.status == 200) {
         print(green(response.data['message']! as String));
       } else {
-        print(red(response.data['error']! as String));
+        print(red(response.data['message']! as String));
       }
     } on IOException catch (e) {
       printerr(red(e.toString()));
@@ -98,7 +98,7 @@ onepub login''');
     } else {
       var found = false;
       for (final line in tokenLines) {
-        if (line == OnepubSettings().onepubApiUrl) {
+        if (line == OnepubSettings().onepubWebUrl) {
           print(green(line));
           found = true;
         } else {

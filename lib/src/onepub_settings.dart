@@ -97,6 +97,10 @@ class OnepubSettings {
   void save() => settings.save();
 
   String resolveApiEndPoint(String command, {String? queryParams}) {
+    if (command.startsWith('/')) {
+      // ignore: parameter_assignments
+      command = command.substring(1);
+    }
     var endpoint = join(OnepubSettings().onepubApiUrl, command);
 
     if (queryParams != null) {
