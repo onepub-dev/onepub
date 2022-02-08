@@ -46,8 +46,6 @@ class LoginCommand extends Command<void> {
             exitCode: 1, message: 'Invalid response. onePubToken not returned');
       }
 
-      print('Successfully authorised.\n');
-
       final onepubToken = responseData['onePubToken'] as String?;
       final firstLogin = responseData['firstLogin'] as bool?;
       if (onepubToken == null || firstLogin == null) {
@@ -88,14 +86,20 @@ class LoginCommand extends Command<void> {
 }
 
 void showWelcome({required bool firstLogin}) {
-  print('Successfully logged in.');
-
+  var firstMessage = '';
   if (firstLogin) {
-    print('''
-
-Welcome to onepub.dev.
+    firstMessage = '''
+Welcome to OnePub.dev.
 Read the getting started guide at:
-${blue('https://onepub.dev/getting-started')}
-''');
+${orange('https://onepub.dev/getting-started')}
+
+''';
   }
+
+  print('''
+
+${blue('Successfully logged in.')}
+
+$firstMessage
+''');
 }

@@ -46,34 +46,42 @@ Future<Map<String, Object?>?> _waitForResponse(
   final server = await bindServer(_port);
   shelf_io.serveRequests(server, (request) async {
     await server.close();
-    if (request.url.queryParameters.keys.contains('app_id') &&
-        request.url.queryParameters.keys.contains('authentication_token')) {
-      print('Authorisation received, processing...');
 
-      final appId = request.url.queryParameters['app_id']!;
-      final token = request.url.queryParameters['authentication_token']!;
+    try {
+      if (request.url.queryParameters.keys.contains('app_id') &&
+          request.url.queryParameters.keys.contains('authentication_token')) {
+        print('Authorisation received, processing...');
 
-      // Forward the oauth details to the server so it can validate us.
-      final response = await sendCommand(
-          command: 'oauthFinalise'
-              '?app_id=$appId&authentication_token=$token',
-          authorised: false);
+        final appId = request.url.queryParameters['app_id']!;
+        final token = request.url.queryParameters['authentication_token']!;
 
-      if (!response.success) {
+        // Forward the oauth details to the server so it can validate us.
+        final response = await sendCommand(
+            command: 'oauthFinalise'
+                '?app_id=$appId&authentication_token=$token',
+            authorised: false);
+
+        if (!response.success) {
+          completer.complete(null);
+          return shelf.Response.notFound('Invalid Request.');
+        }
+
+        /// Redirect to authorised page.
+        completer.complete(response.data);
+        return shelf.Response.found('$onepubWebUrl/cliauthorised');
+
+        //return shelf.Response.ok('Onepub successfully authorised.');
+      } else {
         completer.complete(null);
+
+        /// Forbid all other requests.
         return shelf.Response.notFound('Invalid Request.');
       }
-
-      /// Redirect to authorised page.
-      completer.complete(response.data);
-      return shelf.Response.found('$onepubWebUrl/cliauthorised');
-
-      //return shelf.Response.ok('Onepub successfully authorised.');
-    } else {
+      // ignore: avoid_catches_without_on_clauses
+    } catch (e) {
       completer.complete(null);
 
-      /// Forbid all other requests.
-      return shelf.Response.notFound('Invalid Request.');
+      return shelf.Response.internalServerError(body: e.toString());
     }
   });
 
