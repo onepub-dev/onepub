@@ -9,6 +9,7 @@ import '../token_store/credential.dart';
 import '../token_store/hosted.dart';
 import '../token_store/io.dart';
 import '../token_store/token_store.dart';
+import '../util/send_command.dart';
 import 'bbauth.dart';
 
 /// onepub login
@@ -40,48 +41,43 @@ class LoginCommand extends Command<void> {
     loadSettings();
 
     try {
-      final responseData = await bbAuth();
-      if (responseData == null) {
+      final endPointResponse = await bbAuth();
+      if (endPointResponse == null) {
         throw ExitException(
             exitCode: 1, message: 'Invalid response. onePubToken not returned');
       }
 
-      final onepubToken = responseData['onePubToken'] as String?;
-      final firstLogin = responseData['firstLogin'] as bool?;
-      if (onepubToken == null || firstLogin == null) {
-        throw ExitException(
-            exitCode: 1,
-            message: 'Invalid response. authToken or firstLogin missing');
-      }
-      OnepubSettings()
-        ..onepubToken = onepubToken
-        ..save();
+      if (endPointResponse.success) {
+        final onepubToken = endPointResponse.data['onePubToken'] as String?;
+        final firstLogin = endPointResponse.data['firstLogin'] as bool?;
+        if (onepubToken == null || firstLogin == null) {
+          throw ExitException(
+              exitCode: 1,
+              message: 'Invalid response. authToken or firstLogin missing');
+        }
+        OnepubSettings()
+          ..onepubToken = onepubToken
+          ..save();
 
 //       withEnvironment(() {
-      final store = TokenStore(dartConfigDir);
-      final hostedUrl =
-          validateAndNormalizeHostedUrl(OnepubSettings().onepubWebUrl);
-      store.addCredential(Credential.token(hostedUrl, onepubToken));
-      showWelcome(firstLogin: firstLogin);
-
-      //   final progress = DartSdk().runPub(args: [
-      //     'token',
-      //     'add',
-      //     '--env-var=${Credentials.onepubSecretEnvKey}',
-      //     OnepubSettings().onepubWebUrl
-      //   ], nothrow: true, progress: Progress.capture());
-      //   if (progress.exitCode != 0) {
-      //     printerr(red('Failed to add the authorisation token '
-      //'to dart pub.'));
-      //     printerr(progress.toParagraph());
-      //   } else {
-      //     showWelcome(firstLogin: firstLogin);
-      //   }
-      // }, environment: {Credentials.onepubSecretEnvKey: onepubToken});
+        final store = TokenStore(dartConfigDir);
+        final hostedUrl =
+            validateAndNormalizeHostedUrl(OnepubSettings().onepubWebUrl);
+        store.addCredential(Credential.token(hostedUrl, onepubToken));
+        showWelcome(firstLogin: firstLogin);
+      } else {
+        showError(endPointResponse);
+      }
     } on FetchException {
       printerr(red('Unable to connect to the onepub.dev server. '
           'Check your internet connection.'));
     }
+  }
+
+  void showError(EndpointResponse endPointResponse) {
+    final error = endPointResponse.data['message']! as String;
+
+    print(red(error));
   }
 }
 

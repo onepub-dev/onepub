@@ -14,7 +14,7 @@ import '../util/send_command.dart';
 int _port = 42666;
 
 /// Return the auth token or null if the auth failed.
-Future<Map<String, Object?>?> bbAuth() async {
+Future<EndpointResponse?> bbAuth() async {
   final callbackUrl = 'http://localhost:$_port';
 
   final onepubUrl = OnepubSettings.load().onepubWebUrl;
@@ -37,12 +37,12 @@ Waiting for your authorisation...''');
 }
 
 /// Returns a map with the response
-Future<Map<String, Object?>?> _waitForResponse(
+Future<EndpointResponse?> _waitForResponse(
   String onepubWebUrl,
 
   // oauth2.AuthorizationCodeGrant grant
 ) async {
-  final completer = Completer<Map<String, Object?>?>();
+  final completer = Completer<EndpointResponse?>();
   final server = await bindServer(_port);
   shelf_io.serveRequests(server, (request) async {
     await server.close();
@@ -62,12 +62,12 @@ Future<Map<String, Object?>?> _waitForResponse(
             authorised: false);
 
         if (!response.success) {
-          completer.complete(null);
-          return shelf.Response.notFound('Invalid Request.');
+          completer.complete(response);
+          return shelf.Response.found('$onepubWebUrl/cliauthfailed');
         }
 
         /// Redirect to authorised page.
-        completer.complete(response.data);
+        completer.complete(response);
         return shelf.Response.found('$onepubWebUrl/cliauthorised');
 
         //return shelf.Response.ok('Onepub successfully authorised.');
@@ -75,7 +75,7 @@ Future<Map<String, Object?>?> _waitForResponse(
         completer.complete(null);
 
         /// Forbid all other requests.
-        return shelf.Response.notFound('Invalid Request.');
+        return shelf.Response.notFound('Invalid Request');
       }
       // ignore: avoid_catches_without_on_clauses
     } catch (e) {
