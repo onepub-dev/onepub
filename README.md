@@ -37,4 +37,5 @@ Enjoy.
 
 
 # Security Policy
-Details on our [Security Policy](https://github.com/onepub-dev/policies/blob/master/SECURITY.md)
+Details on our [Security Policy](https://github.com/onepub-dev/onepub/blob/master/SECURITY.md)
+
