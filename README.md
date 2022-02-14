@@ -36,3 +36,5 @@ any other pub subcommands and arguments
 Enjoy.
 
 
+# Security Policy
+Details on our [Security Policy](https://github.com/onepub-dev/policies/blob/master/SECURITY.md)
