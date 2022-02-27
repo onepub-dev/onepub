@@ -6,3 +6,4 @@
 build/
 .history
 .failed_tracker
+onepub.token.yaml

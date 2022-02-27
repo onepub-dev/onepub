@@ -11,6 +11,7 @@ dependencies:
   oauth2: ^2.0.0
   pub_semver: ^2.1.0
   shelf: ^1.2.0
+  validators: ^3.0.0
 dev_dependencies: 
   lint_hard: ^1.0.0
   test: ^1.20.1
