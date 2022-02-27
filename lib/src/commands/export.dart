@@ -1,66 +1,95 @@
 import 'package:args/command_runner.dart';
 import 'package:dcli/dcli.dart';
+import 'package:validators/validators.dart';
 
 import '../exceptions.dart';
 import '../onepub_paths.dart';
 import '../onepub_settings.dart';
-import '../util/credentials.dart';
+import '../util/one_pub_token_store.dart';
+import '../util/send_command.dart';
+import '../util/token_export_file.dart';
 import '../version/version.g.dart';
 
 ///
 class ExportCommand extends Command<void> {
   ///
   ExportCommand() {
-    argParser.addFlag('secret',
-        abbr: 's', help: 'prints the secret to the screen');
+    argParser
+      ..addFlag('file', abbr: 'f', help: 'Save the OnePub token to a file')
+      ..addOption('user', abbr: 'u', help: 'Export the token of a CICD user.');
   }
 
   @override
-  String get description => 'Exports onepub credentials.';
+  String get description => 'Exports the onepub token.';
 
   @override
   String get name => 'export';
 
   @override
-  void run() {
-    export();
+  Future<void> run() async {
+    await export();
   }
 
   ///
-  void export() {
-    if (!exists(OnepubPaths().pathToSettingsDir)) {
-      createDir(OnepubPaths().pathToSettingsDir, recursive: true);
+  Future<void> export() async {
+    OnePubSettings.load();
+    if (!exists(OnePubPaths().pathToSettingsDir)) {
+      createDir(OnePubPaths().pathToSettingsDir, recursive: true);
     }
-    final settings = OnepubSettings.load();
+    final file = argResults!['file'] as bool;
+    final user = argResults!['user'] as String?;
 
-    final secret = argResults!['secret'] as bool;
-
-    if (!settings.hasToken) {
+    if (!OnePubTokenStore().isLoggedIn) {
       throw ExitException(
           exitCode: 1, message: 'You must run onepub login first.');
     }
 
-    print(orange('Exporting onepub credentials: $packageVersion.'));
+    final String onepubToken;
 
-    if (secret) {
-      print('');
-      print('Add the following environment variable to your CI/CD secrets');
-      print('');
-      print('ONEPUB_SECRET=${settings.onepubToken}');
-      print('');
-      return;
+    if (user != null) {
+      if (!isEmail(user)) {
+        throw ExitException(
+            exitCode: 1,
+            message: 'The supplied user must be a valid email address. '
+                'Found $user');
+      }
+      final response = await sendCommand(command: 'getToken/$user');
+      if (response.success) {
+        final token = response.data['onepubToken'];
+        if (token == null) {
+          throw ArgumentError('No token was returned');
+        }
+        onepubToken = response.data['onepubToken']! as String;
+      } else {
+        throw ExitException(
+            exitCode: 1, message: response.data['message']! as String);
+      }
     } else {
-      final path = Credentials.pathToCredentials;
-      final to = join(pwd, Credentials.credentialsFileName);
-      copy(path, to);
+      onepubToken = OnePubTokenStore().fetch();
+    }
+    print(orange('Exporting onepub token: $packageVersion.'));
+
+    if (file) {
+      final exportFile =
+          TokenExportFile(join(pwd, TokenExportFile.exportFilename))
+            ..onepubToken = onepubToken
+            ..save();
 
       print('''
-Saved credentials to: ${truepath(to)}.
+Saved credentials to: ${truepath(exportFile.pathToExportFile)}.
 
-Copy the credentials to your CI/CD environment and run:
-onepub import <path to credentials>
+Copy the onepub.token.yaml to your CI/CD environment and run:
+    
+    onepub import <path to credentials>
 
 ''');
+    } else {
+      print('');
+      print('Add the following environment variable to your CI/CD secrets.');
+      print('');
+      print('ONEPUB_SECRET=$onepubToken');
+      print('');
+      return;
     }
   }
 }

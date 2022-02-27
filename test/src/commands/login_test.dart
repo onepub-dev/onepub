@@ -20,12 +20,12 @@ void main() {
     ///
     withTempDir((tempDir) {
       withEnvironment(() {
-        // final store = TokenStore(dartConfigDir);
+        // final store = OnePubTokenStore();
 
         // /// reset out token.
         // DartSdk()
         //     .runPub(args: ['token', 'remove',
-        // OnepubSettings().onepubWebUrl]);
+        // OnePubSettings().onepubWebUrl]);
 
         // 'onepub login'.run;
       }, environment: {pubTestsConfigDirKey: tempDir});

@@ -6,6 +6,7 @@ import 'package:dcli/dcli.dart';
 
 import '../onepub_settings.dart';
 import '../util/log.dart';
+import '../util/one_pub_token_store.dart';
 import '../util/send_command.dart';
 
 ///
@@ -21,22 +22,22 @@ class DoctorCommand extends Command<void> {
 
   @override
   void run() {
-    if (!exists(OnepubSettings.pathToSettings)) {
+    if (!exists(OnePubSettings.pathToSettings)) {
       logerr(red('''You must run 'onepub install' first.'''));
       exit(1);
     }
-    OnepubSettings.load();
+    OnePubSettings.load();
 
     print(blue('Dart'));
     print('Dart version: ${DartSdk().version}');
     print('Dart path: ${DartSdk().pathToDartExe}');
 
     print(blue('\nURLs'));
-    print('Web site: ${OnepubSettings().onepubWebUrl}');
-    print('Repository: ${OnepubSettings().onepubApiUrl}');
+    print('Web site: ${OnePubSettings().onepubWebUrl}');
+    print('Repository: ${OnePubSettings().onepubApiUrl}');
 
     print(blue('\nEnvironment'));
-    envStatus(OnepubSettings.pubHostedUrlKey);
+    envStatus(OnePubSettings.pubHostedUrlKey);
     envStatus('PUB_CACHE');
 
     tokenStatus();
@@ -55,7 +56,7 @@ class DoctorCommand extends Command<void> {
 
   Future<void> _status() async {
     print(blue('\nStatus'));
-    if (OnepubSettings().isLoggedIn) {
+    if (OnePubTokenStore().isLoggedIn) {
       print('Logged In: true');
     } else {
       print(orange('''
@@ -91,14 +92,14 @@ void tokenStatus() {
   } else {
     final tokenLines = progress.toList().skip(1);
     if (tokenLines.isEmpty) {
-      print(red('Onepub has not been added to the pub token list.'));
+      print(red('OnePub has not been added to the pub token list.'));
       print('''
 run:
 onepub login''');
     } else {
       var found = false;
       for (final line in tokenLines) {
-        if (line == OnepubSettings().onepubWebUrl) {
+        if (line == OnePubSettings().onepubWebUrl) {
           print(green(line));
           found = true;
         } else {
@@ -106,7 +107,7 @@ onepub login''');
         }
       }
       if (!found) {
-        print(red('\nOnepub has not been added to the pub token list.'));
+        print(red('\nOnePub has not been added to the pub token list.'));
         print('''
 run: onepub login''');
       }

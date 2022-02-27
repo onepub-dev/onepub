@@ -24,15 +24,15 @@ class InstallCommand extends Command<void> {
 
   ///
   void install() {
-    if (!exists(OnepubPaths().pathToSettingsDir)) {
-      createDir(OnepubPaths().pathToSettingsDir, recursive: true);
+    if (!exists(OnePubPaths().pathToSettingsDir)) {
+      createDir(OnePubPaths().pathToSettingsDir, recursive: true);
     }
-    OnepubSettings.load();
+    OnePubSettings.load();
 
-    print(orange('Installing Onepub version: $packageVersion.'));
+    print(orange('Installing OnePub version: $packageVersion.'));
 
-    if (!exists(OnepubPaths().pathToSettingsDir)) {
-      createDir(OnepubPaths().pathToSettingsDir, recursive: true);
+    if (!exists(OnePubPaths().pathToSettingsDir)) {
+      createDir(OnePubPaths().pathToSettingsDir, recursive: true);
     }
 
     ConfigCommand().config(dev: false);
@@ -47,6 +47,6 @@ You can then use `opub` in place of `dart pub` or `flutter pub`.
 Alternatively you can create the PUB_HOSTED_URL environment variable and continue to use dart pub or flutter pub.
 '''));
 
-    print(green('Install of Onepub complete.'));
+    print(green('Install of OnePub complete.'));
   }
 }

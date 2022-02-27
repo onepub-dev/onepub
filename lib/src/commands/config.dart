@@ -18,18 +18,18 @@ class ConfigCommand extends Command<void> {
   }
 
   @override
-  String get description => 'Configures Onepub.';
+  String get description => 'Configures OnePub.';
 
   @override
   String get name => 'config';
 
   @override
   void run() {
-    if (!exists(OnepubSettings.pathToSettings)) {
-      logerr(red('''You must run 'Onepub install' first.'''));
+    if (!exists(OnePubSettings.pathToSettings)) {
+      logerr(red('''You must run 'OnePub install' first.'''));
       exit(1);
     }
-    OnepubSettings.load();
+    OnePubSettings.load();
 
     final dev = argResults!['dev'] as bool;
 
@@ -38,19 +38,19 @@ class ConfigCommand extends Command<void> {
 
   ///
   void config({required bool dev}) {
-    print('Configure Onepub');
+    print('Configure OnePub');
     promptForConfig(dev: dev);
   }
 
   void promptForConfig({required bool dev}) {
-    var url = OnepubSettings.defaultOnepubApiUrl;
+    var url = OnePubSettings.defaultOnePubApiUrl;
     if (dev) {
       url =
-          ask('Onepub Api URL:', validator: UrlValidator(), defaultValue: url);
+          ask('OnePub Api URL:', validator: UrlValidator(), defaultValue: url);
     }
 
-    OnepubSettings().onepubApiUrl = url;
-    OnepubSettings().save();
+    OnePubSettings().onepubApiUrl = url;
+    OnePubSettings().save();
   }
 }
 

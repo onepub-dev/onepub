@@ -1,14 +1,14 @@
 import 'package:dcli/dcli.dart';
 
-class OnepubPaths {
-  factory OnepubPaths() => _self;
+class OnePubPaths {
+  factory OnePubPaths() => _self;
 
-  factory OnepubPaths.forTest(String settingsRoot) =>
-      _self = OnepubPaths._internal(settingsRoot);
+  factory OnePubPaths.forTest(String settingsRoot) =>
+      _self = OnePubPaths._internal(settingsRoot);
 
-  OnepubPaths._internal(this._settingsRoot);
+  OnePubPaths._internal(this._settingsRoot);
 
-  static OnepubPaths _self = OnepubPaths._internal(HOME);
+  static OnePubPaths _self = OnePubPaths._internal(HOME);
 
   /// Path to the .batman settings directory
   late final String pathToSettingsDir =

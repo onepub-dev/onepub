@@ -10,18 +10,18 @@ import 'onepub_paths.dart';
 import 'util/log.dart';
 
 void loadSettings() {
-  if (!exists(OnepubSettings.pathToSettings)) {
+  if (!exists(OnePubSettings.pathToSettings)) {
     logerr(red('''You must run 'onepub install' first.'''));
     exit(1);
   }
-  OnepubSettings.load();
+  OnePubSettings.load();
 }
 
-class OnepubSettings {
-  factory OnepubSettings() => _self!;
+class OnePubSettings {
+  factory OnePubSettings() => _self!;
 
   ///
-  factory OnepubSettings.load({bool showWarnings = false}) {
+  factory OnePubSettings.load({bool showWarnings = false}) {
     if (_self != null) {
       return _self!;
     }
@@ -29,7 +29,7 @@ class OnepubSettings {
     try {
       final settings = SettingsYaml.load(pathToSettings: pathToSettings);
       _self =
-          OnepubSettings.loadFromSettings(settings, showWarnings: showWarnings);
+          OnePubSettings.loadFromSettings(settings, showWarnings: showWarnings);
       return _self!;
     } on YamlException catch (e) {
       logerr(red('Failed to load rules from $pathToSettings'));
@@ -43,11 +43,11 @@ class OnepubSettings {
   }
 
   @visibleForTesting
-  OnepubSettings.loadFromSettings(this.settings, {required this.showWarnings});
+  OnePubSettings.loadFromSettings(this.settings, {required this.showWarnings});
 
   static const pubHostedUrlKey = 'PUB_HOSTED_URL';
 
-  static OnepubSettings? _self;
+  static OnePubSettings? _self;
 
   bool showWarnings;
 
@@ -55,10 +55,10 @@ class OnepubSettings {
 
   /// Path to the onepub onepub.yaml file.
   static late final String pathToSettings =
-      join(OnepubPaths().pathToSettingsDir, 'onepub.yaml');
+      join(OnePubPaths().pathToSettingsDir, 'onepub.yaml');
 
-  static const String defaultOnepubWebUrl = 'https://onepub.dev';
-  static const String defaultOnepubApiUrl = 'https://onepub.dev';
+  static const String defaultOnePubWebUrl = 'https://onepub.dev';
+  static const String defaultOnePubApiUrl = 'https://onepub.dev';
 
   static const String defaultApiBasePath = 'api';
 
@@ -75,24 +75,17 @@ class OnepubSettings {
   /// so our process of checking that the url has been added to the
   /// token list works.
   String get onepubApiUrl => join(
-      settings.asString('apiUrl', defaultValue: defaultOnepubApiUrl),
+      settings.asString('apiUrl', defaultValue: defaultOnePubApiUrl),
       defaultApiBasePath);
 
   set onepubApiUrl(String url) => settings['apiUrl'] = url;
 
   ///
   String get onepubWebUrl => join(
-      settings.asString('webUrl', defaultValue: defaultOnepubWebUrl),
+      settings.asString('webUrl', defaultValue: defaultOnePubWebUrl),
       defaultWebBasePath);
 
   static String onepubTokenKey = 'onepubToken';
-
-  /// oauth2
-  bool get hasToken => settings.validString(onepubTokenKey);
-  String get onepubToken => settings.asString(onepubTokenKey);
-  set onepubToken(String token) => settings[onepubTokenKey] = token;
-
-  bool get isLoggedIn => hasToken;
 
   void save() => settings.save();
 
@@ -101,7 +94,7 @@ class OnepubSettings {
       // ignore: parameter_assignments
       command = command.substring(1);
     }
-    var endpoint = join(OnepubSettings().onepubApiUrl, command);
+    var endpoint = join(OnePubSettings().onepubApiUrl, command);
 
     if (queryParams != null) {
       endpoint += '?$queryParams';
@@ -110,7 +103,7 @@ class OnepubSettings {
   }
 
   String resolveWebEndPoint(String command, {String? queryParams}) {
-    var endpoint = join(OnepubSettings().onepubWebUrl, command);
+    var endpoint = join(OnePubSettings().onepubWebUrl, command);
 
     if (queryParams != null) {
       endpoint += '?$queryParams';
@@ -118,8 +111,6 @@ class OnepubSettings {
     return endpoint;
   }
 }
-
-bool get isLoggedIn => OnepubSettings().isLoggedIn;
 
 ///
 class RulesException implements Exception {

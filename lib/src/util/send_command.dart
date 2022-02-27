@@ -6,6 +6,7 @@ import 'package:dcli/dcli.dart';
 
 import '../exceptions.dart';
 import '../onepub_settings.dart';
+import 'one_pub_token_store.dart';
 
 /// Takes the body, assumes its a json string and
 /// converts it to a map.
@@ -20,7 +21,7 @@ Future<EndpointResponse> sendCommand(
     Map<String, String> headers = const <String, String>{},
     String? body,
     Method method = Method.get}) async {
-  final resolvedEndpoint = OnepubSettings().resolveApiEndPoint(command);
+  final resolvedEndpoint = OnePubSettings().resolveApiEndPoint(command);
 
   verbose(() => 'Sending command to $resolvedEndpoint');
 
@@ -30,7 +31,7 @@ Future<EndpointResponse> sendCommand(
     final client = HttpClient()..connectionTimeout = const Duration(seconds: 5);
 
     /// allow self signed/staged certs in dev
-    if (OnepubSettings().allowBadCertificates) {
+    if (OnePubSettings().allowBadCertificates) {
       client.badCertificateCallback = (cert, host, port) => true;
     }
 
@@ -48,14 +49,14 @@ Future<HttpClientResponse> _startRequest(HttpClient client, Method method,
   final _headers = <String, String>{}..addAll(headers);
 
   if (authorised) {
-    if (!isLoggedIn) {
+    if (!OnePubTokenStore().isLoggedIn) {
       throw ExitException(exitCode: 1, message: '''
 You must be logged in to run this command.
 run: 
   onepub login
   ''');
     }
-    final onepubToken = OnepubSettings().onepubToken;
+    final onepubToken = OnePubTokenStore().fetch();
 
     _headers.addAll({'authorization': onepubToken});
   }
@@ -160,7 +161,7 @@ class EndpointResponse {
   }
 
   /// We expect a response of the form:
-  /// {"success":{"message":"Onepub.dev status normal."}}
+  /// {"success":{"message":"OnePub.dev status normal."}}
   /// or
   /// {"error":{"bad things."}}
 

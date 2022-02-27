@@ -5,10 +5,7 @@ import 'package:dcli/dcli.dart';
 
 import '../exceptions.dart';
 import '../onepub_settings.dart';
-import '../token_store/credential.dart';
-import '../token_store/hosted.dart';
-import '../token_store/io.dart';
-import '../token_store/token_store.dart';
+import '../util/one_pub_token_store.dart';
 import '../util/send_command.dart';
 import 'bbauth.dart';
 
@@ -55,15 +52,8 @@ class LoginCommand extends Command<void> {
               exitCode: 1,
               message: 'Invalid response. authToken or firstLogin missing');
         }
-        OnepubSettings()
-          ..onepubToken = onepubToken
-          ..save();
+        OnePubTokenStore().save(onepubToken);
 
-//       withEnvironment(() {
-        final store = TokenStore(dartConfigDir);
-        final hostedUrl =
-            validateAndNormalizeHostedUrl(OnepubSettings().onepubWebUrl);
-        store.addCredential(Credential.token(hostedUrl, onepubToken));
         showWelcome(firstLogin: firstLogin);
       } else {
         showError(endPointResponse);
@@ -85,7 +75,7 @@ void showWelcome({required bool firstLogin}) {
   var firstMessage = '';
   if (firstLogin) {
     firstMessage = '''
-Welcome to OnePub.dev.
+Welcome to OnePub.
 Read the getting started guide at:
 ${orange('https://onepub.dev/getting-started')}
 

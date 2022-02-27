@@ -35,7 +35,7 @@ void main(List<String> arguments) {
     withEnvironment(() {
       DartSdk().runPub(args: arguments, nothrow: true);
     }, environment: {
-      OnepubSettings.pubHostedUrlKey: OnepubSettings().onepubApiUrl
+      OnePubSettings.pubHostedUrlKey: OnePubSettings().onepubApiUrl
     });
   }
 }

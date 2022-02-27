@@ -7,10 +7,8 @@ import 'commands/config.dart';
 import 'commands/doctor.dart';
 import 'commands/export.dart';
 import 'commands/import.dart';
-import 'commands/install.dart';
 import 'commands/login.dart';
 import 'commands/logout.dart';
-import 'commands/team.dart';
 import 'exceptions.dart';
 import 'util/log.dart';
 import 'version/version.g.dart';
@@ -23,7 +21,7 @@ class ParsedArgs {
   ///
   ParsedArgs.withArgs(this.args) : runner = CommandRunner<void>('onepub', '''
 
-${orange('Onepub cli tools')}
+${orange('OnePub cli tools')}
 
 You can alter the config by running 'onepub config' or by modifying ~/.onepub/onepub.yaml''') {
     _self = this;
@@ -45,21 +43,13 @@ You can alter the config by running 'onepub config' or by modifying ~/.onepub/on
   void build() {
     runner.argParser
         .addFlag('debug', abbr: 'd', help: 'Enable versbose logging');
-    runner.argParser.addFlag('colour',
-        abbr: 'c',
-        defaultsTo: true,
-        help: 'Enabled colour coding of messages. You should disable colour '
-            'when using the console to log.');
-    runner.argParser.addOption('logfile',
-        abbr: 'l', help: 'If set all output is sent to the provided logifile');
-
     runner.argParser
         .addFlag('version', help: 'Displays the onepub version no. and exits.');
 
     runner
       ..addCommand(ConfigCommand())
-      ..addCommand(InstallCommand())
-      ..addCommand(TeamCommand())
+      // ..addCommand(InstallCommand())
+      // ..addCommand(TeamCommand())
       ..addCommand(DoctorCommand())
       ..addCommand(LoginCommand())
       ..addCommand(LogoutCommand())
@@ -75,15 +65,6 @@ You can alter the config by running 'onepub config' or by modifying ~/.onepub/on
     if (version == true) {
       print('onepub $packageVersion');
       exit(0);
-    }
-
-    colour = results['colour'] as bool == true;
-
-    if (results.wasParsed('logfile')) {
-      useLogfile = true;
-      logfile = results['logfile'] as String;
-    } else {
-      useLogfile = false;
     }
   }
 

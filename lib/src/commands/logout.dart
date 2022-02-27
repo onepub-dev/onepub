@@ -5,6 +5,7 @@ import 'package:dcli/dcli.dart';
 import '../exceptions.dart';
 
 import '../onepub_settings.dart';
+import '../util/one_pub_token_store.dart';
 import '../util/send_command.dart';
 
 /// onepub Logout <email>
@@ -14,7 +15,7 @@ class LogoutCommand extends Command<void> {
   LogoutCommand();
 
   @override
-  String get description => 'Logs a person to join onepub.dev.';
+  String get description => 'Log out of OnePub CLI on all your devices.';
 
   @override
   String get name => 'logout';
@@ -36,14 +37,9 @@ The logout command takes no arguments. Found ${argResults!.rest.join(',')}.
           exitCode: 1, message: results.data['message']! as String);
     }
 
-    final progress = 'dart pub token remove ${OnepubSettings().onepubWebUrl}'
-        .start(nothrow: true, progress: Progress.capture());
+    OnePubTokenStore().remove();
 
-    /// 65 means no token was found so we were probably already logged out.
-    if (progress.exitCode != 0 && progress.exitCode != 65) {
-      print(progress.toParagraph());
-      return;
-    }
-    print(green('You have been logged out.'));
+    print(green(
+        'You have been logged out of the OnePub CLI on all your devices.'));
   }
 }

@@ -17,14 +17,14 @@ int _port = 42666;
 Future<EndpointResponse?> bbAuth() async {
   final callbackUrl = 'http://localhost:$_port';
 
-  final onepubUrl = OnepubSettings.load().onepubWebUrl;
-  final authUrl = OnepubSettings()
+  final onepubUrl = OnePubSettings.load().onepubWebUrl;
+  final authUrl = OnePubSettings()
       .resolveWebEndPoint('clilogin', queryParams: 'callback=$callbackUrl');
 
   final encodedUrl = Uri.encodeFull(authUrl);
 
   print('''
-To login to Onepub.
+To login to OnePub.
 From a web browser, go to 
 
 ${blue(encodedUrl)}
@@ -70,7 +70,7 @@ Future<EndpointResponse?> _waitForResponse(
         completer.complete(response);
         return shelf.Response.found('$onepubWebUrl/cliauthorised');
 
-        //return shelf.Response.ok('Onepub successfully authorised.');
+        //return shelf.Response.ok('OnePub successfully authorised.');
       } else {
         completer.complete(null);
 
