@@ -8,7 +8,6 @@ import '../onepub_settings.dart';
 import '../util/one_pub_token_store.dart';
 import '../util/send_command.dart';
 import '../util/token_export_file.dart';
-import '../version/version.g.dart';
 
 ///
 class ExportCommand extends Command<void> {
@@ -45,7 +44,7 @@ class ExportCommand extends Command<void> {
 
     if (!OnePubTokenStore().isLoggedIn) {
       throw ExitException(
-          exitCode: 1, message: 'You must run onepub login first.');
+          exitCode: 1, message: "You must run 'onepub login' first.");
     }
 
     final String onepubToken;
@@ -71,7 +70,8 @@ class ExportCommand extends Command<void> {
     } else {
       onepubToken = OnePubTokenStore().fetch();
     }
-    print(orange('Exporting onepub token: $packageVersion.'));
+    print(orange(
+        'Exporting OnePub token for ${OnePubSettings().publisherName}.'));
 
     if (file) {
       final exportFile =
@@ -80,6 +80,7 @@ class ExportCommand extends Command<void> {
             ..save();
 
       print('''
+
 Saved credentials to: ${truepath(exportFile.pathToExportFile)}.
 
 Copy the onepub.token.yaml to your CI/CD environment and run:

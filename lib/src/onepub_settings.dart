@@ -87,6 +87,13 @@ class OnePubSettings {
         settings.asString('publisherId', defaultValue: defaultOnePubApiUrl),
       );
 
+  set publisherName(String publisherName) =>
+      settings['publisherName'] = publisherName;
+
+  String get publisherName => join(
+        settings.asString('publisherName'),
+      );
+
   ///
   String get onepubWebUrl => join(
       settings.asString('webUrl', defaultValue: defaultOnePubWebUrl),

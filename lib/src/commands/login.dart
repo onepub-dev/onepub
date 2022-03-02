@@ -98,6 +98,9 @@ class LoginCommand extends Command<void> {
       OnePubTokenStore().save(
           onepubToken: onepubToken,
           obfuscatedPublisherId: candidate.obfuscatedPublisherId);
+      OnePubSettings()
+        ..publisherName = candidate.publisherName
+        ..save();
 
       showWelcome(
           firstLogin: firstLogin, publisherName: candidate.publisherName);

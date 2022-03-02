@@ -51,12 +51,10 @@ Use `onepub export` to obtain the token.
     }
 
     final response =
-        await sendCommand(command: 'GetPublisherId?onepubToken=$onepubToken');
+        await sendCommand(command: 'getPublisherId/$onepubToken');
     if (!response.success) {
       throw ExitException(
-          exitCode: 1,
-          message: 'The imported OnePub Token is no longer valid. '
-              'Obtain a new one and try again.');
+          exitCode: 1, message: response.data['message']! as String);
     }
 
     final obfuscatedPublisherId =
