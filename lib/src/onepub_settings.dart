@@ -80,6 +80,13 @@ class OnePubSettings {
 
   set onepubApiUrl(String url) => settings['apiUrl'] = url;
 
+  set obfuscatedPublisherId(String obfuscatedPublisherId) =>
+      settings['publisherId'] = obfuscatedPublisherId;
+
+  String get obfuscatedPublisherId => join(
+        settings.asString('publisherId', defaultValue: defaultOnePubApiUrl),
+      );
+
   ///
   String get onepubWebUrl => join(
       settings.asString('webUrl', defaultValue: defaultOnePubWebUrl),

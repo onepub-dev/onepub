@@ -3,12 +3,14 @@ import 'dart:io';
 import 'package:args/command_runner.dart';
 import 'package:dcli/dcli.dart';
 
+import 'commands/add_dependency.dart';
 import 'commands/config.dart';
 import 'commands/doctor.dart';
 import 'commands/export.dart';
 import 'commands/import.dart';
 import 'commands/login.dart';
 import 'commands/logout.dart';
+import 'commands/private.dart';
 import 'exceptions.dart';
 import 'util/log.dart';
 import 'version/version.g.dart';
@@ -54,7 +56,9 @@ You can alter the config by running 'onepub config' or by modifying ~/.onepub/on
       ..addCommand(LoginCommand())
       ..addCommand(LogoutCommand())
       ..addCommand(ImportCommand())
-      ..addCommand(ExportCommand());
+      ..addCommand(ExportCommand())
+      ..addCommand(AddDependencyCommand())
+      ..addCommand(PrivateCommand());
   }
 
   void parse() {

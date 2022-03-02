@@ -16,11 +16,15 @@ class ExportCommand extends Command<void> {
   ExportCommand() {
     argParser
       ..addFlag('file', abbr: 'f', help: 'Save the OnePub token to a file')
-      ..addOption('user', abbr: 'u', help: 'Export the token of a CICD user.');
+      ..addOption('user',
+          abbr: 'u',
+          help: 'Export the token of a CICD member.',
+          valueHelp: 'email address of a CI/CD Member');
   }
 
   @override
-  String get description => 'Exports the onepub token.';
+  String get description =>
+      'Exports your onepub token or a designated CI/CD user.';
 
   @override
   String get name => 'export';

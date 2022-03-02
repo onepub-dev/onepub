@@ -147,6 +147,29 @@ class TokenStore {
     return found;
   }
 
+  /// Removes tokens which start with the same [hostedUrlSuffix] from store.
+  /// Returns whether or not there was at least one stored token with matching
+  /// url.
+  bool removeMatchingCredential(Uri hostedUrlSuffix) {
+    final _credentials = _loadCredentials();
+
+    var i = 0;
+    var found = false;
+    while (i < _credentials.length) {
+      final prefix = hostedUrlSuffix.toString();
+      if (_credentials[i].url.toString().startsWith(prefix)) {
+        _credentials.removeAt(i);
+        found = true;
+      } else {
+        i++;
+      }
+    }
+
+    _saveCredentials(_credentials);
+
+    return found;
+  }
+
   /// Returns [Credential] for authenticating given [hostedUrl] or `null` if no
   /// matching credential is found.
   Credential? findCredential(Uri hostedUrl) {

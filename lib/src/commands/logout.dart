@@ -37,7 +37,7 @@ The logout command takes no arguments. Found ${argResults!.rest.join(',')}.
           exitCode: 1, message: results.data['message']! as String);
     }
 
-    OnePubTokenStore().remove();
+    OnePubTokenStore().clearOldTokens();
 
     print(green(
         'You have been logged out of the OnePub CLI on all your devices.'));

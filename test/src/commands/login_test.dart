@@ -4,6 +4,26 @@ import 'package:test/test.dart';
 
 void main() {
   test('login ...', () async {
+    //  We need to test the following scenarios
+
+    // 0 members
+
+    // 1 member
+
+    // multiple members with the same email from different publishers
+
+    // a disabled member
+
+    // a suspended/cancelled publisher
+
+    // 0,1 0 many invites from the same or multiple publishers - we shouldn't
+    // allow more than one invite from a publisher to be active although
+    // this can make it easer to register if multiple invites are sent
+    // perhaps if if any of them are accepted we delete all outstanding invites
+    // we did discuss allowin the invite link to work for a while after
+    // the fact so users can use it to log back in.
+    // Maybe just redirect the link to the login page given login is simple.
+
     ///
     ///
     /// This is going to be tricky to do as we need to fake the client

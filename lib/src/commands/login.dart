@@ -38,29 +38,71 @@ class LoginCommand extends Command<void> {
     loadSettings();
 
     try {
-      final endPointResponse = await bbAuth();
-      if (endPointResponse == null) {
+      final tempAuthTokenResponse = await bbAuth();
+      if (tempAuthTokenResponse == null) {
         throw ExitException(
             exitCode: 1, message: 'Invalid response. onePubToken not returned');
       }
 
-      if (endPointResponse.success) {
-        final onepubToken = endPointResponse.data['onePubToken'] as String?;
-        final firstLogin = endPointResponse.data['firstLogin'] as bool?;
-        if (onepubToken == null || firstLogin == null) {
-          throw ExitException(
-              exitCode: 1,
-              message: 'Invalid response. authToken or firstLogin missing');
-        }
-        OnePubTokenStore().save(onepubToken);
+      if (tempAuthTokenResponse.success) {
+        final tempAuthToken =
+            tempAuthTokenResponse.data['tempAuthToken']! as String;
+        final operatorEmail =
+            tempAuthTokenResponse.data['operatorEmail']! as String;
 
-        showWelcome(firstLogin: firstLogin);
+        final candidates = await fetchCandidates(
+            tempAuthToken: tempAuthToken, operatorEmail: operatorEmail);
+
+        Candidate candidate;
+
+        if (candidates.length > 1) {
+          candidate = selectCandidate(candidates);
+        } else {
+          candidate = candidates[0];
+        }
+
+        await finaliseAuth(
+            tempAuthToken: tempAuthToken,
+            candidate: candidate,
+            operatorEmail: operatorEmail);
       } else {
-        showError(endPointResponse);
+        showError(tempAuthTokenResponse);
       }
     } on FetchException {
       printerr(red('Unable to connect to the onepub.dev server. '
           'Check your internet connection.'));
+    }
+  }
+
+  Future<void> finaliseAuth(
+      {required String tempAuthToken,
+      required String operatorEmail,
+      required Candidate candidate}) async {
+    final response = await sendCommand(
+      command: 'authMember'
+          '/$tempAuthToken'
+          '/$operatorEmail'
+          '/${candidate.isInvite}'
+          '/${candidate.obfuscatedPublisherId}',
+      authorised: false,
+    );
+
+    if (response.success) {
+      final onepubToken = response.data['onePubToken'] as String?;
+      final firstLogin = response.data['firstLogin'] as bool?;
+      if (onepubToken == null || firstLogin == null) {
+        throw ExitException(
+            exitCode: 1,
+            message: 'Invalid response. authToken or firstLogin missing');
+      }
+      OnePubTokenStore().save(
+          onepubToken: onepubToken,
+          obfuscatedPublisherId: candidate.obfuscatedPublisherId);
+
+      showWelcome(
+          firstLogin: firstLogin, publisherName: candidate.publisherName);
+    } else {
+      showError(response);
     }
   }
 
@@ -69,9 +111,62 @@ class LoginCommand extends Command<void> {
 
     print(red(error));
   }
+
+  Future<List<Candidate>> fetchCandidates(
+      {required String tempAuthToken, required String operatorEmail}) async {
+    final response = await sendCommand(
+      command: 'candidates'
+          '/$tempAuthToken/$operatorEmail',
+      authorised: false,
+    );
+
+    if (!response.success) {
+      throw ExitException(
+          exitCode: 1, message: response.data['message']! as String);
+    }
+
+    final list = response.data['candidates']! as List;
+    final candidates = List<Candidate>.from(
+        list.map<Candidate>((dynamic data) => Candidate.fromJson(data)));
+
+    return candidates;
+  }
+
+  Candidate selectCandidate(List<Candidate> candidates) {
+    print('');
+    print(blue('Your email is associated with multiple publishers.'));
+    return menu(
+        prompt: 'Select the Publisher:',
+        options: candidates,
+        format: (candidate) {
+          var name = candidate.publisherName;
+          if (candidate.isInvite) {
+            name += ' - Invitation';
+          }
+          return name;
+        });
+  }
 }
 
-void showWelcome({required bool firstLogin}) {
+class Candidate {
+  Candidate(this.publisherName, this.obfuscatedPublisherId,
+      {required this.isInvite});
+
+  factory Candidate.fromJson(dynamic data) {
+    final json = data as Map<String, dynamic>;
+    final publisherName = json['publisherName'] as String;
+    final isInvite = json['isInvite'] as bool;
+    final obfuscatedPublisherId = json['obfuscatedPublisherId']! as String;
+
+    return Candidate(publisherName, obfuscatedPublisherId, isInvite: isInvite);
+  }
+
+  String publisherName;
+  bool isInvite;
+  String obfuscatedPublisherId;
+}
+
+void showWelcome({required bool firstLogin, required String publisherName}) {
   var firstMessage = '';
   if (firstLogin) {
     firstMessage = '''
@@ -84,7 +179,7 @@ ${orange('https://onepub.dev/getting-started')}
 
   print('''
 
-${blue('Successfully logged in.')}
+${blue('Successfully logged into $publisherName.')}
 
 $firstMessage
 ''');
