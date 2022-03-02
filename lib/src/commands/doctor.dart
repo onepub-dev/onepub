@@ -58,9 +58,10 @@ class DoctorCommand extends Command<void> {
     print(blue('\nStatus'));
     if (OnePubTokenStore().isLoggedIn) {
       print('Logged In: true');
+      print('Publisher: ${OnePubSettings().publisherName}');
     } else {
       print(orange('''
-You are not logged into onepub.
+You are not logged into OnePub.
 run:
 onepub login'''));
     }
@@ -72,8 +73,10 @@ onepub login'''));
       final response = await sendCommand(command: endpoint);
 
       if (response.status == 200) {
+        print('');
         print(green(response.data['message']! as String));
       } else {
+        print('');
         print(red(response.data['message']! as String));
       }
     } on IOException catch (e) {
@@ -99,7 +102,7 @@ onepub login''');
     } else {
       var found = false;
       for (final line in tokenLines) {
-        if (line == OnePubSettings().onepubWebUrl) {
+        if (line.startsWith(OnePubSettings().onepubApiUrl)) {
           print(green(line));
           found = true;
         } else {
