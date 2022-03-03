@@ -1,0 +1,86 @@
+{
+    "configurations": [
+        {
+            "name": "onepub doctor",
+            "type": "dart",
+            "request": "launch",
+            "program": "bin/onepub.dart",
+            "args": ["doctor"]
+        },
+        {
+            "name": "onepub team create",
+            "type": "dart",
+            "request": "launch",
+            "program": "bin/onepub.dart",
+            "args": ["team", "create", "one"]
+        }
+        ,
+        {
+            "name": "onepub login",
+            "type": "dart",
+            "request": "launch",
+            "program": "bin/onepub.dart",
+            "args": ["login"],
+            "console": "terminal"
+        },
+        {
+            "name": "onepub logout",
+            "type": "dart",
+            "request": "launch",
+            "program": "bin/onepub.dart",
+            "args": ["logout"]
+        }
+        ,
+        {
+            "name": "onepub doctor",
+            "type": "dart",
+            "request": "launch",
+            "program": "bin/onepub.dart",
+            "args": ["doctor"]
+        }
+        ,
+        {
+            "name": "onepub export",
+            "type": "dart",
+            "request": "launch",
+            "program": "bin/onepub.dart",
+            "args": ["export"]
+        }
+        ,
+        {
+            "name": "onepub export to file",
+            "type": "dart",
+            "request": "launch",
+            "program": "bin/onepub.dart",
+            "args": ["export", "--file"]
+        }
+
+        ,
+        {
+            "name": "onepub export CI/CD User",
+            "type": "dart",
+            "request": "launch",
+            "program": "bin/onepub.dart",
+            "args": ["export", "--user", "ci@onepub.dev"]
+        }
+        ,
+        {
+            "name": "onepub import",
+            "type": "dart",
+            "request": "launch",
+            "program": "bin/onepub.dart",
+            "args": ["import"],
+            "env": {"ONEPUB_SECRET" : "ABCDE"}
+        },
+
+        {
+            "name": "onepub private",
+            "type": "dart",
+            "request": "launch",
+            "program": "bin/onepub.dart",
+            "args": ["private"],
+            "console": "terminal"
+        },
+
+    ]
+}
