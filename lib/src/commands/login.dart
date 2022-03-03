@@ -79,7 +79,7 @@ class LoginCommand extends Command<void> {
       required String operatorEmail,
       required Candidate candidate}) async {
     final response = await sendCommand(
-      command: 'authMember'
+      command: 'member/auth'
           '/$tempAuthToken'
           '/$operatorEmail'
           '/${candidate.isInvite}'
@@ -103,7 +103,9 @@ class LoginCommand extends Command<void> {
         ..save();
 
       showWelcome(
-          firstLogin: firstLogin, publisherName: candidate.publisherName);
+          firstLogin: firstLogin,
+          publisherName: candidate.publisherName,
+          operator: operatorEmail);
     } else {
       showError(response);
     }
@@ -169,7 +171,10 @@ class Candidate {
   String obfuscatedPublisherId;
 }
 
-void showWelcome({required bool firstLogin, required String publisherName}) {
+void showWelcome(
+    {required bool firstLogin,
+    required String publisherName,
+    required String operator}) {
   var firstMessage = '';
   if (firstLogin) {
     firstMessage = '''
@@ -182,7 +187,7 @@ ${orange('https://onepub.dev/getting-started')}
 
   print('''
 
-${blue('Successfully logged into $publisherName.')}
+${blue('Successfully logged into $publisherName as $operator.')}
 
 $firstMessage
 ''');

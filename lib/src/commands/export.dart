@@ -56,7 +56,7 @@ class ExportCommand extends Command<void> {
             message: 'The supplied user must be a valid email address. '
                 'Found $user');
       }
-      final response = await sendCommand(command: 'getToken/$user');
+      final response = await sendCommand(command: 'member/token/$user');
       if (response.success) {
         final token = response.data['onepubToken'];
         if (token == null) {

@@ -57,7 +57,7 @@ Future<EndpointResponse?> _waitForResponse(
 
         // Forward the oauth details to the server so it can validate us.
         final response = await sendCommand(
-            command: 'oauthFinalise'
+            command: '/member/oauth'
                 '?app_id=$appId&authentication_token=$token',
             authorised: false);
 

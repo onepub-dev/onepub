@@ -50,8 +50,7 @@ Use `onepub export` to obtain the token.
       onepubToken = fromSecret();
     }
 
-    final response =
-        await sendCommand(command: 'getPublisherId/$onepubToken');
+    final response = await sendCommand(command: 'member/publisher');
     if (!response.success) {
       throw ExitException(
           exitCode: 1, message: response.data['message']! as String);

@@ -30,7 +30,7 @@ The logout command takes no arguments. Found ${argResults!.rest.join(',')}.
 '''));
     }
 
-    final results = await sendCommand(command: 'logout');
+    final results = await sendCommand(command: '/member/logout');
 
     if (!results.success) {
       throw ExitException(
@@ -39,7 +39,7 @@ The logout command takes no arguments. Found ${argResults!.rest.join(',')}.
 
     OnePubTokenStore().clearOldTokens();
 
-    print(green(
-        'You have been logged out of the OnePub CLI on all your devices.'));
+    print(green('You have been logged out of the OnePub CLI for '
+        '${OnePubSettings().publisherName} on all your devices.'));
   }
 }
