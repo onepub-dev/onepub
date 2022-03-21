@@ -40,11 +40,10 @@ class InstallCommand extends Command<void> {
     print(blue('''
 Register with or accept your invite to onepub.dev at https://onepub.dev/register
 Then run: 
-  onepub auth
+  onepub login
 
 You can then use `opub` in place of `dart pub` or `flutter pub`.
 
-Alternatively you can create the PUB_HOSTED_URL environment variable and continue to use dart pub or flutter pub.
 '''));
 
     print(green('Install of OnePub complete.'));
