@@ -40,9 +40,9 @@ See https://${OnePubSettings.onepubHostName}/publish
       createDir(OnePubPaths().pathToSettingsDir, recursive: true);
     }
 
-    final obfuscatedPublisherId = OnePubSettings().obfuscatedPublisherId;
-    final currentPublisherName = OnePubSettings().publisherName;
-    final url = '${OnePubSettings().onepubApiUrl}/$obfuscatedPublisherId/';
+    final obfuscatedOrganisationId = OnePubSettings().obfuscatedOrganisationId;
+    final currentOrganisationName = OnePubSettings().organisationName;
+    final url = '${OnePubSettings().onepubApiUrl}/$obfuscatedOrganisationId/';
 
     final pubspec = project.pubSpec.pubspec;
     if (pubspec.publishTo != null) {
@@ -51,14 +51,16 @@ See https://${OnePubSettings.onepubHostName}/publish
         return;
       }
 
-      final publisherName = await getPublisher(obfuscatedPublisherId);
-      if (publisherName == null) {
+      final organisationName = await getOrganisation(obfuscatedOrganisationId);
+      if (organisationName == null) {
         print(orange('${pubspec.name} is already a private package '
-            'for another publisher'));
+            'for another organisation'));
       } else {
-        print(orange('${pubspec.name} is already a private package of $publisherName'));
+        print(orange('${pubspec.name} is already a private package of '
+            '$organisationName'));
       }
-      if (!confirm('Do you want to update the publisher to $currentPublisherName?')) {
+      if (!confirm('Do you want to update the organisation to '
+          '$currentOrganisationName?')) {
         print(red('Action cancelled'));
         return;
       }
@@ -68,7 +70,7 @@ See https://${OnePubSettings.onepubHostName}/publish
     await pubspecUpdated.save(Directory(project.pathToProjectRoot));
 
     print('''
-${pubspecUpdated.name} has been marked as a private package for the publisher ${OnePubSettings().publisherName}.
+${pubspecUpdated.name} has been marked as a private package for the organisation ${OnePubSettings().organisationName}.
 
 Run 'dart/flutter pub publish' to publish ${pubspecUpdated.name} to OnePub
 
@@ -76,16 +78,17 @@ See https://${OnePubSettings.onepubHostName}/publish
 ''');
   }
 
-  /// get the publisher name
-  Future<String?> getPublisher(String obfuscatedId) async {
-    final response = await sendCommand(command: 'publisher/$obfuscatedId');
+  /// get the organisation name
+  Future<String?> getOrganisation(String obfuscatedId) async {
+    final response = await sendCommand(command: 'organisation/$obfuscatedId');
     if (!response.success) {
       if (response.status == HttpStatus.notFound) {
         return null;
       }
-      throw ExitException(exitCode: 1, message: response.data['message']! as String);
+      throw ExitException(
+          exitCode: 1, message: response.data['message']! as String);
     }
 
-    return response.data['publisherName']! as String;
+    return response.data['organisationName']! as String;
   }
 }

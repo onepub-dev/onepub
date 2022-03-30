@@ -28,7 +28,8 @@ class OnePubSettings {
 
     try {
       final settings = SettingsYaml.load(pathToSettings: pathToSettings);
-      _self = OnePubSettings.loadFromSettings(settings, showWarnings: showWarnings);
+      _self =
+          OnePubSettings.loadFromSettings(settings, showWarnings: showWarnings);
       return _self!;
     } on YamlException catch (e) {
       logerr(red('Failed to load rules from $pathToSettings'));
@@ -55,7 +56,8 @@ class OnePubSettings {
   late final SettingsYaml settings;
 
   /// Path to the onepub onepub.yaml file.
-  static late final String pathToSettings = join(OnePubPaths().pathToSettingsDir, 'onepub.yaml');
+  static late final String pathToSettings =
+      join(OnePubPaths().pathToSettingsDir, 'onepub.yaml');
 
   static const String defaultOnePubWebUrl = 'https://$onepubHostName';
   static const String defaultOnePubApiUrl = 'https://$onepubHostName';
@@ -68,29 +70,36 @@ class OnePubSettings {
   /// allowBadCertificates
   /// During dev if we are using self signed cert we need to set this
   static String allowBadCertificatesKey = 'allowBadCertificates';
-  bool get allowBadCertificates => settings.asBool(allowBadCertificatesKey, defaultValue: false);
+  bool get allowBadCertificates =>
+      settings.asBool(allowBadCertificatesKey, defaultValue: false);
 
   /// pub token add strips the port if its 443 so we must as well
   /// so our process of checking that the url has been added to the
   /// token list works.
-  String get onepubApiUrl => join(settings.asString('apiUrl', defaultValue: defaultOnePubApiUrl), defaultApiBasePath);
+  String get onepubApiUrl => join(
+      settings.asString('apiUrl', defaultValue: defaultOnePubApiUrl),
+      defaultApiBasePath);
 
   set onepubApiUrl(String url) => settings['apiUrl'] = url;
 
-  set obfuscatedPublisherId(String obfuscatedPublisherId) => settings['publisherId'] = obfuscatedPublisherId;
+  set obfuscatedOrganisationId(String obfuscatedOrganisationId) =>
+      settings['organisationId'] = obfuscatedOrganisationId;
 
-  String get obfuscatedPublisherId => join(
-        settings.asString('publisherId', defaultValue: defaultOnePubApiUrl),
+  String get obfuscatedOrganisationId => join(
+        settings.asString('organisationId', defaultValue: defaultOnePubApiUrl),
       );
 
-  set publisherName(String publisherName) => settings['publisherName'] = publisherName;
+  set organisationName(String organisationName) =>
+      settings['organisationName'] = organisationName;
 
-  String get publisherName => join(
-        settings.asString('publisherName'),
+  String get organisationName => join(
+        settings.asString('organisationName'),
       );
 
   ///
-  String get onepubWebUrl => join(settings.asString('webUrl', defaultValue: defaultOnePubWebUrl), defaultWebBasePath);
+  String get onepubWebUrl => join(
+      settings.asString('webUrl', defaultValue: defaultOnePubWebUrl),
+      defaultWebBasePath);
 
   static String onepubTokenKey = 'onepubToken';
 
@@ -131,6 +140,7 @@ class RulesException implements Exception {
 
 String generateRandomString(int len) {
   final r = Random();
-  const _chars = 'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890';
+  const _chars =
+      'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890';
   return List.generate(len, (index) => _chars[r.nextInt(_chars.length)]).join();
 }

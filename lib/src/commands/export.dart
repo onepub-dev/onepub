@@ -71,7 +71,7 @@ class ExportCommand extends Command<void> {
       onepubToken = OnePubTokenStore().fetch();
     }
     print(orange(
-        'Exporting OnePub token for ${OnePubSettings().publisherName}.'));
+        'Exporting OnePub token for ${OnePubSettings().organisationName}.'));
 
     if (file) {
       final exportFile =

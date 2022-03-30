@@ -43,7 +43,8 @@ class TokenStore {
       }
 
       if (json is! Map<String, dynamic>) {
-        throw const FormatException('JSON contents is corrupted or not supported');
+        throw const FormatException(
+            'JSON contents is corrupted or not supported');
       }
       if (json['version'] != 1) {
         throw const FormatException('Version is not supported');
@@ -66,7 +67,8 @@ class TokenStore {
             result.add(credential);
 
             if (!credential.isValid()) {
-              throw const FormatException('Invalid or not supported credential');
+              throw const FormatException(
+                  'Invalid or not supported credential');
             }
           } on FormatException catch (e) {
             // ignore: avoid_dynamic_calls
@@ -104,7 +106,7 @@ class TokenStore {
       missingConfigDir();
     }
     final tokenPath = path.dirname(tokensFile);
-    print("Token path is " + tokenPath);
+    print('Token path is $tokenPath');
     if (!exists(tokenPath)) {
       createDir(tokenPath);
     }
@@ -192,7 +194,8 @@ class TokenStore {
 
   /// Returns whether or not store contains a token that could be used for
   /// authenticating given [url].
-  bool hasCredential(Uri url) => credentials.any((it) => it.url == url && it.isValid());
+  bool hasCredential(Uri url) =>
+      credentials.any((it) => it.url == url && it.isValid());
 
   /// Deletes pub-tokens.json file from the disk.
   void deleteTokensFile() {

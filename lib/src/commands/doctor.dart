@@ -58,7 +58,7 @@ class DoctorCommand extends Command<void> {
     print(blue('\nStatus'));
     if (OnePubTokenStore().isLoggedIn) {
       print('Logged In: true');
-      print('Publisher: ${OnePubSettings().publisherName}');
+      print('Organisation: ${OnePubSettings().organisationName}');
     } else {
       print(orange('''
 You are not logged into OnePub.

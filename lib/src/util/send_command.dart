@@ -10,7 +10,8 @@ import 'one_pub_token_store.dart';
 
 /// Takes the body, assumes its a json string and
 /// converts it to a map.
-Map<String, dynamic> bodyAsJsonMap(String body) => jsonDecode(body) as Map<String, dynamic>;
+Map<String, dynamic> bodyAsJsonMap(String body) =>
+    jsonDecode(body) as Map<String, dynamic>;
 
 enum Method { get, post }
 
@@ -34,7 +35,8 @@ Future<EndpointResponse> sendCommand(
       client.badCertificateCallback = (cert, host, port) => true;
     }
 
-    final response = await _startRequest(client, method, uri, headers, body, authorised);
+    final response =
+        await _startRequest(client, method, uri, headers, body, authorised);
 
     return await _processData(client, response);
   } on SocketException catch (e) {
@@ -42,8 +44,8 @@ Future<EndpointResponse> sendCommand(
   } finally {}
 }
 
-Future<HttpClientResponse> _startRequest(
-    HttpClient client, Method method, Uri uri, Map<String, String> headers, String? body, bool authorised) async {
+Future<HttpClientResponse> _startRequest(HttpClient client, Method method,
+    Uri uri, Map<String, String> headers, String? body, bool authorised) async {
   final _headers = <String, String>{}..addAll(headers);
 
   if (authorised) {
@@ -182,7 +184,8 @@ class EndpointResponse {
 
   /// Takes the body, assumes its a json string and
   /// converts it to a map.
-  Map<String, dynamic> _bodyAsJsonMap(String body) => jsonDecode(body) as Map<String, dynamic>;
+  Map<String, dynamic> _bodyAsJsonMap(String body) =>
+      jsonDecode(body) as Map<String, dynamic>;
 
   @override
   String toString() => 'status: $status, data: ${data.toString()}';

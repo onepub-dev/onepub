@@ -50,17 +50,18 @@ Use `onepub export` to obtain the token.
       onepubToken = fromSecret();
     }
 
-    final response = await sendCommand(command: 'member/publisher');
+    final response = await sendCommand(command: 'member/organisation');
     if (!response.success) {
       throw ExitException(
           exitCode: 1, message: response.data['message']! as String);
     }
 
-    final obfuscatedPublisherId =
-        response.data['obfuscatedPublisherId']! as String;
+    final obfuscatedOrganisationId =
+        response.data['obfuscatedOrganisationId']! as String;
 
     OnePubTokenStore().save(
-        onepubToken: onepubToken, obfuscatedPublisherId: obfuscatedPublisherId);
+        onepubToken: onepubToken,
+        obfuscatedOrganisationId: obfuscatedOrganisationId);
   }
 
   /// pull the secret from onepub.export.yaml

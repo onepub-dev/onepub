@@ -10,14 +10,14 @@ void main() {
 
     // 1 member
 
-    // multiple members with the same email from different publishers
+    // multiple members with the same email from different organisations
 
     // a disabled member
 
-    // a suspended/cancelled publisher
+    // a suspended/cancelled organisation
 
-    // 0,1 0 many invites from the same or multiple publishers - we shouldn't
-    // allow more than one invite from a publisher to be active although
+    // 0,1 0 many invites from the same or multiple organisations - we shouldn't
+    // allow more than one invite from a organisation to be active although
     // this can make it easer to register if multiple invites are sent
     // perhaps if if any of them are accepted we delete all outstanding invites
     // we did discuss allowin the invite link to work for a while after

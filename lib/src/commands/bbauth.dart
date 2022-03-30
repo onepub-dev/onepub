@@ -18,7 +18,8 @@ Future<EndpointResponse?> bbAuth() async {
   final callbackUrl = 'http://localhost:$_port';
 
   final onepubUrl = OnePubSettings.load().onepubWebUrl;
-  final authUrl = OnePubSettings().resolveWebEndPoint('clilogin', queryParams: 'callback=$callbackUrl');
+  final authUrl = OnePubSettings()
+      .resolveWebEndPoint('clilogin', queryParams: 'callback=$callbackUrl');
 
   final encodedUrl = Uri.encodeFull(authUrl);
 
@@ -117,7 +118,11 @@ List<String> _split(String toSplit, String pattern) {
   if (index == -1) {
     return [toSplit];
   }
-  return [toSplit.substring(0, index), toSplit.substring(index + pattern.length)];
+  return [
+    toSplit.substring(0, index),
+    toSplit.substring(index + pattern.length)
+  ];
 }
 
-String _urlDecode(String encoded) => Uri.decodeComponent(encoded.replaceAll('+', ' '));
+String _urlDecode(String encoded) =>
+    Uri.decodeComponent(encoded.replaceAll('+', ' '));

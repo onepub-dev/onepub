@@ -40,6 +40,6 @@ The logout command takes no arguments. Found ${argResults!.rest.join(',')}.
     OnePubTokenStore().clearOldTokens();
 
     print(green('You have been logged out of the OnePub CLI for '
-        '${OnePubSettings().publisherName} on all your devices.'));
+        '${OnePubSettings().organisationName} on all your devices.'));
   }
 }

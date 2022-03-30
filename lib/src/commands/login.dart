@@ -40,37 +40,50 @@ class LoginCommand extends Command<void> {
     try {
       final tempAuthTokenResponse = await bbAuth();
       if (tempAuthTokenResponse == null) {
-        throw ExitException(exitCode: 1, message: 'Invalid response. onePubToken not returned');
+        throw ExitException(
+            exitCode: 1, message: 'Invalid response. onePubToken not returned');
       }
 
       if (tempAuthTokenResponse.success) {
-        final onepubToken = tempAuthTokenResponse.data['onePubToken'] as String?;
+        final onepubToken =
+            tempAuthTokenResponse.data['onePubToken'] as String?;
         final firstLogin = tempAuthTokenResponse.data['firstLogin'] as bool?;
-        final operatorEmail = tempAuthTokenResponse.data['operatorEmail'] as String?;
-        final publisherName = tempAuthTokenResponse.data['publisherName'] as String?;
-        final obfuscatedPublisherId = tempAuthTokenResponse.data['obfuscatedPublisherId'] as String?;
+        final operatorEmail =
+            tempAuthTokenResponse.data['operatorEmail'] as String?;
+        final organisationName =
+            tempAuthTokenResponse.data['organisationName'] as String?;
+        final obfuscatedOrganisationId =
+            tempAuthTokenResponse.data['obfuscatedOrganisationId'] as String?;
         if (onepubToken == null ||
             firstLogin == null ||
-            publisherName == null ||
+            organisationName == null ||
             operatorEmail == null ||
-            obfuscatedPublisherId == null) {
+            obfuscatedOrganisationId == null) {
           print(tempAuthTokenResponse.data);
-          throw ExitException(exitCode: 1, message: 'Invalid response. missing authrization data');
+          throw ExitException(
+              exitCode: 1,
+              message: 'Invalid response. missing authrization data');
         }
 
         print(onepubToken);
 
-        OnePubTokenStore().save(onepubToken: onepubToken, obfuscatedPublisherId: obfuscatedPublisherId);
+        OnePubTokenStore().save(
+            onepubToken: onepubToken,
+            obfuscatedOrganisationId: obfuscatedOrganisationId);
         OnePubSettings()
-          ..publisherName = publisherName
+          ..organisationName = organisationName
           ..save();
 
-        showWelcome(firstLogin: firstLogin, publisherName: publisherName, operator: operatorEmail);
+        showWelcome(
+            firstLogin: firstLogin,
+            organisationName: organisationName,
+            operator: operatorEmail);
       } else {
         showError(tempAuthTokenResponse);
       }
     } on FetchException {
-      printerr(red('Unable to connect to the ${OnePubSettings.onepubHostName} server. '
+      printerr(red(
+          'Unable to connect to the ${OnePubSettings.onepubHostName} server. '
           'Check your internet connection.'));
     }
   }
@@ -82,7 +95,10 @@ class LoginCommand extends Command<void> {
   }
 }
 
-void showWelcome({required bool firstLogin, required String publisherName, required String operator}) {
+void showWelcome(
+    {required bool firstLogin,
+    required String organisationName,
+    required String operator}) {
   var firstMessage = '';
   if (firstLogin) {
     firstMessage = '''
@@ -95,7 +111,7 @@ ${orange('https://${OnePubSettings.onepubHostName}/getting-started')}
 
   print('''
 
-${blue('Successfully logged into $publisherName as $operator.')}
+${blue('Successfully logged into $organisationName as $operator.')}
 
 $firstMessage
 ''');
