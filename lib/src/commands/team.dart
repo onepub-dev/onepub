@@ -54,7 +54,7 @@ class TeamCommand extends Command<void> {
     }
 
     print(blue('''
-Register with or accept your invite to OnePub at http://onepub.dev/register
+Register with or accept your invite to OnePub at http://${OnePubSettings.onepubHostName}/register
 Then run: 
   onepub auth
 

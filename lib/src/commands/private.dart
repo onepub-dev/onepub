@@ -17,7 +17,7 @@ class PrivateCommand extends Command<void> {
   String get description => '''
 Marks the current package as a private package.
 Private packages are published to your OnePub private repository.
-See https://onepub.dev/publish
+See https://${OnePubSettings.onepubHostName}/publish
       ''';
 
   @override
@@ -56,11 +56,9 @@ See https://onepub.dev/publish
         print(orange('${pubspec.name} is already a private package '
             'for another publisher'));
       } else {
-        print(orange(
-            '${pubspec.name} is already a private package of $publisherName'));
+        print(orange('${pubspec.name} is already a private package of $publisherName'));
       }
-      if (!confirm(
-          'Do you want to update the publisher to $currentPublisherName?')) {
+      if (!confirm('Do you want to update the publisher to $currentPublisherName?')) {
         print(red('Action cancelled'));
         return;
       }
@@ -74,7 +72,7 @@ ${pubspecUpdated.name} has been marked as a private package for the publisher ${
 
 Run 'dart/flutter pub publish' to publish ${pubspecUpdated.name} to OnePub
 
-See https://onepub.dev/publish
+See https://${OnePubSettings.onepubHostName}/publish
 ''');
   }
 
@@ -85,8 +83,7 @@ See https://onepub.dev/publish
       if (response.status == HttpStatus.notFound) {
         return null;
       }
-      throw ExitException(
-          exitCode: 1, message: response.data['message']! as String);
+      throw ExitException(exitCode: 1, message: response.data['message']! as String);
     }
 
     return response.data['publisherName']! as String;

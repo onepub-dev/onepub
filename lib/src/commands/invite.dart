@@ -14,7 +14,7 @@ class InviteCommand extends Command<void> {
   InviteCommand();
 
   @override
-  String get description => 'Invites a person to join onepub.dev.';
+  String get description => 'Invites a person to join ${OnePubSettings.onepubHostName}.';
 
   @override
   String get name => 'add';

@@ -11,6 +11,7 @@ import 'commands/import.dart';
 import 'commands/login.dart';
 import 'commands/logout.dart';
 import 'commands/private.dart';
+import 'commands/install.dart';
 import 'exceptions.dart';
 import 'util/log.dart';
 import 'version/version.g.dart';
@@ -50,7 +51,7 @@ You can alter the config by running 'onepub config' or by modifying ~/.onepub/on
 
     runner
       ..addCommand(ConfigCommand())
-      // ..addCommand(InstallCommand())
+      ..addCommand(InstallCommand())
       // ..addCommand(TeamCommand())
       ..addCommand(DoctorCommand())
       ..addCommand(LoginCommand())
