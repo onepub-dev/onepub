@@ -1,24 +1,31 @@
 name: onepub
 version: 1.1.0
 homepage: https://github.com/noojee/onepub.dev
+publish_to: https://squarephone.biz/api/usdavuhnof/
 description: Command line tools for onepub.dev including a replacement pub command.
 environment: 
   sdk: '>=2.14.0 <3.0.0'
-platforms: 
-  linux:
-  macos:
-  winows:
 dependencies: 
+  args: ^2.3.0
   cli_util: ^0.3.5
   dcli: ^1.16.2
   http_multi_server: ^3.0.1
+  meta: ^1.7.0
   oauth2: ^2.0.0
+  path: ^1.8.1
   pub_semver: ^2.1.0
+  settings_yaml: ^3.4.0
   shelf: ^1.2.0
-  validators: ^3.0.0
+  stack_trace: ^1.10.0
+  validators2: ^3.0.0
+  yaml: ^3.1.0
 dev_dependencies: 
   lint_hard: ^1.0.0
   test: ^1.20.1
 executables: 
   onepub: 
   opub: 
+platforms: 
+  linux: null
+  macos: null
+  winows: null

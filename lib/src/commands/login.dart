@@ -5,9 +5,9 @@ import 'package:dcli/dcli.dart';
 
 import '../exceptions.dart';
 import '../onepub_settings.dart';
+import '../util/bread_butter_auth.dart';
 import '../util/one_pub_token_store.dart';
 import '../util/send_command.dart';
-import 'bbauth.dart';
 
 /// onepub login
 /// We trigger oauth by showing url
@@ -38,7 +38,7 @@ class LoginCommand extends Command<void> {
     loadSettings();
 
     try {
-      final tempAuthTokenResponse = await bbAuth();
+      final tempAuthTokenResponse = await breadButterAuth();
       if (tempAuthTokenResponse == null) {
         throw ExitException(
             exitCode: 1, message: 'Invalid response. onePubToken not returned');

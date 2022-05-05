@@ -1,6 +1,6 @@
 import 'package:args/command_runner.dart';
 import 'package:dcli/dcli.dart';
-import 'package:validators/validators.dart';
+import 'package:validators2/validators.dart';
 
 import '../exceptions.dart';
 import '../onepub_paths.dart';
