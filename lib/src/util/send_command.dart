@@ -184,8 +184,18 @@ class EndpointResponse {
 
   /// Takes the body, assumes its a json string and
   /// converts it to a map.
-  Map<String, dynamic> _bodyAsJsonMap(String body) =>
-      jsonDecode(body) as Map<String, dynamic>;
+  Map<String, dynamic> _bodyAsJsonMap(String body) {
+    try {
+      return jsonDecode(body) as Map<String, dynamic>;
+    } on Exception catch (e, s) {
+      print('Server response follows...');
+      print('');
+      print(body);
+      print(red('Bad response from server, please try again later.'));
+
+      rethrow;
+    }
+  }
 
   @override
   String toString() => 'status: $status, data: ${data.toString()}';
