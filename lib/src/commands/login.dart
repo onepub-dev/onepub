@@ -28,7 +28,7 @@ class LoginCommand extends Command<void> {
   LoginCommand();
 
   @override
-  String get description => 'Log in to ${OnePubSettings().onepubWebUrl}.';
+  String get description => 'Log in to Onepub.';
 
   @override
   String get name => 'login';

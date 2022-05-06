@@ -187,7 +187,7 @@ class EndpointResponse {
   Map<String, dynamic> _bodyAsJsonMap(String body) {
     try {
       return jsonDecode(body) as Map<String, dynamic>;
-    } on Exception catch (e, s) {
+    } on Exception {
       print('Server response follows...');
       print('');
       print(body);

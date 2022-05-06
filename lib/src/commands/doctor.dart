@@ -37,7 +37,6 @@ class DoctorCommand extends Command<void> {
     print('Repository: ${OnePubSettings().onepubApiUrl}');
 
     print(blue('\nEnvironment'));
-    envStatus(OnePubSettings.pubHostedUrlKey);
     envStatus('PUB_CACHE');
 
     tokenStatus();

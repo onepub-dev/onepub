@@ -17,7 +17,7 @@ class PrivateCommand extends Command<void> {
   String get description => '''
 Marks the current package as a private package.
 Private packages are published to your OnePub private repository.
-See https://${OnePubSettings().onepubWebUrl}/publish
+See https://onepub.dev/publish
       ''';
 
   @override
