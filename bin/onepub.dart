@@ -5,7 +5,6 @@ import 'package:onepub/src/entry_point.dart';
 import 'package:onepub/src/version/version.g.dart';
 
 void main(List<String> arguments) {
-  print('');
   print(orange('OnePub version: $packageVersion '));
 
   print('');

@@ -83,7 +83,8 @@ You can alter the config by running 'onepub config' or by modifying ~/.onepub/on
       waitForEx(runner.run(args));
     } on FormatException catch (e) {
       logerr(red(e.message));
-      showUsage();
+      // this is an Exception (generally from the server, not a usage problem)
+      //showUsage();
     } on UsageException catch (e) {
       logerr(red(e.message));
       showUsage();

@@ -28,7 +28,7 @@ class LoginCommand extends Command<void> {
   LoginCommand();
 
   @override
-  String get description => 'Log in to ${OnePubSettings.onepubHostName}.';
+  String get description => 'Log in to ${OnePubSettings().onepubWebUrl}.';
 
   @override
   String get name => 'login';
@@ -65,7 +65,7 @@ class LoginCommand extends Command<void> {
               message: 'Invalid response. missing authrization data');
         }
 
-        print(onepubToken);
+        print('Token is -> $onepubToken');
 
         OnePubTokenStore().save(
             onepubToken: onepubToken,
@@ -82,8 +82,7 @@ class LoginCommand extends Command<void> {
         showError(tempAuthTokenResponse);
       }
     } on FetchException {
-      printerr(red(
-          'Unable to connect to the ${OnePubSettings.onepubHostName} server. '
+      printerr(red('Unable to connect to ${OnePubSettings().onepubApiUrl} . '
           'Check your internet connection.'));
     }
   }
@@ -104,7 +103,7 @@ void showWelcome(
     firstMessage = '''
 Welcome to OnePub.
 Read the getting started guide at:
-${orange('https://${OnePubSettings.onepubHostName}/getting-started')}
+${orange('https://${OnePubSettings().onepubWebUrl}/getting-started')}
 
 ''';
   }

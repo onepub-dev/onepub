@@ -17,7 +17,7 @@ class PrivateCommand extends Command<void> {
   String get description => '''
 Marks the current package as a private package.
 Private packages are published to your OnePub private repository.
-See https://${OnePubSettings.onepubHostName}/publish
+See https://${OnePubSettings().onepubWebUrl}/publish
       ''';
 
   @override
@@ -74,7 +74,7 @@ ${pubspecUpdated.name} has been marked as a private package for the organisation
 
 Run 'dart/flutter pub publish' to publish ${pubspecUpdated.name} to OnePub
 
-See https://${OnePubSettings.onepubHostName}/publish
+See https://${OnePubSettings().onepubWebUrl}/publish
 ''');
   }
 

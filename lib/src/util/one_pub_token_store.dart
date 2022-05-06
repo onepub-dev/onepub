@@ -50,9 +50,16 @@ class OnePubTokenStore {
 
   TokenStore get tokenStore => TokenStore(dartConfigDir);
 
+  static bool reportedNonStandard = false;
+
   Uri _hostedUrl(String obfuscatedOrganisationId) {
-    print('Onepub api url is ${OnePubSettings().onepubApiUrl}');
-    final url = '${OnePubSettings().onepubApiUrl}/$obfuscatedOrganisationId/';
+    final apiUrl = OnePubSettings().onepubApiUrl;
+    if (!reportedNonStandard &&
+        apiUrl != '${OnePubSettings.defaultOnePubUrl}/api') {
+      print(red('Using non standard Onepub API url $apiUrl'));
+      reportedNonStandard = true;
+    }
+    final url = '$apiUrl/$obfuscatedOrganisationId/';
     return validateAndNormalizeHostedUrl(url);
   }
 }

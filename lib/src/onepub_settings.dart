@@ -45,9 +45,7 @@ class OnePubSettings {
   @visibleForTesting
   OnePubSettings.loadFromSettings(this.settings, {required this.showWarnings});
 
-  static const onepubHostName = 'squarephone.biz'; //onepub.dev';
-
-  static const pubHostedUrlKey = 'PUB_HOSTED_URL';
+  static const pubHostedUrlKey = 'onepubUrl';
 
   static OnePubSettings? _self;
 
@@ -59,13 +57,12 @@ class OnePubSettings {
   static late final String pathToSettings =
       join(OnePubPaths().pathToSettingsDir, 'onepub.yaml');
 
-  static const String defaultOnePubWebUrl = 'https://$onepubHostName';
-  static const String defaultOnePubApiUrl = 'https://$onepubHostName';
+  static const String defaultOnePubUrl = 'https://onepub.dev';
 
-  static const String defaultApiBasePath = 'api';
+  static const String _defaultApiBasePath = 'api';
 
   ///static const String defaultWebBasePath = 'ui';
-  static const String defaultWebBasePath = '';
+  static const String _defaultWebBasePath = '';
 
   /// allowBadCertificates
   /// During dev if we are using self signed cert we need to set this
@@ -77,16 +74,21 @@ class OnePubSettings {
   /// so our process of checking that the url has been added to the
   /// token list works.
   String get onepubApiUrl => join(
-      settings.asString('apiUrl', defaultValue: defaultOnePubApiUrl),
-      defaultApiBasePath);
+      settings.asString(pubHostedUrlKey, defaultValue: defaultOnePubUrl),
+      _defaultApiBasePath);
 
-  set onepubApiUrl(String url) => settings['apiUrl'] = url;
+  String get onepubWebUrl => join(
+      settings.asString(pubHostedUrlKey, defaultValue: defaultOnePubUrl),
+      _defaultWebBasePath);
+
+  set onepubUrl(String url) => settings[pubHostedUrlKey] = url;
 
   set obfuscatedOrganisationId(String obfuscatedOrganisationId) =>
       settings['organisationId'] = obfuscatedOrganisationId;
 
   String get obfuscatedOrganisationId => join(
-        settings.asString('organisationId', defaultValue: defaultOnePubApiUrl),
+        settings.asString('organisationId',
+            defaultValue: 'OrganisationId_not_set'),
       );
 
   set organisationName(String organisationName) =>
@@ -95,11 +97,6 @@ class OnePubSettings {
   String get organisationName => join(
         settings.asString('organisationName'),
       );
-
-  ///
-  String get onepubWebUrl => join(
-      settings.asString('webUrl', defaultValue: defaultOnePubWebUrl),
-      defaultWebBasePath);
 
   static String onepubTokenKey = 'onepubToken';
 

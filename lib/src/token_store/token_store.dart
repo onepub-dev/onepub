@@ -106,7 +106,6 @@ class TokenStore {
       missingConfigDir();
     }
     final tokenPath = path.dirname(tokensFile);
-    print('Token path is $tokenPath');
     if (!exists(tokenPath)) {
       createDir(tokenPath);
     }

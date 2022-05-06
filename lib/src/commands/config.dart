@@ -43,13 +43,12 @@ class ConfigCommand extends Command<void> {
   }
 
   void promptForConfig({required bool dev}) {
-    var url = OnePubSettings.defaultOnePubApiUrl;
+    var url = OnePubSettings.defaultOnePubUrl;
     if (dev) {
-      url =
-          ask('OnePub Api URL:', validator: UrlValidator(), defaultValue: url);
+      url = ask('OnePub URL:', validator: UrlValidator(), defaultValue: url);
     }
 
-    OnePubSettings().onepubApiUrl = url;
+    OnePubSettings().onepubUrl = url;
     OnePubSettings().save();
   }
 }
@@ -59,7 +58,11 @@ class UrlValidator extends AskValidator {
   String validate(String line) {
     final finalLine = line.trim().toLowerCase();
 
-    if (!isFQDN(finalLine)) {
+    if (!line.startsWith('https://')) {
+      throw AskValidatorException(red('Must start with https://'));
+    }
+    final fqdn = finalLine.replaceFirst('https://', '');
+    if (!isFQDN(fqdn)) {
       throw AskValidatorException(red('Invalid FQDN.'));
     }
     return finalLine;

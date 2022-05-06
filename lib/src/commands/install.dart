@@ -29,8 +29,6 @@ class InstallCommand extends Command<void> {
     }
     OnePubSettings.load();
 
-    print(orange('Installing OnePub version: $packageVersion.'));
-
     if (!exists(OnePubPaths().pathToSettingsDir)) {
       createDir(OnePubPaths().pathToSettingsDir, recursive: true);
     }
@@ -38,7 +36,7 @@ class InstallCommand extends Command<void> {
     ConfigCommand().config(dev: false);
 
     print(blue('''
-Register with or accept your invite to onepub.dev at https://${OnePubSettings.onepubHostName}/Register
+Register with or accept your invite to onepub.dev at https://${OnePubSettings().onepubWebUrl}/Register
 Then run: 
   onepub login
 
@@ -46,6 +44,6 @@ You can then use `opub` in place of `dart pub` or `flutter pub`.
 
 '''));
 
-    print(green('Install of OnePub complete.'));
+    print(orange('Installed OnePub version: $packageVersion.'));
   }
 }
