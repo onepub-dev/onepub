@@ -74,7 +74,7 @@ ${pubspecUpdated.name} has been marked as a private package for the organisation
 
 Run 'dart/flutter pub publish' to publish ${pubspecUpdated.name} to OnePub
 
-See https://${OnePubSettings().onepubWebUrl}/publish
+See ${OnePubSettings().onepubWebUrl}/publish
 ''');
   }
 

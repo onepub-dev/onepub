@@ -103,7 +103,7 @@ void showWelcome(
     firstMessage = '''
 Welcome to OnePub.
 Read the getting started guide at:
-${orange('https://${OnePubSettings().onepubWebUrl}/getting-started')}
+${orange('${OnePubSettings().onepubWebUrl}/getting-started')}
 
 ''';
   }

@@ -70,8 +70,7 @@ onepub add <Package> <Version Constraint>
     print('''
 $package $version has been marked as a private package.
 
-
-See https://onepub.dev/publish
+See ${OnePubSettings().onepubWebUrl}/publish
 ''');
   }
 }

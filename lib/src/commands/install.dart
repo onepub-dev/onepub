@@ -36,7 +36,7 @@ class InstallCommand extends Command<void> {
     ConfigCommand().config(dev: false);
 
     print(blue('''
-Register with or accept your invite to onepub.dev at https://${OnePubSettings().onepubWebUrl}/Register
+Register with or accept your invite to onepub.dev at ${OnePubSettings().onepubWebUrl}/Register
 Then run: 
   onepub login
 
