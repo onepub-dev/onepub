@@ -25,12 +25,9 @@ Future<EndpointResponse?> breadButterAuth() async {
 
   print('''
 To login to OnePub.
+
 From a web browser, go to 
-
 ${blue(encodedUrl)}
-
-When prompted Sign in.
-
 Waiting for your authorisation...''');
 
   return _waitForResponse(onepubUrl);
