@@ -26,7 +26,7 @@ class ParsedArgs {
 
 ${orange('OnePub cli tools')}
 
-You can alter the config by running 'onepub config' or by modifying ~/.onepub/onepub.yaml''') {
+You can alter the config by running 'onepub config' or by modifying ${join(HOME, '.onepub', 'onepub.yaml')}''') {
     _self = this;
     build();
     parse();
