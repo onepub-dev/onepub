@@ -1,5 +1,7 @@
 #! /usr/bin/env dcli
 
+import 'dart:io';
+
 import 'package:dcli/dcli.dart';
 
 import 'global_args.dart';
@@ -31,10 +33,21 @@ void install({required bool dev}) {
 
   OnePubSettings.load();
   if (OnePubSettings().onepubUrl == null ||
-      OnePubSettings().onepubUrl!.isEmpty) {
+      OnePubSettings().onepubUrl!.isEmpty ||
+      dev) {
     OnePubSettings.load();
     ConfigCommand().config(dev: dev);
 
     print(orange('Installed OnePub version: $packageVersion.'));
+  }
+
+  if (exists(ConfigCommand.testingFlagPath)) {
+    if (OnePubSettings().onepubUrl == OnePubSettings.defaultOnePubUrl) {
+      print(red('This system is configured for testing, but is also configured'
+          ' for the production URL. If you need to change this, then delete '
+          '${ConfigCommand.testingFlagPath} or use the --dev option to '
+          'change the URL'));
+      exit(1);
+    }
   }
 }

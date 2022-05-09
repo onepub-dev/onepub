@@ -10,6 +10,8 @@ import '../onepub_settings.dart';
 
 ///
 class ConfigCommand {
+  static final testingFlagPath = join(HOME, '.onepubtesting');
+
   ///
   void config({required bool dev}) {
     print('Configure OnePub');
@@ -23,6 +25,7 @@ class ConfigCommand {
     var url = OnePubSettings.defaultOnePubUrl;
     if (dev) {
       url = ask('OnePub URL:', validator: UrlValidator(), defaultValue: url);
+      testingFlagPath.write('onepubtesting');
     }
 
     OnePubSettings().onepubUrl = url;
