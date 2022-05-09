@@ -10,11 +10,9 @@ import 'package:args/command_runner.dart';
 import 'package:dcli/dcli.dart';
 
 import 'commands/add_dependency.dart';
-
 import 'commands/doctor.dart';
 import 'commands/export.dart';
 import 'commands/import.dart';
-
 import 'commands/login.dart';
 import 'commands/logout.dart';
 import 'commands/private.dart';
@@ -24,9 +22,6 @@ import 'version/version.g.dart';
 
 ///
 class ParsedArgs {
-  late final ArgResults results;
-
-  ///
   factory ParsedArgs() => _self;
 
   ///
@@ -42,14 +37,20 @@ You can alter the config by running 'onepub config' or by modifying ${join(HOME,
 
   static late ParsedArgs _self;
 
+  late final ArgResults results;
+
   List<String> args;
+
   CommandRunner<void> runner;
 
   late final bool colour;
   late final bool quiet;
+
   late final bool secureMode;
   late final bool useLogfile;
   late final String logfile;
+
+  ///
 
   void build() {
     runner.argParser
@@ -83,11 +84,6 @@ You can alter the config by running 'onepub config' or by modifying ${join(HOME,
     }
   }
 
-  void showUsage() {
-    runner.printUsage();
-    exit(1);
-  }
-
   void run() {
     try {
       waitForEx(runner.run(args));
@@ -106,5 +102,10 @@ You can alter the config by running 'onepub config' or by modifying ${join(HOME,
     } catch (e) {
       logerr(red(e.toString()));
     }
+  }
+
+  void showUsage() {
+    runner.printUsage();
+    exit(1);
   }
 }
