@@ -71,8 +71,6 @@ class LoginCommand extends Command<void> {
               message: 'Invalid response. missing authrization data');
         }
 
-        print('Token is -> $onepubToken');
-
         OnePubTokenStore().save(
             onepubToken: onepubToken,
             obfuscatedOrganisationId: obfuscatedOrganisationId);
