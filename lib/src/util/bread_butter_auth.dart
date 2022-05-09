@@ -15,11 +15,8 @@ int _port = 42666;
 
 /// Return the auth token or null if the auth failed.
 Future<EndpointResponse?> breadButterAuth() async {
-  final callbackUrl = 'http://localhost:$_port';
-
   final onepubUrl = OnePubSettings.load().onepubWebUrl;
-  final authUrl = OnePubSettings()
-      .resolveWebEndPoint('clilogin', queryParams: 'callback=$callbackUrl');
+  final authUrl = OnePubSettings().resolveWebEndPoint('clilogin');
 
   final encodedUrl = Uri.encodeFull(authUrl);
 
@@ -28,6 +25,7 @@ To login to OnePub.
 
 From a web browser, go to 
 ${blue(encodedUrl)}
+
 Waiting for your authorisation...''');
 
   return _waitForResponse(onepubUrl);
