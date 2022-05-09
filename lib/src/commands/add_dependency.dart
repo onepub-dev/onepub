@@ -54,7 +54,7 @@ onepub add <Package> <Version Constraint>
     final versionConstraint = VersionConstraint.parse(version);
 
     final deps = project.pubSpec.dependencies;
-    final ref = ExternalHostedReference(package, url, versionConstraint, false);
+    final ref = ExternalHostedReference(package, url, versionConstraint);
 
     final dep = Dependency(package, ref);
 
