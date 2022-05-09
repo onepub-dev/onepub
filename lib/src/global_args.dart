@@ -10,11 +10,11 @@ import 'package:args/command_runner.dart';
 import 'package:dcli/dcli.dart';
 
 import 'commands/add_dependency.dart';
-import 'commands/config.dart';
+
 import 'commands/doctor.dart';
 import 'commands/export.dart';
 import 'commands/import.dart';
-import 'commands/install.dart';
+
 import 'commands/login.dart';
 import 'commands/logout.dart';
 import 'commands/private.dart';
@@ -55,10 +55,12 @@ You can alter the config by running 'onepub config' or by modifying ${join(HOME,
     runner.argParser
         .addFlag('version', help: 'Displays the onepub version no. and exits.');
 
+    runner.argParser.addFlag('dev',
+        hide: true,
+        help: 'Allows for configuration of localhost for '
+            'use in a development environment.');
+
     runner
-      ..addCommand(ConfigCommand())
-      ..addCommand(InstallCommand())
-      // ..addCommand(TeamCommand())
       ..addCommand(DoctorCommand())
       ..addCommand(LoginCommand())
       ..addCommand(LogoutCommand())

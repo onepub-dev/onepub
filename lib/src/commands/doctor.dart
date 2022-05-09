@@ -75,7 +75,7 @@ onepub login'''));
 
       echo('checking status...  ');
 
-      final response = await sendCommand(command: endpoint);
+      final response = await sendCommand(command: endpoint, authorised: false);
 
       if (response.status == 200) {
         print('');

@@ -4,47 +4,18 @@
  * Written by Brett Sutton <bsutton@onepub.dev>, Jan 2022
  */
 
-import 'dart:io';
-
-import 'package:args/command_runner.dart';
 import 'package:dcli/dcli.dart';
 import 'package:validators2/validators.dart';
 import '../onepub_settings.dart';
-import '../util/log.dart';
 
 ///
-class ConfigCommand extends Command<void> {
-  ///
-  ConfigCommand() {
-    argParser.addFlag('dev',
-        abbr: 'd',
-        hide: true,
-        help: 'Allows for configuration of localhost for '
-            'use in a development environment.');
-  }
-
-  @override
-  String get description => 'Configures OnePub.';
-
-  @override
-  String get name => 'config';
-
-  @override
-  void run() {
-    if (!exists(OnePubSettings.pathToSettings)) {
-      logerr(red('''You must run 'OnePub install' first.'''));
-      exit(1);
-    }
-    OnePubSettings.load();
-
-    final dev = argResults!['dev'] as bool;
-
-    config(dev: dev);
-  }
-
+class ConfigCommand {
   ///
   void config({required bool dev}) {
     print('Configure OnePub');
+
+    OnePubSettings.load();
+
     promptForConfig(dev: dev);
   }
 
