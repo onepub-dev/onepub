@@ -17,7 +17,7 @@ import 'util/log.dart';
 
 void loadSettings() {
   if (!exists(OnePubSettings.pathToSettings)) {
-    logerr(red('''You must run 'onepub install' first.'''));
+    logerr(red('''Something went wrong, could not find settings file.'''));
     exit(1);
   }
   OnePubSettings.load();

@@ -16,11 +16,11 @@ import 'version/version.g.dart';
 
 void entrypoint(List<String> args) {
   final parsedArgs = ParsedArgs.withArgs(args);
-  install(ArgParser().parse(args));
+  install(dev: parsedArgs.results['dev'] as bool);
   parsedArgs.run();
 }
 
-void install(ArgResults argResults) {
+void install({required bool dev}) {
   if (!exists(OnePubPaths().pathToSettingsDir)) {
     createDir(OnePubPaths().pathToSettingsDir, recursive: true);
   }
@@ -33,8 +33,6 @@ void install(ArgResults argResults) {
   if (OnePubSettings().onepubUrl == null ||
       OnePubSettings().onepubUrl!.isEmpty) {
     OnePubSettings.load();
-    //final dev = argResults['dev'] as bool;
-    const dev = true;
     ConfigCommand().config(dev: dev);
 
     print(orange('Installed OnePub version: $packageVersion.'));

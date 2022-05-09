@@ -24,6 +24,8 @@ import 'version/version.g.dart';
 
 ///
 class ParsedArgs {
+  late final ArgResults results;
+
   ///
   factory ParsedArgs() => _self;
 
@@ -71,7 +73,7 @@ You can alter the config by running 'onepub config' or by modifying ${join(HOME,
   }
 
   void parse() {
-    final results = runner.argParser.parse(args);
+    results = runner.argParser.parse(args);
     Settings().setVerbose(enabled: results['debug'] as bool);
 
     final version = results['version'] as bool == true;
