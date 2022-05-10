@@ -9,7 +9,7 @@ import 'source.dart';
 import 'source/hosted.dart';
 import 'source/root.dart';
 import 'system_cache.dart';
-import '../util/object_hash.dart';
+import 'object_hash.dart';
 
 /// A reference to a [Package], but not any particular version(s) of it.
 ///

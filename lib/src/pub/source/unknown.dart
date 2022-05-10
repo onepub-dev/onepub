@@ -7,7 +7,7 @@ import 'dart:convert';
 
 import 'package:pub_semver/pub_semver.dart';
 
-import '../../util/object_hash.dart';
+import '../object_hash.dart';
 import '../language_version.dart';
 import '../package_name.dart';
 import '../pubspec.dart';

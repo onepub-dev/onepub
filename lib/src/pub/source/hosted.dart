@@ -14,7 +14,7 @@ import 'package:pub_semver/pub_semver.dart';
 import 'package:stack_trace/stack_trace.dart';
 import 'package:pedantic/pedantic.dart';
 
-import '../../util/object_hash.dart';
+import '../object_hash.dart';
 import '../authentication/client.dart';
 import '../exceptions.dart';
 import '../http.dart';

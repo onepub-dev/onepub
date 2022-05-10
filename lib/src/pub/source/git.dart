@@ -10,7 +10,7 @@ import 'package:path/path.dart' as p;
 import 'package:pool/pool.dart';
 import 'package:pub_semver/pub_semver.dart';
 
-import '../../util/object_hash.dart';
+import '../object_hash.dart';
 import '../git.dart' as git;
 import '../io.dart';
 import '../language_version.dart';
