@@ -8,6 +8,7 @@ import 'dart:io';
 
 import 'package:args/command_runner.dart';
 import 'package:dcli/dcli.dart';
+import 'package:onepub/src/pub/command.dart';
 
 import 'commands/add_dependency.dart';
 import 'commands/doctor.dart';
@@ -16,6 +17,7 @@ import 'commands/import.dart';
 import 'commands/login.dart';
 import 'commands/logout.dart';
 import 'commands/private.dart';
+import 'commands/pub.dart';
 import 'exceptions.dart';
 import 'util/log.dart';
 import 'version/version.g.dart';
@@ -67,6 +69,7 @@ You can alter the config by running 'onepub config' or by modifying ${join(HOME,
       ..addCommand(DoctorCommand())
       ..addCommand(LoginCommand())
       ..addCommand(LogoutCommand())
+      ..addCommand(PubCommand2())
       ..addCommand(ImportCommand())
       ..addCommand(ExportCommand())
       ..addCommand(AddDependencyCommand())
