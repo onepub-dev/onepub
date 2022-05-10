@@ -10,7 +10,25 @@ import 'package:args/command_runner.dart';
 import 'package:path/path.dart' as p;
 
 import 'command.dart' show PubTopLevel, lineLength;
+import 'command/add.dart';
+import 'command/build.dart';
+import 'command/cache.dart';
+import 'command/deps.dart';
+import 'command/downgrade.dart';
+import 'command/get.dart';
+import 'command/global.dart';
 import 'command/lish.dart';
+import 'command/list_package_dirs.dart';
+import 'command/login.dart';
+import 'command/logout.dart';
+import 'command/outdated.dart';
+import 'command/remove.dart';
+import 'command/run.dart';
+import 'command/serve.dart';
+import 'command/token.dart';
+import 'command/upgrade.dart';
+import 'command/uploader.dart';
+import 'command/version.dart';
 import 'exit_codes.dart' as exit_codes;
 import 'git.dart' as git;
 import 'io.dart';
@@ -20,10 +38,7 @@ import 'sdk.dart';
 
 /// The name of the program that is invoking pub
 /// 'flutter' if we are running inside `flutter pub` 'dart' otherwise.
-String topLevelProgram = _isrunningInsideFlutter ? 'flutter' : 'dart';
-
-bool _isrunningInsideFlutter =
-    (Platform.environment['PUB_ENVIRONMENT'] ?? '').contains('flutter_cli');
+String topLevelProgram = 'onepub';
 
 class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
   @override
@@ -113,7 +128,25 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
 
     // When adding new commands be sure to also add them to
     // `pub_embeddable_command.dart`.
+    addCommand(AddCommand());
+    addCommand(BuildCommand());
+    addCommand(CacheCommand());
+    addCommand(DepsCommand());
+    addCommand(DowngradeCommand());
+    addCommand(GlobalCommand());
+    addCommand(GetCommand());
+    addCommand(ListPackageDirsCommand());
     addCommand(LishCommand());
+    addCommand(OutdatedCommand());
+    addCommand(RemoveCommand());
+    addCommand(RunCommand());
+    addCommand(ServeCommand());
+    addCommand(UpgradeCommand());
+    addCommand(UploaderCommand());
+    addCommand(LoginCommand());
+    addCommand(LogoutCommand());
+    addCommand(VersionCommand());
+    addCommand(TokenCommand());
   }
 
   @override

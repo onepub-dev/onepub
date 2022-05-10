@@ -93,8 +93,6 @@ class _AuthenticatedClient extends http.BaseClient {
           .map((r) => 32 <= r && r <= 127 ? r : 32)
           .take(1024));
     }
-    print('**********************  server message is $serverMessage');
-    print(StackTrace.current);
     throw AuthenticationException(response.statusCode, serverMessage);
   }
 

@@ -16,9 +16,9 @@ import '../util/send_command.dart';
 
 /// onepub Logout <email>
 ///     - if the user doesn't exists sends them an Logout.
-class LogoutCommand extends Command<void> {
+class OnePubLogoutCommand extends Command<int> {
   ///
-  LogoutCommand();
+  OnePubLogoutCommand();
 
   @override
   String get description => 'Log out of OnePub CLI on all your devices.';
@@ -27,7 +27,7 @@ class LogoutCommand extends Command<void> {
   String get name => 'logout';
 
   @override
-  Future<void> run() async {
+  Future<int> run() async {
     loadSettings();
 
     if (argResults!.rest.isNotEmpty) {
@@ -47,5 +47,6 @@ The logout command takes no arguments. Found ${argResults!.rest.join(',')}.
 
     print(green('You have been logged out of the OnePub CLI for '
         '${OnePubSettings().organisationName} on all your devices.'));
+    return 0;
   }
 }

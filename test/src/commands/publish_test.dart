@@ -1,4 +1,3 @@
-#! /usr/bin/env dcli
 /* Copyright (C) OnePub IP Pty Ltd - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
  * Proprietary and confidential
@@ -7,7 +6,10 @@
 
 import 'package:onepub/src/entry_point.dart';
 import 'package:onepub/src/global_args.dart';
+import 'package:test/test.dart';
 
-void main(List<String> arguments) {
-  entrypoint(arguments, CommandSet.OPUB, 'onepub');
+void main() {
+  test('logout ...', () async {
+    entrypoint(['publish'], CommandSet.OPUB, 'opub');
+  });
 }

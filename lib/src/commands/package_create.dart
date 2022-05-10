@@ -14,7 +14,7 @@ import '../onepub_settings.dart';
 import '../util/send_command.dart';
 
 /// onepub Package create  <Package>
-class PackageCreateCommand extends Command<void> {
+class PackageCreateCommand extends Command<int> {
   ///
   PackageCreateCommand();
 
@@ -25,7 +25,7 @@ class PackageCreateCommand extends Command<void> {
   String get name => 'create';
 
   @override
-  Future<void> run() async {
+  Future<int> run() async {
     loadSettings();
 
     if (argResults!.rest.length != 2) {
@@ -39,5 +39,6 @@ onepub package create <Package> <Team>
     final team = argResults!.rest[1];
 
     await sendCommand(command: 'package/create/$package/team/$team');
+    return 0;
   }
 }

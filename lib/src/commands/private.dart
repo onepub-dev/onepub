@@ -15,7 +15,7 @@ import '../onepub_settings.dart';
 import '../util/send_command.dart';
 
 ///
-class PrivateCommand extends Command<void> {
+class PrivateCommand extends Command<int> {
   ///
   PrivateCommand();
 
@@ -30,8 +30,9 @@ See https://onepub.dev/publish
   String get name => 'private';
 
   @override
-  Future<void> run() async {
+  Future<int> run() async {
     await private();
+    return 0;
   }
 
   ///

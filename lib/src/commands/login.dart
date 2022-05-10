@@ -29,9 +29,9 @@ import '../util/send_command.dart';
 // No oauth is required we just check the onepub token is invalid.
 // A logout on any device will invalidate the token.
 // A manager can invalidate the token from the web site.
-class LoginCommand extends Command<void> {
+class OnePubLoginCommand extends Command<int> {
   ///
-  LoginCommand();
+  OnePubLoginCommand();
 
   @override
   String get description => 'Log in to Onepub.';
@@ -40,7 +40,7 @@ class LoginCommand extends Command<void> {
   String get name => 'login';
 
   @override
-  Future<void> run() async {
+  Future<int> run() async {
     loadSettings();
 
     try {
@@ -89,6 +89,7 @@ class LoginCommand extends Command<void> {
       printerr(red('Unable to connect to ${OnePubSettings().onepubApiUrl} . '
           'Check your internet connection.'));
     }
+    return 0;
   }
 
   void showError(EndpointResponse endPointResponse) {

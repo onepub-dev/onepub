@@ -16,7 +16,7 @@ import '../util/send_command.dart';
 import '../util/token_export_file.dart';
 
 ///
-class ExportCommand extends Command<void> {
+class ExportCommand extends Command<int> {
   ///
   ExportCommand() {
     argParser
@@ -35,8 +35,9 @@ class ExportCommand extends Command<void> {
   String get name => 'export';
 
   @override
-  Future<void> run() async {
+  Future<int> run() async {
     await export();
+    return 0;
   }
 
   ///

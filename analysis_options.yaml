@@ -1,2 +1,2 @@
 
-include: package:lint_hard/all.yaml
+#include: package:lint_hard/all.yaml

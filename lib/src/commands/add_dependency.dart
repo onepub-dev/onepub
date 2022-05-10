@@ -16,7 +16,7 @@ import '../onepub_paths.dart';
 import '../onepub_settings.dart';
 
 ///
-class AddDependencyCommand extends Command<void> {
+class AddDependencyCommand extends Command<int> {
   ///
   AddDependencyCommand();
 
@@ -30,8 +30,9 @@ or updates an existing dependency to pull from your OnePub private repository.
   String get name => 'add';
 
   @override
-  Future<void> run() async {
+  Future<int> run() async {
     await private();
+    return 0;
   }
 
   ///

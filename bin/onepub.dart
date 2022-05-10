@@ -7,6 +7,7 @@
 
 import 'package:dcli/dcli.dart';
 import 'package:onepub/src/entry_point.dart';
+import 'package:onepub/src/global_args.dart';
 import 'package:onepub/src/version/version.g.dart';
 
 void main(List<String> arguments) {
@@ -14,5 +15,5 @@ void main(List<String> arguments) {
 
   print('');
 
-  entrypoint(arguments);
+  entrypoint(arguments, CommandSet.ONEPUB, 'onepub');
 }

@@ -16,7 +16,7 @@ import '../util/one_pub_token_store.dart';
 import '../util/send_command.dart';
 
 ///
-class DoctorCommand extends Command<void> {
+class DoctorCommand extends Command<int> {
   ///
   DoctorCommand();
 
@@ -27,7 +27,7 @@ class DoctorCommand extends Command<void> {
   String get name => 'doctor';
 
   @override
-  void run() {
+  int run() {
     if (!exists(OnePubSettings.pathToSettings)) {
       logerr(red('''Something went wrong, could not find settings file.'''));
       exit(1);
@@ -49,6 +49,7 @@ class DoctorCommand extends Command<void> {
 
     print('');
     _status();
+    return 0;
   }
 
   void envStatus(String key) {

@@ -366,9 +366,6 @@ class HostedSource extends CachedSource {
       body = decoded;
       result = _versionInfoFromPackageListing(body, ref, url, cache);
     } on Exception catch (error, stackTrace) {
-      print("********************** in error handler");
-      print(error);
-      print(stackTrace);
       final packageName = _asDescription(ref.description).packageName;
       _throwFriendlyError(error, stackTrace, packageName, hostedUrl);
     }
