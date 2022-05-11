@@ -3,11 +3,11 @@ version: 1.1.3
 homepage: https://github.com/noojee/onepub.dev
 description: Command line tools for onepub.dev including a replacement pub command.
 environment: 
-  sdk: '>=2.15.0 <3.0.0'
+  sdk: '>=2.12.0 <3.0.0'
 dependencies: 
   args: ^2.3.0
   cli_util: ^0.3.5
-  dcli: ^1.16.2
+  dcli: ^1.20.1
   http_multi_server: ^3.0.1
   meta: ^1.7.0
   oauth2: ^2.0.0
