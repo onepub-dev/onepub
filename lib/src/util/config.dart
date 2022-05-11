@@ -1,44 +1,23 @@
-import 'dart:io';
+/* Copyright (C) OnePub IP Pty Ltd - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * Written by Brett Sutton <bsutton@onepub.dev>, Jan 2022
+ */
 
-import 'package:args/command_runner.dart';
 import 'package:dcli/dcli.dart';
 import 'package:validators2/validators.dart';
 import '../onepub_settings.dart';
-import '../util/log.dart';
 
 ///
-class ConfigCommand extends Command<void> {
-  ///
-  ConfigCommand() {
-    argParser.addFlag('dev',
-        abbr: 'd',
-        hide: true,
-        help: 'Allows for configuration of localhost for '
-            'use in a development environment.');
-  }
-
-  @override
-  String get description => 'Configures OnePub.';
-
-  @override
-  String get name => 'config';
-
-  @override
-  void run() {
-    if (!exists(OnePubSettings.pathToSettings)) {
-      logerr(red('''You must run 'OnePub install' first.'''));
-      exit(1);
-    }
-    OnePubSettings.load();
-
-    final dev = argResults!['dev'] as bool;
-
-    config(dev: dev);
-  }
+class ConfigCommand {
+  static final testingFlagPath = join(HOME, '.onepubtesting');
 
   ///
   void config({required bool dev}) {
     print('Configure OnePub');
+
+    OnePubSettings.load();
+
     promptForConfig(dev: dev);
   }
 
@@ -46,6 +25,7 @@ class ConfigCommand extends Command<void> {
     var url = OnePubSettings.defaultOnePubUrl;
     if (dev) {
       url = ask('OnePub URL:', validator: UrlValidator(), defaultValue: url);
+      testingFlagPath.write('onepubtesting');
     }
 
     OnePubSettings().onepubUrl = url;

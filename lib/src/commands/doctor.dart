@@ -1,3 +1,9 @@
+/* Copyright (C) OnePub IP Pty Ltd - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * Written by Brett Sutton <bsutton@onepub.dev>, Jan 2022
+ */
+
 import 'dart:async';
 import 'dart:io';
 
@@ -10,7 +16,7 @@ import '../util/one_pub_token_store.dart';
 import '../util/send_command.dart';
 
 ///
-class DoctorCommand extends Command<void> {
+class DoctorCommand extends Command<int> {
   ///
   DoctorCommand();
 
@@ -21,9 +27,9 @@ class DoctorCommand extends Command<void> {
   String get name => 'doctor';
 
   @override
-  void run() {
+  int run() {
     if (!exists(OnePubSettings.pathToSettings)) {
-      logerr(red('''You must run 'onepub install' first.'''));
+      logerr(red('''Something went wrong, could not find settings file.'''));
       exit(1);
     }
     OnePubSettings.load();
@@ -43,6 +49,7 @@ class DoctorCommand extends Command<void> {
 
     print('');
     _status();
+    return 0;
   }
 
   void envStatus(String key) {
@@ -69,7 +76,7 @@ onepub login'''));
 
       echo('checking status...  ');
 
-      final response = await sendCommand(command: endpoint);
+      final response = await sendCommand(command: endpoint, authorised: false);
 
       if (response.status == 200) {
         print('');

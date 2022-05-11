@@ -1,3 +1,9 @@
+/* Copyright (C) OnePub IP Pty Ltd - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * Written by Brett Sutton <bsutton@onepub.dev>, Jan 2022
+ */
+
 import 'dart:io';
 import 'dart:math';
 
@@ -11,7 +17,7 @@ import 'util/log.dart';
 
 void loadSettings() {
   if (!exists(OnePubSettings.pathToSettings)) {
-    logerr(red('''You must run 'onepub install' first.'''));
+    logerr(red('''Something went wrong, could not find settings file.'''));
     exit(1);
   }
   OnePubSettings.load();
@@ -81,7 +87,9 @@ class OnePubSettings {
       settings.asString(pubHostedUrlKey, defaultValue: defaultOnePubUrl),
       _defaultWebBasePath);
 
-  set onepubUrl(String url) => settings[pubHostedUrlKey] = url;
+  set onepubUrl(String? url) => settings[pubHostedUrlKey] = url;
+
+  String? get onepubUrl => settings[pubHostedUrlKey] as String?;
 
   set obfuscatedOrganisationId(String obfuscatedOrganisationId) =>
       settings['organisationId'] = obfuscatedOrganisationId;

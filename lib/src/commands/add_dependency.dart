@@ -1,3 +1,9 @@
+/* Copyright (C) OnePub IP Pty Ltd - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * Written by Brett Sutton <bsutton@onepub.dev>, Jan 2022
+ */
+
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
@@ -10,7 +16,7 @@ import '../onepub_paths.dart';
 import '../onepub_settings.dart';
 
 ///
-class AddDependencyCommand extends Command<void> {
+class AddDependencyCommand extends Command<int> {
   ///
   AddDependencyCommand();
 
@@ -24,8 +30,9 @@ or updates an existing dependency to pull from your OnePub private repository.
   String get name => 'add';
 
   @override
-  Future<void> run() async {
+  Future<int> run() async {
     await private();
+    return 0;
   }
 
   ///
@@ -54,7 +61,7 @@ onepub add <Package> <Version Constraint>
     final versionConstraint = VersionConstraint.parse(version);
 
     final deps = project.pubSpec.dependencies;
-    final ref = ExternalHostedReference(package, url, versionConstraint, false);
+    final ref = ExternalHostedReference(package, url, versionConstraint);
 
     final dep = Dependency(package, ref);
 

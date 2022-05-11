@@ -1,3 +1,9 @@
+/* Copyright (C) OnePub IP Pty Ltd - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * Written by Brett Sutton <bsutton@onepub.dev>, Jan 2022
+ */
+
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
@@ -9,7 +15,7 @@ import '../onepub_settings.dart';
 import '../util/send_command.dart';
 
 ///
-class PrivateCommand extends Command<void> {
+class PrivateCommand extends Command<int> {
   ///
   PrivateCommand();
 
@@ -24,8 +30,9 @@ See https://onepub.dev/publish
   String get name => 'private';
 
   @override
-  Future<void> run() async {
+  Future<int> run() async {
     await private();
+    return 0;
   }
 
   ///

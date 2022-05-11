@@ -1,3 +1,9 @@
+/* Copyright (C) OnePub IP Pty Ltd - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * Written by Brett Sutton <bsutton@onepub.dev>, Jan 2022
+ */
+
 /// Some parts of this file come from the unpub_auth project and are subject
 /// to MIT license.
 import 'dart:async';
@@ -15,11 +21,8 @@ int _port = 42666;
 
 /// Return the auth token or null if the auth failed.
 Future<EndpointResponse?> breadButterAuth() async {
-  final callbackUrl = 'http://localhost:$_port';
-
   final onepubUrl = OnePubSettings.load().onepubWebUrl;
-  final authUrl = OnePubSettings()
-      .resolveWebEndPoint('clilogin', queryParams: 'callback=$callbackUrl');
+  final authUrl = OnePubSettings().resolveWebEndPoint('clilogin');
 
   final encodedUrl = Uri.encodeFull(authUrl);
 
@@ -28,6 +31,7 @@ To login to OnePub.
 
 From a web browser, go to 
 ${blue(encodedUrl)}
+
 Waiting for your authorisation...''');
 
   return _waitForResponse(onepubUrl);

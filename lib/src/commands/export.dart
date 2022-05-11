@@ -1,3 +1,9 @@
+/* Copyright (C) OnePub IP Pty Ltd - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * Written by Brett Sutton <bsutton@onepub.dev>, Jan 2022
+ */
+
 import 'package:args/command_runner.dart';
 import 'package:dcli/dcli.dart';
 import 'package:validators2/validators.dart';
@@ -10,7 +16,7 @@ import '../util/send_command.dart';
 import '../util/token_export_file.dart';
 
 ///
-class ExportCommand extends Command<void> {
+class ExportCommand extends Command<int> {
   ///
   ExportCommand() {
     argParser
@@ -29,8 +35,9 @@ class ExportCommand extends Command<void> {
   String get name => 'export';
 
   @override
-  Future<void> run() async {
+  Future<int> run() async {
     await export();
+    return 0;
   }
 
   ///
