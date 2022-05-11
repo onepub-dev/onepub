@@ -7,7 +7,7 @@
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
-import 'package:dcli/dcli.dart' hide log;
+import 'package:dcli/dcli.dart';
 import 'package:onepub/src/pub/command.dart';
 import 'package:onepub/src/pub/log.dart';
 import 'package:onepub/src/util/config.dart';

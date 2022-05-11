@@ -1,8 +1,6 @@
 #! /usr/bin/env dcli
 
-import 'dart:io';
 
-import 'package:dcli/dcli.dart';
 
 import 'global_args.dart';
 
