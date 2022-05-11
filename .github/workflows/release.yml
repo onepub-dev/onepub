@@ -8,6 +8,9 @@ name: compile
 on:
   push:
     branches: [ main ]
+    # the release proces will fail if we run it without a tag.
+    tags:
+      - 'v*.*.*'  # only release when a tag is pushed of the form vx.x.x
 
 jobs: 
   compile:
