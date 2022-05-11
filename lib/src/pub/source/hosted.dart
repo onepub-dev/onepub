@@ -895,9 +895,7 @@ class HostedSource extends CachedSource {
     String package,
     String hostedUrl,
   ) {
-    print(error);
     if (error is PubHttpException) {
-      print(error.response.statusCode);
       if (error.response.statusCode == 404) {
         throw PackageNotFoundException(
             'could not find package $package at $hostedUrl',
@@ -919,7 +917,6 @@ class HostedSource extends CachedSource {
     } else if (error is AuthenticationException) {
       String? hint;
       var message = 'authentication failed';
-      print('AuthenticationException ${error.statusCode}');
 
       assert(error.statusCode == 401 || error.statusCode == 403);
       if (error.statusCode == 401) {
@@ -937,8 +934,7 @@ class HostedSource extends CachedSource {
       if (error.serverMessage?.isNotEmpty == true && hint != null) {
         hint += '\n${error.serverMessage}';
       }
-      print("the hint is $hint");
-      print(StackTrace.current);
+
       throw PackageNotFoundException(message, hint: hint);
     } else if (error is FormatException) {
       throw PackageNotFoundException(
