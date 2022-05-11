@@ -32,7 +32,7 @@ jobs:
       # - name: Verify formatting
       #   run: dart format --output=none --set-exit-if-changed .
       - name: Delete Test dir so analyze runs
-        run: rm -rf test
+        run: rm -r test
 
       # Consider passing '--fatal-infos' for slightly stricter analysis.
       - name: Analyze project source
