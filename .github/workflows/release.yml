@@ -60,6 +60,15 @@ jobs:
           files: |
             bin/${{ runner.os }}/opub
             bin/${{ runner.os }}/onepub
+            
+      - name: Delete old latest so we can replace
+        uses: dev-drprasad/delete-tag-and-release@v0.2.0
+        with:
+          delete_release: true # default: false
+          tag_name: ${{ runner.os }}/latest # tag name to delete
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
       - name: Release opub and onepub as latest
         uses: softprops/action-gh-release@v1
         env:
