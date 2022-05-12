@@ -50,20 +50,31 @@ jobs:
       # package:test for this step to succeed. Note that Flutter projects will
       # want to change this to 'flutter test'.
       - name: Run compile opub
-        run: dart compile exe bin/opub.dart -o bin/${{ matrix.os }}/opub
+        run: dart compile exe bin/opub.dart -o bin/${{ runner.os }}/opub
 
       - name: Run compile onepub
-        run: dart compile exe bin/onepub.dart -o bin/${{ matrix.os }}/onepub
+        run: dart compile exe bin/onepub.dart -o bin/${{ runner.os }}/onepub
         
       - name: Release opub and onepub
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
         with:
-          name: ${{ matrix.os }}/${{github.ref_name}}
+          name: ${{ runner.os }}/${{github.ref_name}}
+          tag_name: ${{ runner.os }}/${{github.ref_name}}
           files: |
-            bin/${{ matrix.os }}/opub
-            bin/${{ matrix.os }}/onepub
+            bin/${{ runner.os }}/opub
+            bin/${{ runner.os }}/onepub
+      - name: Release opub and onepub as latest
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+        with:
+          name: ${{ runner.os }}/latest
+          tag_name: ${{ runner.os }}/latest
+          files: |
+            bin/${{ runner.os }}/opub
+            bin/${{ runner.os }}/onepub
           
         
 
