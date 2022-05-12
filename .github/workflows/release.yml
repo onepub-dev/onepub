@@ -24,6 +24,11 @@ jobs:
       - uses: dart-lang/setup-dart@v1.0
         with:
           sdk: ${{ matrix.sdk }}
+          
+      # you can reference the tagged version via 
+      - name: Get the version
+        id: get_version
+        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}          
 
       - name: Install dependencies
         run: dart pub get
@@ -55,6 +60,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
         with:
+          name: ${{ matrix.os }}/${{github.ref_name}}
           files: |
             bin/${{ matrix.os }}/opub
             bin/${{ matrix.os }}/onepub
