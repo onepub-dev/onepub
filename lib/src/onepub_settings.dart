@@ -124,7 +124,11 @@ class OnePubSettings {
   }
 
   String resolveWebEndPoint(String command, {String? queryParams}) {
-    var endpoint = join(OnePubSettings().onepubWebUrl, command);
+    var endpoint = OnePubSettings().onepubWebUrl;
+    if (!endpoint.endsWith('/')) {
+      endpoint += '/';
+    }
+    endpoint += command;
 
     if (queryParams != null) {
       endpoint += '?$queryParams';
