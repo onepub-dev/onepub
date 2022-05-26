@@ -82,5 +82,23 @@
             "console": "terminal"
         },
 
+        {
+            "name": "opub login",
+            "type": "dart",
+            "request": "launch",
+            "program": "bin/opub.dart",
+            "args": ["login"],
+            "console": "terminal"
+        },
+
+        {
+            "name": "opub publish",
+            "type": "dart",
+            "request": "launch",
+            "program": "bin/opub.dart",
+            "args": ["publish"],
+            "console": "terminal"
+        },
+
     ]
 }
