@@ -70,7 +70,7 @@ packages:
       name: circular_buffer
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.10.0"
+    version: "0.9.1"
   cli_util:
     dependency: "direct main"
     description:
@@ -133,7 +133,7 @@ packages:
       name: dcli_core
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.30.2"
+    version: "1.20.1"
   equatable:
     dependency: "direct main"
     description:
@@ -224,7 +224,7 @@ packages:
       name: js
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.6.4"
+    version: "0.6.3"
   json_annotation:
     dependency: transitive
     description:
@@ -364,7 +364,7 @@ packages:
       name: settings_yaml
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.4.0"
+    version: "3.4.1"
   shelf:
     dependency: "direct main"
     description:
@@ -553,7 +553,7 @@ packages:
       name: win32
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.6.1"
+    version: "2.3.6"
   yaml:
     dependency: "direct main"
     description:
@@ -569,4 +569,4 @@ packages:
     source: hosted
     version: "2.0.2"
 sdks:
-  dart: ">=2.17.0 <3.0.0"
+  dart: ">=2.14.0 <3.0.0"

@@ -15,7 +15,7 @@ dependencies:
   path: 1.8.1
   pub_semver: 2.1.0
   pubspec: 2.1.0
-  settings_yaml: 3.4.0
+  settings_yaml: 3.4.1
   shelf: 1.2.0
   stack_trace: 1.10.0
   usage: 4.0.2
