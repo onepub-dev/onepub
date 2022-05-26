@@ -45,7 +45,7 @@ Future<EndpointResponse?> _waitForResponse(
 ) async {
   final completer = Completer<EndpointResponse?>();
   final server = await bindServer(_port);
-  shelf_io.serveRequests(server, (request) async {
+  var handlerCascade = (request) async {
     await server.close();
 
     try {
@@ -64,14 +64,13 @@ Future<EndpointResponse?> _waitForResponse(
 
         if (!response.success) {
           completer.complete(response);
-          return shelf.Response.found('$onepubWebUrl/cliauthfailed');
+          return shelf.Response.internalServerError(
+              body: 'OnePub CLI failed to authenticate.');
         }
 
         /// Redirect to authorised page.
         completer.complete(response);
-        return shelf.Response.found('$onepubWebUrl/cliauthorised');
-
-        //return shelf.Response.ok('OnePub successfully authorised.');
+        return shelf.Response.ok('OnePub CLI successfully authorised.');
       } else {
         completer.complete(null);
 
@@ -84,7 +83,22 @@ Future<EndpointResponse?> _waitForResponse(
 
       return shelf.Response.internalServerError(body: e.toString());
     }
-  });
+  };
+
+  final onepuburl = OnePubSettings().onepubUrl;
+  var headers = {"Access-Control-Allow-Origin": onepuburl!};
+  shelf.Response _cors(shelf.Response response) =>
+      response.change(headers: headers);
+
+  shelf.Middleware _fixCORS = shelf.createMiddleware(responseHandler: _cors);
+
+// Pipeline handlers
+  final handler = const shelf.Pipeline()
+      .addMiddleware(_fixCORS)
+      //.addMiddleware(shelf.logRequests())
+      .addHandler(handlerCascade);
+
+  shelf_io.serveRequests(server, handler);
 
   return completer.future;
 }

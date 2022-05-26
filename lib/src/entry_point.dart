@@ -1,7 +1,5 @@
 #! /usr/bin/env dcli
 
-
-
 import 'global_args.dart';
 
 /* Copyright (C) OnePub IP Pty Ltd - All Rights Reserved
