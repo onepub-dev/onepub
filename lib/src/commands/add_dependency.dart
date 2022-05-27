@@ -75,7 +75,7 @@ onepub add <Package> <Version Constraint>
     await pubspec.save(Directory(project.pathToProjectRoot));
 
     print('''
-$package $version has been marked as a private package.
+$package $version has been added as a private dependency.
 
 See ${OnePubSettings().onepubWebUrl}/publish
 ''');
