@@ -100,5 +100,25 @@
             "console": "terminal"
         },
 
+        {
+            "name": "opub get",
+            "type": "dart",
+            "request": "launch",
+            "program": "bin/opub.dart",
+            "args": ["get"],
+            "console": "terminal"
+        },
+
+
+        {
+            "name": "onepub private ",
+            "type": "dart",
+            "request": "launch",
+            "program": "/home/bsutton/git/onepub/onepub/bin/onepub.dart",
+            "args": ["private"],
+            "cwd": "/home/bsutton/git/dvault",
+            "console": "terminal"
+        },
+
     ]
 }

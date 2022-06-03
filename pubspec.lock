@@ -72,7 +72,7 @@ packages:
     source: hosted
     version: "0.9.1"
   cli_util:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: cli_util
       url: "https://pub.dartlang.org"
