@@ -95,9 +95,10 @@
             "name": "opub publish",
             "type": "dart",
             "request": "launch",
-            "program": "bin/opub.dart",
+            "program": "/home/bsutton/git/onepub/onepub/bin/opub.dart",
             "args": ["publish"],
-            "console": "terminal"
+            "console": "terminal",
+            "cwd": "/home/bsutton/git/dcli/dcli_core"
         },
 
         {

@@ -1,3 +1,6 @@
+# 1.1.10
+- minor cleanups.
+
 # 1.1.9
 - improved the completion message when adding a private dependency.
 - Found a combo dependencies that works from 2.12 to 2.17. Change dependencies with care.
