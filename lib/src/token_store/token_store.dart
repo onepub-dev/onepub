@@ -170,8 +170,6 @@ class TokenStore {
     return found;
   }
 
-
-
   /// Returns [Credential] for authenticating given [hostedUrl] or `null` if no
   /// matching credential is found.
   Credential? findCredential(Uri hostedUrl) {

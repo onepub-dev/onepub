@@ -1,3 +1,7 @@
+# 1.1.11
+- Added a --ask switch to import so a user could directly enter the onepub token. This was to make it easy for ssh users to authenticate.
+- improvements to the output of onepub doctor.
+
 # 1.1.10
 - minor cleanups.
 
