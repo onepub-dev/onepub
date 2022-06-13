@@ -81,20 +81,20 @@ Use `onepub export` to obtain the token.
     headers.addAll({'authorization': onepubToken});
 
     final response = await sendCommand(
-        command: '/organisation/obfuscatedId',
-        authorised: false,
-        headers: headers);
+        command: '/organisation/token', authorised: false, headers: headers);
     if (!response.success) {
       throw ExitException(
           exitCode: 1, message: response.data['message']! as String);
     }
 
-    final obfuscatedOrganisationId =
-        response.data['obfuscatedOrganisationId']! as String;
+    final organisationName = response.data['organisationName']! as String;
+    final organisationObfuscatedId = response.data['obfuscatedId']! as String;
 
     OnePubTokenStore().save(
         onepubToken: onepubToken,
-        obfuscatedOrganisationId: obfuscatedOrganisationId);
+        obfuscatedOrganisationId: organisationObfuscatedId);
+
+    print('${blue('Successfully logged into $organisationName.')}');
   }
 
   /// pull the secret from onepub.export.yaml
