@@ -34,7 +34,7 @@ class OnePubLoginCommand extends Command<int> {
   OnePubLoginCommand();
 
   @override
-  String get description => 'Log in to Onepub.';
+  String get description => 'Log in to OnePub.';
 
   @override
   String get name => 'login';

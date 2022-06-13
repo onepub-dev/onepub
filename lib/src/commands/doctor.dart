@@ -40,7 +40,7 @@ class DoctorCommand extends Command<int> {
 
     print(blue('\nURLs'));
     print('Web site: ${OnePubSettings().onepubWebUrl}');
-    print('Repository: ${OnePubSettings().onepubApiUrl}');
+    print('API endpoint: ${OnePubSettings().onepubApiUrl}');
 
     print(blue('\nEnvironment'));
     envStatus('PUB_CACHE');
@@ -68,13 +68,10 @@ class DoctorCommand extends Command<int> {
     } else {
       print(orange('''
 You are not logged into OnePub.
-run:
-onepub login'''));
+run: onepub login'''));
     }
     try {
       const endpoint = '/status';
-
-      echo('checking status...  ');
 
       final response = await sendCommand(command: endpoint, authorised: false);
 
@@ -88,38 +85,20 @@ onepub login'''));
     } on IOException catch (e) {
       printerr(red(e.toString()));
     } finally {}
+    print('');
   }
 }
 
 void tokenStatus() {
   print(blue('\nRepository tokens'));
-  final progress =
-      DartSdk().runPub(args: ['token', 'list'], progress: Progress.capture());
 
-  if (progress.exitCode != 0) {
-    printerr(red(progress.toParagraph()));
-  } else {
-    final tokenLines = progress.toList().skip(1);
-    if (tokenLines.isEmpty) {
-      print(red('OnePub has not been added to the pub token list.'));
-      print('''
-run:
-onepub login''');
-    } else {
-      var found = false;
-      for (final line in tokenLines) {
-        if (line.startsWith(OnePubSettings().onepubApiUrl)) {
-          print(green(line));
-          found = true;
-        } else {
-          print(line);
-        }
-      }
-      if (!found) {
-        print(red('\nOnePub has not been added to the pub token list.'));
-        print('''
-run: onepub login''');
-      }
-    }
+  var store = OnePubTokenStore();
+  if (!store.isLoggedIn) {
+    print(red('No tokens found.'));
+    return;
+  }
+
+  for (final credential in store.credentials) {
+    print(credential.url);
   }
 }
