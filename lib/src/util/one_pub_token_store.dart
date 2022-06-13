@@ -16,9 +16,12 @@ class OnePubTokenStore {
   static const onepubSecretEnvKey = 'ONEPUB_SECRET';
 
   void save(
-      {required String onepubToken, required String obfuscatedOrganisationId}) {
+      {required String onepubToken,
+      required String obfuscatedOrganisationId,
+      required String organisationName}) {
     withEnvironment(() {
       OnePubSettings().obfuscatedOrganisationId = obfuscatedOrganisationId;
+      OnePubSettings().organisationName = organisationName;
       OnePubSettings().save();
       clearOldTokens();
       tokenStore.addCredential(

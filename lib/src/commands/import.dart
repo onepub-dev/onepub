@@ -95,6 +95,7 @@ Use `onepub export` to obtain the token.
 
     OnePubTokenStore().save(
         onepubToken: onepubToken,
+        organisationName: organisationName,
         obfuscatedOrganisationId: organisationObfuscatedId);
 
     print('${blue('Successfully logged into $organisationName.')}');

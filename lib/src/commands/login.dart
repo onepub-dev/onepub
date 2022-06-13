@@ -84,10 +84,8 @@ onepub import --ask
 
         OnePubTokenStore().save(
             onepubToken: onepubToken,
+            organisationName: organisationName,
             obfuscatedOrganisationId: obfuscatedOrganisationId);
-        OnePubSettings()
-          ..organisationName = organisationName
-          ..save();
 
         showWelcome(
             firstLogin: firstLogin,
