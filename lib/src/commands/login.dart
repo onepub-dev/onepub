@@ -108,9 +108,9 @@ onepub import --ask
   }
 
   bool inSSH() {
-    return env.entries.contains('SSH_CLIENT') ||
-        env.entries.contains('SSH_CONNECTION') ||
-        env.entries.contains('SSH_TTY');
+    return Env().exists('SSH_CLIENT') ||
+        Env().exists('SSH_CONNECTION') ||
+        Env().exists('SSH_TTY');
   }
 }
 
