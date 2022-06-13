@@ -36,6 +36,9 @@ class ImportCommand extends Command<int> {
 Import onepub token.
 Use `onepub export` to obtain the token.
 
+  Ask the user to enter the token:
+  onepub import --ask
+
   Import the token from the ${OnePubSettings.onepubTokenKey} environment variable
   onepub import 
 

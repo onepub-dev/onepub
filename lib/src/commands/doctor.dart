@@ -72,6 +72,7 @@ run: onepub login'''));
     }
     try {
       const endpoint = '/status';
+      echo('checking status...  ');
 
       final response = await sendCommand(command: endpoint, authorised: false);
 

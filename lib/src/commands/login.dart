@@ -43,9 +43,7 @@ class OnePubLoginCommand extends Command<int> {
   Future<int> run() async {
     loadSettings();
 
-    final ask = argResults!['ask'] as bool;
-
-    if (!ask && inSSH()) {
+    if (inSSH()) {
       throw ExitException(exitCode: -1, message: """
 onepub login will not work from an ssh shell.
 Instead:
