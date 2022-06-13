@@ -4,6 +4,8 @@
  * Written by Brett Sutton <bsutton@onepub.dev>, Jan 2022
  */
 
+import 'dart:io';
+
 import 'package:args/command_runner.dart';
 import 'package:dcli/dcli.dart';
 
@@ -18,16 +20,24 @@ import '../util/token_export_file.dart';
 class ImportCommand extends Command<int> {
   ///
   ImportCommand() : super() {
-    argParser.addFlag('file',
-        abbr: 'f',
-        negatable: false,
-        help: 'Imports the OnePub credentials from onepub.token.yaml');
+    argParser
+      ..addFlag('file',
+          abbr: 'f',
+          negatable: false,
+          help: 'Imports the OnePub credentials from onepub.token.yaml')
+      ..addFlag('ask',
+          abbr: 'a',
+          negatable: false,
+          help: 'Prompts the user to enter the ONEPUB_SECRET');
   }
 
   @override
   String get description => '''
 Import onepub token.
 Use `onepub export` to obtain the token.
+
+  Ask the user to enter the token:
+  onepub import --ask
 
   Import the token from the ${OnePubSettings.onepubTokenKey} environment variable
   onepub import 
@@ -48,16 +58,35 @@ Use `onepub export` to obtain the token.
   Future<void> import() async {
     OnePubSettings.load();
     final file = argResults!['file'] as bool;
+    final ask = argResults!['ask'] as bool;
+
+    if (file && ask) {
+      throw ExitException(
+          exitCode: -1, message: 'You may not pass --ask and --file');
+    }
 
     final String onepubToken;
 
-    if (file) {
+    if (ask) {
+      onepubToken = fromUser();
+    } else if (file) {
       onepubToken = fromFile();
     } else {
       onepubToken = fromSecret();
     }
 
-    final response = await sendCommand(command: 'member/organisation');
+    // the import is an alternate (from login) form of getting
+    // authorised but we have a chicken and egg problem
+    // because the [sendCommand] expects the token to be
+    // in the token store which it isn't
+    // So we paass the auth header directly.
+    final headers = <String, String>{};
+    headers.addAll({'authorization': onepubToken});
+
+    final response = await sendCommand(
+        command: '/organisation/obfuscatedId',
+        authorised: false,
+        headers: headers);
     if (!response.success) {
       throw ExitException(
           exitCode: 1, message: response.data['message']! as String);
@@ -93,6 +122,8 @@ Found: ${argResults!.rest.join(',')}''');
     print(orange(
         'Importing OnePub secret from ${OnePubTokenStore.onepubSecretEnvKey}'));
 
+    print(Platform.environment);
+
     if (!Env().exists(OnePubTokenStore.onepubSecretEnvKey)) {
       throw ExitException(exitCode: 1, message: '''
     The OnePub environment variable ${OnePubTokenStore.onepubSecretEnvKey} doesn't exist.
@@ -100,5 +131,15 @@ Found: ${argResults!.rest.join(',')}''');
     }
 
     return env[OnePubTokenStore.onepubSecretEnvKey]!;
+  }
+
+  String fromUser() {
+    return ask('ONEPUB_SECRET:',
+        required: true,
+        validator: Ask.all([
+          Ask.regExp(r'[a-zA-Z0-9-]*',
+              error: 'The secret contains invalid characters.'),
+          Ask.lengthRange(36, 36),
+        ]));
   }
 }

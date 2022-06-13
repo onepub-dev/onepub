@@ -1,3 +1,16 @@
+# 1.1.11
+- Added a --ask switch to import so a user could directly enter the onepub token. This was to make it easy for ssh users to authenticate.
+- improvements to the output of onepub doctor.
+
+# 1.1.10
+- minor cleanups.
+
+# 1.1.9
+- improved the completion message when adding a private dependency.
+- Found a combo dependencies that works from 2.12 to 2.17. Change dependencies with care.
+- change resolveWebEndPoint to use the correct slash when running on windows.
+- Fixed bug on windows caused by settgins.yaml trying move the file whilst it was still open.
+
 # 1.1.7
 - Merge branch 'main' of github.com:onepub-dev/onepub
 - add CORS header

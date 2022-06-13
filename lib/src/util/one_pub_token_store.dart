@@ -45,6 +45,10 @@ class OnePubTokenStore {
     return credentials.token!;
   }
 
+  Iterable<Credential> get credentials {
+    return tokenStore.credentials;
+  }
+
   /// Removes the onepub token from the pub token store.
   void clearOldTokens() {
     tokenStore.removeMatchingCredential(
@@ -62,7 +66,8 @@ class OnePubTokenStore {
     final apiUrl = OnePubSettings().onepubApiUrl;
     if (!reportedNonStandard &&
         apiUrl != '${OnePubSettings.defaultOnePubUrl}/api') {
-      print(red('Using non standard OnePub API url $apiUrl'));
+      print(red('Using non-standard OnePub API url $apiUrl'));
+      print('');
       reportedNonStandard = true;
     }
     final url = '$apiUrl/$obfuscatedOrganisationId/';

@@ -43,6 +43,17 @@ class OnePubLoginCommand extends Command<int> {
   Future<int> run() async {
     loadSettings();
 
+    if (inSSH()) {
+      throw ExitException(exitCode: -1, message: """
+onepub login will not work from an ssh shell.
+Instead:
+Exit your ssh session.
+run: onepub export
+Restart your ssh session and run:
+onepub import --ask
+""");
+    }
+
     try {
       final tempAuthTokenResponse = await breadButterAuth();
       if (tempAuthTokenResponse == null) {
@@ -96,6 +107,12 @@ class OnePubLoginCommand extends Command<int> {
     final error = endPointResponse.data['message']! as String;
 
     print(red(error));
+  }
+
+  bool inSSH() {
+    return env.entries.contains('SSH_CLIENT') ||
+        env.entries.contains('SSH_CONNECTION') ||
+        env.entries.contains('SSH_TTY');
   }
 }
 
