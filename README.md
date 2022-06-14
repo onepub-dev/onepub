@@ -13,7 +13,7 @@ https://onepub.dev
 
 Full documentation is available at:
 
-https://doc.onepub.dev
+https://docs.onepub.dev
 
 
 ## opub
