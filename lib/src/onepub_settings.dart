@@ -79,11 +79,11 @@ class OnePubSettings {
   /// pub token add strips the port if its 443 so we must as well
   /// so our process of checking that the url has been added to the
   /// token list works.
-  String get onepubApiUrl => join(
+  String get onepubApiUrl => urlJoin(
       settings.asString(pubHostedUrlKey, defaultValue: defaultOnePubUrl),
       _defaultApiBasePath);
 
-  String get onepubWebUrl => join(
+  String get onepubWebUrl => urlJoin(
       settings.asString(pubHostedUrlKey, defaultValue: defaultOnePubUrl),
       _defaultWebBasePath);
 
@@ -94,28 +94,20 @@ class OnePubSettings {
   set obfuscatedOrganisationId(String obfuscatedOrganisationId) =>
       settings['organisationId'] = obfuscatedOrganisationId;
 
-  String get obfuscatedOrganisationId => join(
-        settings.asString('organisationId',
-            defaultValue: 'OrganisationId_not_set'),
-      );
+  String get obfuscatedOrganisationId => settings.asString('organisationId',
+      defaultValue: 'OrganisationId_not_set');
 
   set organisationName(String organisationName) =>
       settings['organisationName'] = organisationName;
 
-  String get organisationName => join(
-        settings.asString('organisationName'),
-      );
+  String get organisationName => settings.asString('organisationName');
 
   static String onepubTokenKey = 'onepubToken';
 
   void save() => settings.save();
 
   String resolveApiEndPoint(String command, {String? queryParams}) {
-    if (command.startsWith('/')) {
-      // ignore: parameter_assignments
-      command = command.substring(1);
-    }
-    var endpoint = join(OnePubSettings().onepubApiUrl, command);
+    var endpoint = urlJoin(OnePubSettings().onepubApiUrl, command);
 
     if (queryParams != null) {
       endpoint += '?$queryParams';
@@ -124,10 +116,36 @@ class OnePubSettings {
   }
 
   String resolveWebEndPoint(String command, {String? queryParams}) {
-    var endpoint = join(OnePubSettings().onepubWebUrl, command);
+    var endpoint = urlJoin(OnePubSettings().onepubWebUrl, command);
 
     if (queryParams != null) {
       endpoint += '?$queryParams';
+    }
+    return endpoint;
+  }
+
+  String urlJoin(String part1, String part2, [String? part3, String? part4]) {
+    var endpoint = urlStrip(part1);
+
+    endpoint = urlJoin2(endpoint, part2);
+    if (part3 != null) endpoint = urlJoin2(endpoint, part3);
+    if (part4 != null) endpoint = urlJoin2(endpoint, part4);
+    return endpoint;
+  }
+
+  String urlJoin2(String part1, String part2) {
+    return '${urlStrip(part1)}/${urlStrip(part2)}';
+  }
+
+  String urlStrip(String part1) {
+    String endpoint;
+    if (part1.startsWith('/')) {
+      endpoint = part1.substring(1);
+    } else {
+      endpoint = part1;
+    }
+    if (endpoint.endsWith('/')) {
+      endpoint = endpoint.substring(0, endpoint.length - 1);
     }
     return endpoint;
   }

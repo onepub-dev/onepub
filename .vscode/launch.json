@@ -82,5 +82,44 @@
             "console": "terminal"
         },
 
+        {
+            "name": "opub login",
+            "type": "dart",
+            "request": "launch",
+            "program": "bin/opub.dart",
+            "args": ["login"],
+            "console": "terminal"
+        },
+
+        {
+            "name": "opub publish",
+            "type": "dart",
+            "request": "launch",
+            "program": "/home/bsutton/git/onepub/onepub/bin/opub.dart",
+            "args": ["publish"],
+            "console": "terminal",
+            "cwd": "/home/bsutton/git/dcli/dcli_core"
+        },
+
+        {
+            "name": "opub get",
+            "type": "dart",
+            "request": "launch",
+            "program": "bin/opub.dart",
+            "args": ["get"],
+            "console": "terminal"
+        },
+
+
+        {
+            "name": "onepub private ",
+            "type": "dart",
+            "request": "launch",
+            "program": "/home/bsutton/git/onepub/onepub/bin/onepub.dart",
+            "args": ["private"],
+            "cwd": "/home/bsutton/git/dvault",
+            "console": "terminal"
+        },
+
     ]
 }

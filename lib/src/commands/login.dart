@@ -34,7 +34,7 @@ class OnePubLoginCommand extends Command<int> {
   OnePubLoginCommand();
 
   @override
-  String get description => 'Log in to Onepub.';
+  String get description => 'Log in to OnePub.';
 
   @override
   String get name => 'login';
@@ -42,6 +42,17 @@ class OnePubLoginCommand extends Command<int> {
   @override
   Future<int> run() async {
     loadSettings();
+
+    if (inSSH()) {
+      throw ExitException(exitCode: -1, message: """
+onepub login will not work from an ssh shell.
+Instead:
+Exit your ssh session.
+run: onepub export
+Restart your ssh session and run:
+onepub import --ask
+""");
+    }
 
     try {
       final tempAuthTokenResponse = await breadButterAuth();
@@ -73,10 +84,8 @@ class OnePubLoginCommand extends Command<int> {
 
         OnePubTokenStore().save(
             onepubToken: onepubToken,
+            organisationName: organisationName,
             obfuscatedOrganisationId: obfuscatedOrganisationId);
-        OnePubSettings()
-          ..organisationName = organisationName
-          ..save();
 
         showWelcome(
             firstLogin: firstLogin,
@@ -96,6 +105,12 @@ class OnePubLoginCommand extends Command<int> {
     final error = endPointResponse.data['message']! as String;
 
     print(red(error));
+  }
+
+  bool inSSH() {
+    return Env().exists('SSH_CLIENT') ||
+        Env().exists('SSH_CONNECTION') ||
+        Env().exists('SSH_TTY');
   }
 }
 

@@ -36,17 +36,24 @@ The logout command takes no arguments. Found ${argResults!.rest.join(',')}.
 '''));
     }
 
-    final results = await sendCommand(command: '/member/logout');
+    if (OnePubTokenStore().isLoggedIn) {
+      final results = await sendCommand(command: '/member/logout');
 
-    if (!results.success) {
-      throw ExitException(
-          exitCode: 1, message: results.data['message']! as String);
+      OnePubTokenStore().clearOldTokens();
+
+      if (!results.success) {
+        final message = results.data['message']! as String;
+        if (!(message.startsWith('Your token is no longer valid') ||
+            message.startsWith('You must be logged in to run this command.')))
+          throw ExitException(exitCode: 1, message: message);
+      }
+      print(green('You have been logged out of the OnePub CLI for '
+          '${OnePubSettings().organisationName} on all your devices.'));
+    } else {
+      OnePubTokenStore().clearOldTokens();
+      print(orange('You are already logged out.'));
     }
 
-    OnePubTokenStore().clearOldTokens();
-
-    print(green('You have been logged out of the OnePub CLI for '
-        '${OnePubSettings().organisationName} on all your devices.'));
     return 0;
   }
 }

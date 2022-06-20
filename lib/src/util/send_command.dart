@@ -58,8 +58,7 @@ Future<HttpClientResponse> _startRequest(HttpClient client, Method method,
     if (!OnePubTokenStore().isLoggedIn) {
       throw ExitException(exitCode: 1, message: '''
 You must be logged in to run this command.
-run: 
-  onepub login
+run: onepub login
   ''');
     }
     final onepubToken = OnePubTokenStore().fetch();
