@@ -12,7 +12,7 @@ import 'package:onepub/src/pub/command.dart';
 import 'package:onepub/src/pub/log.dart';
 import 'package:onepub/src/util/config.dart';
 
-import 'commands/add_dependency.dart';
+import 'commands/add_private_command.dart';
 import 'commands/doctor.dart';
 import 'commands/export.dart';
 
@@ -27,6 +27,7 @@ import 'onepub_settings.dart';
 import 'pub/command/add.dart';
 
 import 'pub/command/cache.dart';
+
 import 'pub/command/deps.dart';
 import 'pub/command/downgrade.dart';
 import 'pub/command/get.dart';
@@ -62,12 +63,13 @@ class MyRunner extends CommandRunner<int> implements PubTopLevel {
           hide: true,
           help: 'Allows for configuration of localhost for '
               'use in a development environment.');
+
       addCommand(DoctorCommand());
       addCommand(OnePubLoginCommand());
       addCommand(OnePubLogoutCommand());
       addCommand(ImportCommand());
       addCommand(ExportCommand());
-      addCommand(AddDependencyCommand());
+      addCommand(AddPrivateCommand());
       addCommand(PrivateCommand());
 
       results = argParser.parse(args);
@@ -173,18 +175,28 @@ class MyRunner extends CommandRunner<int> implements PubTopLevel {
   ArgResults get argResults => results;
 
   @override
-  String? get directory => argResults['directory'];
+  String get directory {
+    if (!argResults.options.contains('directory')) {
+      return '';
+    }
+    return argResults['directory'];
+  }
 
   @override
   bool get captureStackChains {
-    return argResults['trace'] ||
-        argResults['verbose'] ||
-        argResults['verbosity'] == 'all';
+    return trace || verbose || verbosityString == 'all';
+  }
+
+  String get verbosityString {
+    if (!argResults.options.contains('verbosity')) {
+      return '';
+    }
+    return argResults['verbosity'];
   }
 
   @override
   Verbosity get verbosity {
-    switch (argResults['verbosity']) {
+    switch (verbosityString) {
       case 'error':
         return plog.Verbosity.error;
       case 'warning':
@@ -199,14 +211,26 @@ class MyRunner extends CommandRunner<int> implements PubTopLevel {
         return plog.Verbosity.all;
       default:
         // No specific verbosity given, so check for the shortcut.
-        if (argResults['verbose']) return plog.Verbosity.all;
+        if (verbose) return plog.Verbosity.all;
         if (runningFromTest) return plog.Verbosity.testing;
         return plog.Verbosity.normal;
     }
   }
 
   @override
-  bool get trace => argResults['trace'];
+  bool get trace {
+    if (!argResults.options.contains('trace')) {
+      return false;
+    }
+    return argResults['trace'];
+  }
+
+  bool get verbose {
+    if (!argResults.options.contains('verbose')) {
+      return false;
+    }
+    return argResults['verbose'];
+  }
 }
 
 enum CommandSet { OPUB, ONEPUB }
