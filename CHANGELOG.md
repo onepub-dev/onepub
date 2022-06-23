@@ -1,3 +1,6 @@
+# 1.2.1
+- Tweaks to improve our pub.dev score.
+
 # 1.2.0
 - removed the need to pass a version to the onepub add command.
 

@@ -1,14 +1,9 @@
 name: onepub
-version: 1.2.0
+version: 1.2.1
 homepage: https://github.com/onepub-dev/onepub
 description: Command line tools for onepub.dev including a replacement pub command.
 environment: 
   sdk: '>=2.12.1 <3.0.0'
-platforms:
-  linux:
-  macos:
-  windows:
-
 dependencies: 
   args: 2.3.0
   basic_utils: 3.8.0
@@ -49,5 +44,9 @@ dev_dependencies:
 executables: 
   onepub: 
   opub: 
+platforms: 
+  linux: null
+  macos: null
+  windows: null
 false_secrets: 
   - lib/src/pub/validator/leak_detection.dart
