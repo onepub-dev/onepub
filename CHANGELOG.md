@@ -1,3 +1,6 @@
+# 1.2.0
+- removed the need to pass a version to the onepub add command.
+
 # 1.1.12
 - import command now sets the organisation name.
 - change logout command so it succeeds even if you have already logged out.

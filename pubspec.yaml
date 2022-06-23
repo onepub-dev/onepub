@@ -1,5 +1,5 @@
 name: onepub
-version: 1.1.12
+version: 1.2.0
 homepage: https://github.com/onepub-dev/onepub
 description: Command line tools for onepub.dev including a replacement pub command.
 environment: 
