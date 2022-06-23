@@ -43,7 +43,7 @@ class AddPrivateCommand extends AddCommand {
 
   bool get hasHostOptions => hostUrl != null;
 
-  AddCommand() {
+  AddPrivateCommand() {
     argParser.options.remove('git-url');
     argParser.options.remove('git-ref');
     argParser.options.remove('git-path');
