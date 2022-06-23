@@ -1,3 +1,6 @@
+# 1.2.2
+- Added documentation keyword to pubspec.yaml
+
 # 1.2.1
 - Tweaks to improve our pub.dev score.
 
