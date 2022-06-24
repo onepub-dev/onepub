@@ -1,3 +1,6 @@
+# 1.2.4
+- Fixes #37
+
 # 1.2.2
 - Added documentation keyword to pubspec.yaml
 

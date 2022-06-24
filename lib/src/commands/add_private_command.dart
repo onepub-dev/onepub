@@ -43,13 +43,13 @@ class AddPrivateCommand extends AddCommand {
 
   bool get hasHostOptions => hostUrl != null;
 
-  AddPrivateCommand() {
-    argParser.options.remove('git-url');
-    argParser.options.remove('git-ref');
-    argParser.options.remove('git-path');
-    argParser.options.remove('hosted-url');
-    argParser.options.remove('path');
-    argParser.options.remove('offline');
-    argParser.options.remove('precompile');
-  }
+  // AddPrivateCommand() {
+  //   argParser.options.remove('git-url');
+  //   argParser.options.remove('git-ref');
+  //   argParser.options.remove('git-path');
+  //   argParser.options.remove('hosted-url');
+  //   argParser.options.remove('path');
+  //   argParser.options.remove('offline');
+  //   argParser.options.remove('precompile');
+  // }
 }
