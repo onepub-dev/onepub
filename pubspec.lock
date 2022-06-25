@@ -235,9 +235,9 @@ packages:
   lint_hard:
     dependency: "direct dev"
     description:
-      path: "../../lint_hard"
-      relative: true
-    source: path
+      name: lint_hard
+      url: "https://pub.dartlang.org"
+    source: hosted
     version: "2.0.0"
   logging:
     dependency: transitive

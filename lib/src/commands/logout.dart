@@ -44,8 +44,9 @@ The logout command takes no arguments. Found ${argResults!.rest.join(',')}.
       if (!results.success) {
         final message = results.data['message']! as String;
         if (!(message.startsWith('Your token is no longer valid') ||
-            message.startsWith('You must be logged in to run this command.')))
+            message.startsWith('You must be logged in to run this command.'))) {
           throw ExitException(exitCode: 1, message: message);
+        }
       }
       print(green('You have been logged out of the OnePub CLI for '
           '${OnePubSettings().organisationName} on all your devices.'));
