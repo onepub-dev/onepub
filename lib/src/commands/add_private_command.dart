@@ -53,3 +53,44 @@ class AddPrivateCommand extends AddCommand {
   //   argParser.options.remove('precompile');
   // }
 }
+
+
+    class FallibleOpSuccess {}
+    class FallibleOpFailure {}
+    
+    FallibleOpSuccess fallibleOp() {
+      if (true) {
+        return FallibleOpSuccess();
+      throw FallibleOpFailure();
+    }
+    
+    try {
+      var result = fallibleOp();
+        print('Success with value: ${result.unwrap()}');
+    } on FallibleOpFailure catch (e) {
+        print('Failure with error: ${e.unwrapErr()};');
+    }
+    
+    
+    class FallibleOpSuccess {}
+    class FallibleOpFailure {}
+    
+    Result<FallibleOpSuccess, FallibleOpFailure> fallibleOp() {
+      if (true) {
+        return ok(FallibleOpSuccess());
+      } else {
+        return err(FallibleOpFailure());
+      }
+    }
+    
+    final result = fallibleOp();
+    
+    switch(result.type) {
+      case ResultType.ok:
+        print('Success with value: ${result.unwrap()}');
+        break;
+      case ResultType.err: 
+        print('Failure with error: ${result.unwrapErr()};');
+        break;      
+    }
+    
