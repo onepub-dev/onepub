@@ -59,22 +59,25 @@ class AddCommand extends PubCommand {
 
   bool get isHosted => !hasGitOptions && path == null && path == null;
 
-  AddCommand() {
+  AddCommand({bool includeSourceOptions = true}) {
     argParser.addFlag('dev',
         abbr: 'd',
         negatable: false,
         help: 'Adds to the development dependencies instead.');
 
-    argParser.addOption('git-url', help: 'Git URL of the package');
-    argParser.addOption('git-ref',
-        help: 'Git branch or commit to be retrieved');
-    argParser.addOption('git-path', help: 'Path of git package in repository');
-    argParser.addOption('hosted-url', help: 'URL of package host server');
-    argParser.addOption('path', help: 'Add package from local path');
-    argParser.addOption('sdk',
-        help: 'add package from SDK source',
-        allowed: ['flutter'],
-        valueHelp: '[flutter]');
+    if (includeSourceOptions) {
+      argParser.addOption('git-url', help: 'Git URL of the package');
+      argParser.addOption('git-ref',
+          help: 'Git branch or commit to be retrieved');
+      argParser.addOption('git-path',
+          help: 'Path of git package in repository');
+      argParser.addOption('hosted-url', help: 'URL of package host server');
+      argParser.addOption('path', help: 'Add package from local path');
+      argParser.addOption('sdk',
+          help: 'add package from SDK source',
+          allowed: ['flutter'],
+          valueHelp: '[flutter]');
+    }
     argParser.addFlag(
       'example',
       help:
