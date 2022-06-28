@@ -45,3 +45,4 @@ class AddPrivateCommand extends AddCommand {
 
   AddPrivateCommand() : super(includeSourceOptions: false);
 }
+
