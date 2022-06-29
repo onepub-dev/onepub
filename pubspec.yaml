@@ -1,8 +1,7 @@
 name: onepub
-version: 1.2.4
+version: 1.2.5
 homepage: https://onepub.dev
 documentation: https://docs.onepub.dev
-publish_to: https://onepub.dev/api/jjbxpsdavu/
 description: Command line tools for onepub.dev including a replacement pub command.
 repository: https://github.com/onepub-dev/onepub
 environment: 
