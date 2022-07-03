@@ -18,10 +18,12 @@ class OnePubTokenStore {
   void save(
       {required String onepubToken,
       required String obfuscatedOrganisationId,
-      required String organisationName}) {
+      required String organisationName,
+      required String operatorEmail}) {
     withEnvironment(() {
       OnePubSettings().obfuscatedOrganisationId = obfuscatedOrganisationId;
       OnePubSettings().organisationName = organisationName;
+      OnePubSettings().operatorEmail = operatorEmail;
       OnePubSettings().save();
       clearOldTokens();
       tokenStore.addCredential(

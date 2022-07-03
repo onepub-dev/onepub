@@ -100,7 +100,11 @@ class OnePubSettings {
   set organisationName(String organisationName) =>
       settings['organisationName'] = organisationName;
 
+  set operatorEmail(String operatorEmail) =>
+      settings['operatorEmail'] = operatorEmail;
+
   String get organisationName => settings.asString('organisationName');
+  String get operatorEmail => settings.asString('operatorEmail');
 
   static String onepubTokenKey = 'onepubToken';
 

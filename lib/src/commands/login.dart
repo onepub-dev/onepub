@@ -87,7 +87,8 @@ ${green('onepub import --ask')}
         OnePubTokenStore().save(
             onepubToken: onepubToken,
             organisationName: organisationName,
-            obfuscatedOrganisationId: obfuscatedOrganisationId);
+            obfuscatedOrganisationId: obfuscatedOrganisationId,
+            operatorEmail: operatorEmail);
 
         showWelcome(
             firstLogin: firstLogin,
