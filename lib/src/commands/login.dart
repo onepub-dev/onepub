@@ -45,13 +45,14 @@ class OnePubLoginCommand extends Command<int> {
 
     if (inSSH()) {
       throw ExitException(exitCode: -1, message: """
-onepub login will not work from an ssh shell.
+${red('onepub login will not work from an ssh shell.')}
+
 Instead:
 Exit your ssh session and run:
-onepub export
+${green('onepub export')}
 
 Restart your ssh session and run:
-onepub import --ask
+${green('onepub import --ask')}
 """);
     }
 
