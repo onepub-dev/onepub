@@ -81,7 +81,7 @@ ${green('onepub import --ask')}
           print(tempAuthTokenResponse.data);
           throw ExitException(
               exitCode: 1,
-              message: 'Invalid response. missing authrization data');
+              message: 'Invalid response. missing authorization data');
         }
 
         OnePubTokenStore().save(
