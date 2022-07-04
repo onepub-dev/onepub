@@ -9,6 +9,7 @@ import 'dart:math';
 
 import 'package:dcli/dcli.dart';
 import 'package:meta/meta.dart';
+import 'package:onepub/src/pub/source/hosted.dart';
 import 'package:settings_yaml/settings_yaml.dart';
 import 'package:yaml/yaml.dart';
 
@@ -82,6 +83,21 @@ class OnePubSettings {
   String get onepubApiUrl => urlJoin(
       settings.asString(pubHostedUrlKey, defaultValue: defaultOnePubUrl),
       _defaultApiBasePath);
+
+  /// The url to the currently logged in organisation
+  static bool reportedNonStandard = false;
+  Uri onepubHostedUrl([String? obfuscatedOrganisationId]) {
+    obfuscatedOrganisationId ??= OnePubSettings().obfuscatedOrganisationId;
+    final apiUrl = OnePubSettings().onepubApiUrl;
+    if (!reportedNonStandard &&
+        apiUrl != '${OnePubSettings.defaultOnePubUrl}/api') {
+      print(red('Using non-standard OnePub API url $apiUrl'));
+      print('');
+      reportedNonStandard = true;
+    }
+    final url = '$apiUrl/$obfuscatedOrganisationId/';
+    return validateAndNormalizeHostedUrl(url);
+  }
 
   String get onepubWebUrl => urlJoin(
       settings.asString(pubHostedUrlKey, defaultValue: defaultOnePubUrl),

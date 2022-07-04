@@ -49,7 +49,7 @@ See https://onepub.dev/publish
 
     final obfuscatedOrganisationId = OnePubSettings().obfuscatedOrganisationId;
     final currentOrganisationName = OnePubSettings().organisationName;
-    final url = '${OnePubSettings().onepubApiUrl}/$obfuscatedOrganisationId/';
+    final url = OnePubSettings().onepubHostedUrl().toString();
 
     final pubspec = project.pubSpec.pubspec;
     if (pubspec.publishTo != null) {

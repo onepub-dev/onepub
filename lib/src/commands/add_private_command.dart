@@ -26,9 +26,7 @@ class AddPrivateCommand extends AddCommand {
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-add';
 
   String? get hostUrl {
-    final apiUrl = OnePubSettings().onepubApiUrl;
-    final organisation = OnePubSettings().obfuscatedOrganisationId;
-    final url = '$apiUrl/$organisation/';
+    final url = OnePubSettings().onepubHostedUrl().toString();
     print(url);
     return url;
   }

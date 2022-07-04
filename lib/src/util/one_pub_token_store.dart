@@ -24,22 +24,23 @@ class OnePubTokenStore {
       OnePubSettings().organisationName = organisationName;
       OnePubSettings().save();
       clearOldTokens();
-      tokenStore.addCredential(
-          Credential.token(_hostedUrl(obfuscatedOrganisationId), onepubToken));
+      tokenStore.addCredential(Credential.token(
+          OnePubSettings().onepubHostedUrl(obfuscatedOrganisationId),
+          onepubToken));
     }, environment: {onepubSecretEnvKey: onepubToken});
   }
 
 // True if we have a onepub token.
   bool get isLoggedIn =>
-      tokenStore.findCredential(
-          _hostedUrl(OnePubSettings().obfuscatedOrganisationId)) !=
+      tokenStore.findCredential(OnePubSettings()
+          .onepubHostedUrl(OnePubSettings().obfuscatedOrganisationId)) !=
       null;
 
   /// throws [StateError] if called when not logged in.
   /// returns the onepubToken.
   String fetch() {
-    final credentials = tokenStore
-        .findCredential(_hostedUrl(OnePubSettings().obfuscatedOrganisationId));
+    final credentials = tokenStore.findCredential(OnePubSettings()
+        .onepubHostedUrl(OnePubSettings().obfuscatedOrganisationId));
 
     if (credentials == null || credentials.token == null) {
       throw StateError('You may not call fetch when not logged in');
@@ -62,18 +63,4 @@ class OnePubTokenStore {
   }
 
   TokenStore get tokenStore => TokenStore(dartConfigDir);
-
-  static bool reportedNonStandard = false;
-
-  Uri _hostedUrl(String obfuscatedOrganisationId) {
-    final apiUrl = OnePubSettings().onepubApiUrl;
-    if (!reportedNonStandard &&
-        apiUrl != '${OnePubSettings.defaultOnePubUrl}/api') {
-      print(red('Using non-standard OnePub API url $apiUrl'));
-      print('');
-      reportedNonStandard = true;
-    }
-    final url = '$apiUrl/$obfuscatedOrganisationId/';
-    return validateAndNormalizeHostedUrl(url);
-  }
 }
