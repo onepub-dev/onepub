@@ -59,22 +59,33 @@ class AddCommand extends PubCommand {
 
   bool get isHosted => !hasGitOptions && path == null && path == null;
 
-  AddCommand() {
+  bool includeSourceOptions;
+
+  AddCommand({this.includeSourceOptions = true}) {
     argParser.addFlag('dev',
         abbr: 'd',
         negatable: false,
         help: 'Adds to the development dependencies instead.');
 
-    argParser.addOption('git-url', help: 'Git URL of the package');
-    argParser.addOption('git-ref',
-        help: 'Git branch or commit to be retrieved');
-    argParser.addOption('git-path', help: 'Path of git package in repository');
-    argParser.addOption('hosted-url', help: 'URL of package host server');
-    argParser.addOption('path', help: 'Add package from local path');
-    argParser.addOption('sdk',
-        help: 'add package from SDK source',
-        allowed: ['flutter'],
-        valueHelp: '[flutter]');
+    if (includeSourceOptions) {
+      argParser.addOption('git-url',
+          help: 'Git URL of the package', hide: includeSourceOptions);
+      argParser.addOption('git-ref',
+          help: 'Git branch or commit to be retrieved',
+          hide: includeSourceOptions);
+      argParser.addOption('git-path',
+          help: 'Path of git package in repository',
+          hide: includeSourceOptions);
+      argParser.addOption('hosted-url',
+          help: 'URL of package host server', hide: includeSourceOptions);
+      argParser.addOption('path',
+          help: 'Add package from local path', hide: includeSourceOptions);
+      argParser.addOption('sdk',
+          help: 'add package from SDK source',
+          allowed: ['flutter'],
+          hide: includeSourceOptions,
+          valueHelp: '[flutter]');
+    }
     argParser.addFlag(
       'example',
       help:
@@ -287,10 +298,10 @@ class AddCommand extends PubCommand {
   /// defined, an error will be thrown.
   _ParseResult _parsePackage(String package, LanguageVersion languageVersion) {
     final _conflictingFlagSets = [
-      ['git-url', 'git-ref', 'git-path'],
-      ['hosted-url'],
-      ['path'],
-      ['sdk'],
+      if (includeSourceOptions) ['git-url', 'git-ref', 'git-path'],
+      if (includeSourceOptions) ['hosted-url'],
+      if (includeSourceOptions) ['path'],
+      if (includeSourceOptions) ['sdk'],
     ];
 
     for (final flag
@@ -356,7 +367,7 @@ class AddCommand extends PubCommand {
     } else if (path != null) {
       ref = PackageRef(
           packageName, PathDescription(p.absolute(path), p.isRelative(path)));
-    } else if (sdk != null) {
+    } else if (includeSourceOptions && sdk != null) {
       ref = cache.sdk.parseRef(packageName, sdk);
     } else {
       ref = PackageRef(

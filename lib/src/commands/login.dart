@@ -45,12 +45,14 @@ class OnePubLoginCommand extends Command<int> {
 
     if (inSSH()) {
       throw ExitException(exitCode: -1, message: """
-onepub login will not work from an ssh shell.
+${red('onepub login will not work from an ssh shell.')}
+
 Instead:
-Exit your ssh session.
-run: onepub export
+Exit your ssh session and run:
+${green('onepub export')}
+
 Restart your ssh session and run:
-onepub import --ask
+${green('onepub import --ask')}
 """);
     }
 
@@ -79,13 +81,14 @@ onepub import --ask
           print(tempAuthTokenResponse.data);
           throw ExitException(
               exitCode: 1,
-              message: 'Invalid response. missing authrization data');
+              message: 'Invalid response. missing authorization data');
         }
 
         OnePubTokenStore().save(
             onepubToken: onepubToken,
             organisationName: organisationName,
-            obfuscatedOrganisationId: obfuscatedOrganisationId);
+            obfuscatedOrganisationId: obfuscatedOrganisationId,
+            operatorEmail: operatorEmail);
 
         showWelcome(
             firstLogin: firstLogin,
