@@ -20,7 +20,7 @@ class ExportCommand extends Command<int> {
   ///
   ExportCommand() {
     argParser
-      ..addFlag('file', abbr: 'f', help: 'Save the OnePub token to a file')
+      ..addFlag('file', abbr: 'f', help: 'Save the OnePub token to a file.')
       ..addOption('user',
           abbr: 'u',
           help: 'Export the token of a CICD member.',

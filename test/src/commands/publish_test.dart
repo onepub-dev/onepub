@@ -5,11 +5,11 @@
  */
 
 import 'package:onepub/src/entry_point.dart';
-import 'package:onepub/src/global_args.dart';
+import 'package:onepub/src/my_runner.dart';
 import 'package:test/test.dart';
 
 void main() {
   test('logout ...', () async {
-    entrypoint(['publish'], CommandSet.OPUB, 'opub');
+    await entrypoint(['publish'], CommandSet.OPUB, 'opub');
   });
 }

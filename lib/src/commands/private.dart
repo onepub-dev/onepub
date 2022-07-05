@@ -12,6 +12,7 @@ import 'package:dcli/dcli.dart';
 import '../exceptions.dart';
 import '../onepub_paths.dart';
 import '../onepub_settings.dart';
+import '../util/one_pub_token_store.dart';
 import '../util/send_command.dart';
 
 ///
@@ -37,6 +38,11 @@ See https://onepub.dev/publish
 
   ///
   Future<void> private() async {
+    if (!OnePubTokenStore().isLoggedIn) {
+      throw ExitException(
+          exitCode: 1, message: "You must run 'onepub login' first.");
+    }
+
     final project = DartProject.findProject(pwd);
     if (project == null) {
       printerr('You must be in a Dart Package directory to run this command.');
