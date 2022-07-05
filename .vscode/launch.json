@@ -109,6 +109,14 @@
             "args": ["get"],
             "console": "terminal"
         },
+        {
+            "name": "onepub global activate",
+            "type": "dart",
+            "request": "launch",
+            "program": "bin/onepub.dart",
+            "args": ["global","activate","dcli"],
+            "console": "terminal"
+        },
 
 
         {

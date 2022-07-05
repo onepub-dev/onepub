@@ -7,13 +7,13 @@
 
 import 'package:dcli/dcli.dart';
 import 'package:onepub/src/entry_point.dart';
-import 'package:onepub/src/global_args.dart';
+import 'package:onepub/src/my_runner.dart';
 import 'package:onepub/src/version/version.g.dart';
 
-void main(List<String> arguments) {
+void main(List<String> arguments) async {
   print(orange('OnePub version: $packageVersion '));
 
   print('');
 
-  entrypoint(arguments, CommandSet.ONEPUB, 'onepub');
+  await entrypoint(arguments, CommandSet.ONEPUB, 'onepub');
 }
