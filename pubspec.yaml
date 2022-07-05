@@ -47,8 +47,8 @@ executables:
   onepub: 
   opub: 
 platforms: 
-  linux: 
-  macos: 
-  windows: 
+  linux: null
+  macos: null
+  windows: null
 false_secrets: 
   - lib/src/pub/validator/leak_detection.dart
