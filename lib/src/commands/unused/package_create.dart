@@ -8,10 +8,10 @@ import 'dart:async';
 
 import 'package:args/command_runner.dart';
 import 'package:dcli/dcli.dart';
-import '../exceptions.dart';
+import '../../exceptions.dart';
 
-import '../onepub_settings.dart';
-import '../util/send_command.dart';
+import '../../onepub_settings.dart';
+import '../../util/send_command.dart';
 
 /// onepub Package create  <Package>
 class PackageCreateCommand extends Command<int> {
