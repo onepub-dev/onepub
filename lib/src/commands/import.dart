@@ -4,8 +4,6 @@
  * Written by Brett Sutton <bsutton@onepub.dev>, Jan 2022
  */
 
-import 'dart:io';
-
 import 'package:args/command_runner.dart';
 import 'package:dcli/dcli.dart';
 
@@ -123,8 +121,6 @@ Found: ${argResults!.rest.join(',')}''');
   String fromSecret() {
     print(orange(
         'Importing OnePub secret from ${OnePubTokenStore.onepubSecretEnvKey}'));
-
-    print(Platform.environment);
 
     if (!Env().exists(OnePubTokenStore.onepubSecretEnvKey)) {
       throw ExitException(exitCode: 1, message: '''
