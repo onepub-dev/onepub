@@ -20,8 +20,8 @@ import 'commands/import.dart';
 import 'commands/login.dart';
 import 'commands/logout.dart';
 import 'commands/private.dart';
-import 'commands/global.dart' as onepub;
 
+import 'commands/pub.dart' as onepub;
 import 'exceptions.dart';
 import 'onepub_paths.dart';
 import 'onepub_settings.dart';
@@ -154,7 +154,7 @@ class MyRunner extends CommandRunner<int> implements PubTopLevel {
     addCommand(ExportCommand());
     addCommand(AddPrivateCommand());
     addCommand(PrivateCommand());
-    addCommand(onepub.GlobalCommand());
+    addCommand(onepub.PubCommand());
   }
 
   void install({required bool dev}) {
