@@ -18,15 +18,7 @@ import 'util/log.dart' as ulog;
 Future<void> entrypoint(
     List<String> args, CommandSet commandSet, String program) async {
   try {
-    MyRunner runner = MyRunner(
-        args,
-        program,
-        '''
-
-${orange('OnePub CLI tools')}
-
-You can alter the config by running 'onepub config' or by modifying ${join(HOME, '.onepub', 'onepub.yaml')}''',
-        commandSet);
+    MyRunner runner = MyRunner(args, program, _description, commandSet);
     try {
       runner.init();
       await runner.run(args);
@@ -40,7 +32,7 @@ You can alter the config by running 'onepub config' or by modifying ${join(HOME,
       // ignore: avoid_catches_without_on_clauses
     }
   } on ExitException catch (e) {
-    printerr(e.message);
+    printerr('${red('Error:')} ${e.message}');
     exit(e.exitCode);
     // ignore: avoid_catches_without_on_clauses
   } catch (e) {
@@ -52,3 +44,9 @@ void showUsage(MyRunner runner) {
   runner.printUsage();
   exit(1);
 }
+
+String get _description => '''
+
+${orange('OnePub CLI tools')}
+
+You can alter the config by running 'onepub config' or by modifying ${join(HOME, '.onepub', 'onepub.yaml')}''';
