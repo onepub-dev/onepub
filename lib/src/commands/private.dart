@@ -45,8 +45,10 @@ See https://onepub.dev/publish
 
     final project = DartProject.findProject(pwd);
     if (project == null) {
-      printerr('You must be in a Dart Package directory to run this command.');
-      return;
+      throw ExitException(
+          exitCode: 1,
+          message:
+              'You must be in a Dart Package directory to run this command.');
     }
     OnePubSettings.load();
     if (!exists(OnePubPaths().pathToSettingsDir)) {
