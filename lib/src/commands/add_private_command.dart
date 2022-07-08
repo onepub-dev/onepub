@@ -43,12 +43,16 @@ class AddPrivateCommand extends AddCommand {
 
   bool get hasHostOptions => hostUrl != null;
 
-  AddPrivateCommand() : super(includeSourceOptions: false) {
+  AddPrivateCommand() : super(includeSourceOptions: false);
+
+  @override
+  Future<void> runProtected() async {
     OnePubSettings.load();
 
     if (!OnePubTokenStore().isLoggedIn) {
       throw ExitException(
           exitCode: 1, message: "You must run 'onepub login' first.");
     }
+    super.runProtected();
   }
 }
