@@ -7,9 +7,9 @@
 import 'package:dcli/dcli.dart';
 import 'package:onepub/src/pub/command/add.dart';
 
-import '../exceptions.dart';
-import '../onepub_settings.dart';
-import '../util/one_pub_token_store.dart';
+import '../../exceptions.dart';
+import '../../onepub_settings.dart';
+import '../../util/one_pub_token_store.dart';
 
 /// Handles the `add` pub command. Adds a dependency to `pubspec.yaml` and gets
 /// the package. The user may pass in a git constraint, host url, or path as

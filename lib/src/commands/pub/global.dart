@@ -6,8 +6,8 @@
 import 'package:args/command_runner.dart';
 import 'package:dcli/dcli.dart';
 
-import 'global/activate.dart';
 import 'global/deactivate.dart';
+import 'global/activate.dart';
 
 /// Provides the abilty to work with global packages that are hosted
 /// as private packages on OnePub
@@ -15,7 +15,7 @@ class GlobalCommand extends Command<int> {
   @override
   String get name => 'global';
   @override
-  String get description => blue('Work with global packages hosted on OnePub.');
+  String get description => blue('Work with private global packages.');
 
   ///
   GlobalCommand() : super() {

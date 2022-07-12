@@ -9,11 +9,11 @@ import 'package:args/command_runner.dart';
 import 'package:dcli/dcli.dart';
 import 'package:url_builder/url_builder.dart';
 
-import '../exceptions.dart';
-import '../onepub_paths.dart';
-import '../onepub_settings.dart';
-import '../util/one_pub_token_store.dart';
-import '../util/send_command.dart';
+import '../../exceptions.dart';
+import '../../onepub_paths.dart';
+import '../../onepub_settings.dart';
+import '../../util/one_pub_token_store.dart';
+import '../../util/send_command.dart';
 
 ///
 class PrivateCommand extends Command<int> {

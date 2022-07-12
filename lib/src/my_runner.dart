@@ -11,14 +11,12 @@ import 'package:onepub/src/pub/command.dart';
 import 'package:onepub/src/pub/log.dart' hide red;
 import 'package:onepub/src/util/config.dart';
 
-import 'commands/add_private_command.dart';
 import 'commands/doctor.dart';
 import 'commands/export.dart';
 
 import 'commands/import.dart';
 import 'commands/login.dart';
 import 'commands/logout.dart';
-import 'commands/private.dart';
 
 import 'commands/pub.dart' as onepub;
 import 'exceptions.dart';
@@ -151,8 +149,6 @@ class MyRunner extends CommandRunner<int> implements PubTopLevel {
     addCommand(OnePubLogoutCommand());
     addCommand(ImportCommand());
     addCommand(ExportCommand());
-    addCommand(AddPrivateCommand());
-    addCommand(PrivateCommand());
     addCommand(onepub.PubCommand());
   }
 

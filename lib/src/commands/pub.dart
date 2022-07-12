@@ -6,7 +6,9 @@
 import 'package:args/command_runner.dart';
 import 'package:dcli/dcli.dart';
 
-import 'global.dart';
+import 'pub/add_private.dart';
+import 'pub/global.dart';
+import 'pub/private.dart';
 
 /// Provides the abilty to work with global packages that are hosted
 /// as private packages on OnePub
@@ -19,5 +21,7 @@ class PubCommand extends Command<int> {
   ///
   PubCommand() : super() {
     addSubcommand(GlobalCommand());
+    addSubcommand(AddPrivateCommand());
+    addSubcommand(PrivateCommand());
   }
 }
