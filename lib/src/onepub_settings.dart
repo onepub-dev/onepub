@@ -121,8 +121,6 @@ class OnePubSettings {
   String get organisationName => settings.asString('organisationName');
   String get operatorEmail => settings.asString('operatorEmail');
 
-  static String onepubTokenKey = 'onepubToken';
-
   void save() => settings.save();
 
   String resolveApiEndPoint(String command, {String? queryParams}) {
