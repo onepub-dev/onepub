@@ -9,8 +9,6 @@ import 'package:test/test.dart';
 void main() {
   test('add_dependency ...', () async {
     Settings().setVerbose(enabled: false);
-    // entrypoint(['add', 'node_mgmt_lib', '^0.3.3'], CommandSet.ONEPUB, 'onepub');
-    // entrypoint(['add', 'node_mgmt_lib'], CommandSet.ONEPUB, 'onepub');
 
     var pathToRoot = DartProject.self.pathToProjectRoot;
     var pathToOnePub = join(pathToRoot, 'bin', 'onepub.dart');
@@ -22,7 +20,7 @@ void main() {
       var pubSpec = PubSpec.fromFile(pathToPubSpec);
       expect(pubSpec.dependencies.containsKey('node_mgmt_lib'), isFalse);
 
-      // run add dep
+      // run onepub add <dep>
       var progress = 'dart $pathToOnePub add node_mgmt_lib'
           .start(workingDirectory: workingDir);
       expect(progress.exitCode, equals(0));
