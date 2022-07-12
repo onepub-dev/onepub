@@ -110,11 +110,11 @@
             "console": "terminal"
         },
         {
-            "name": "onepub global activate",
+            "name": "onepub pub global activate",
             "type": "dart",
             "request": "launch",
             "program": "bin/onepub.dart",
-            "args": ["global","activate","dcli"],
+            "args": ["pub", "global","activate","dcli"],
             "console": "terminal"
         },
 

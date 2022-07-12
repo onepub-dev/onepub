@@ -1,4 +1,6 @@
-// Copyright (c) 2020, the Dart project authors.  Please see the AUTHORS file
+// Copyright (c) 2020, the Dart project authors and OnePub IP Pty Ltd
+//
+// Please see the AUTHORS file
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
@@ -36,10 +38,6 @@ class AddPrivateCommand extends AddCommand {
   @override
   bool get isOffline => false;
 
-  String? get gitUrl => null;
-  String? get gitPath => null;
-  String? get gitRef => null;
-  String? get path => null;
 
   bool get hasHostOptions => hostUrl != null;
 

@@ -1,10 +1,9 @@
 #! /usr/bin/env dcli
+
 /* Copyright (C) OnePub IP Pty Ltd - All Rights Reserved
- * Unauthorized copying of this file, via any medium is strictly prohibited
- * Proprietary and confidential
+ * licensed under the GPL v2.
  * Written by Brett Sutton <bsutton@onepub.dev>, Jan 2022
  */
-
 import 'package:dcli/dcli.dart';
 import 'package:onepub/src/entry_point.dart';
 import 'package:onepub/src/my_runner.dart';
