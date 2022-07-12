@@ -20,7 +20,7 @@ class DoctorCommand extends Command<int> {
   DoctorCommand();
 
   @override
-  String get description => 'Displays the onepub settings';
+  String get description => blue('Displays the onepub settings.');
 
   @override
   String get name => 'doctor';

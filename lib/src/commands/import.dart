@@ -20,26 +20,26 @@ class ImportCommand extends Command<int> {
       ..addFlag('file',
           abbr: 'f',
           negatable: false,
-          help: 'Imports the OnePub credentials from onepub.token.yaml')
+          help: 'Imports the OnePub token from onepub.token.yaml')
       ..addFlag('ask',
           abbr: 'a',
           negatable: false,
-          help: 'Prompts the user to enter the ONEPUB_SECRET');
+          help: 'Prompts the user to enter the OnePub token');
   }
 
   @override
   String get description => '''
-Import onepub token.
-Use `onepub export` to obtain the token.
+${blue('Import a OnePub token.')}
+Use `onepub export` to obtain the OnePub token.
 
-  Ask the user to enter the token:
-  onepub import --ask
+  Ask the user to enter the OnePub token:
+  ${green('onepub import --ask')}
 
-  Import the token from the ${OnePubSettings.onepubTokenKey} environment variable
-  onepub import 
+  Import the OnePub token from the ${OnePubTokenStore.onepubSecretEnvKey} environment variable:
+  ${green('onepub import')};
 
-  Import the token from onepub.token.yaml
-  onepub import --file [<path to credentials>] ''';
+  Import the OnePub token from onepub.token.yaml:
+  ${green('onepub import --file [<path to credentials>]')} ''';
 
   @override
   String get name => 'import';

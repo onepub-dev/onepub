@@ -26,8 +26,8 @@ class ExportCommand extends Command<int> {
   }
 
   @override
-  String get description =>
-      'Exports your onepub token or a designated CI/CD user.';
+  String get description => blue(
+      'Exports your OnePub token or the token of a designated CI/CD user.');
 
   @override
   String get name => 'export';

@@ -3,6 +3,7 @@
  * Written by Brett Sutton <bsutton@onepub.dev>, Jan 2022
  */
 
+import 'package:dcli/dcli.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../../exceptions.dart';
@@ -19,7 +20,8 @@ class ActivateCommand extends PubCommand {
   ActivateCommand() : super() {}
 
   @override
-  String get description => "Make a package's executables globally available.";
+  String get description =>
+      blue("Make a package's executables globally available.");
 
   @override
   String get name => 'activate';

@@ -4,6 +4,7 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'package:dcli/dcli.dart';
 import 'package:onepub/src/pub/command/add.dart';
 
 import '../exceptions.dart';
@@ -22,7 +23,7 @@ class AddPrivateCommand extends AddCommand {
   @override
   String get name => 'add';
   @override
-  String get description => 'Add private dependencies to pubspec.yaml.';
+  String get description => blue('Add private dependencies to pubspec.yaml.');
   @override
   String get argumentsDescription =>
       '<package>[:<constraint>] [<package2>[:<constraint2>]...] [options]';
@@ -37,7 +38,6 @@ class AddPrivateCommand extends AddCommand {
 
   @override
   bool get isOffline => false;
-
 
   bool get hasHostOptions => hostUrl != null;
 

@@ -4,6 +4,7 @@
  */
 
 import 'package:args/command_runner.dart';
+import 'package:dcli/dcli.dart';
 
 import 'global.dart';
 
@@ -13,7 +14,7 @@ class PubCommand extends Command<int> {
   @override
   String get name => 'pub';
   @override
-  String get description => 'Work with packages.';
+  String get description => blue('Work with packages.');
 
   ///
   PubCommand() : super() {

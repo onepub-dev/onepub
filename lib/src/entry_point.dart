@@ -45,7 +45,4 @@ void showUsage(MyRunner runner) {
 }
 
 String get _description => '''
-
-${orange('OnePub CLI tools')}
-
-You can alter the config by running 'onepub config' or by modifying ${join(HOME, '.onepub', 'onepub.yaml')}''';
+${orange('OnePub CLI tools')}''';

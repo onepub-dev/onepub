@@ -4,6 +4,7 @@
  */
 
 import 'package:args/command_runner.dart';
+import 'package:dcli/dcli.dart';
 
 import 'global/activate.dart';
 import 'global/deactivate.dart';
@@ -14,7 +15,7 @@ class GlobalCommand extends Command<int> {
   @override
   String get name => 'global';
   @override
-  String get description => 'Work with global packages hosted on OnePub.';
+  String get description => blue('Work with global packages hosted on OnePub.');
 
   ///
   GlobalCommand() : super() {

@@ -14,7 +14,7 @@ import '../../pub/system_cache.dart';
 /// and then addes it
 class DeactivateCommand extends PubCommand {
   @override
-  String get description => "Remove a previously activated package.";
+  String get description => blue('Remove a previously activated package.');
 
   @override
   String get name => 'deactivate';

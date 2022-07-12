@@ -7,6 +7,7 @@ import 'dart:io';
 
 import 'package:args/command_runner.dart';
 import 'package:dcli/dcli.dart';
+import 'package:url_builder/url_builder.dart';
 
 import '../exceptions.dart';
 import '../onepub_paths.dart';
@@ -21,10 +22,10 @@ class PrivateCommand extends Command<int> {
 
   @override
   String get description => '''
-Marks the current package as a private package.
+${blue('Marks the current package as a private package.')}
+
 Private packages are published to your OnePub private repository.
-See https://onepub.dev/publish
-      ''';
+See ${urlJoin(OnePubSettings().onepubWebUrl, 'publish')}''';
 
   @override
   String get name => 'private';
@@ -88,7 +89,7 @@ ${pubspecUpdated.name} has been marked as a private package for the organisation
 
 Run 'dart/flutter pub publish' to publish ${pubspecUpdated.name} to OnePub
 
-See ${OnePubSettings().onepubWebUrl}/publish
+See ${urlJoin(OnePubSettings().onepubWebUrl, 'publish')}
 ''');
   }
 

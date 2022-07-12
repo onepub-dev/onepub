@@ -19,7 +19,7 @@ class OnePubLogoutCommand extends Command<int> {
   OnePubLogoutCommand();
 
   @override
-  String get description => 'Log out of OnePub CLI on all your devices.';
+  String get description => blue('Log out of OnePub CLI on all your devices.');
 
   @override
   String get name => 'logout';
