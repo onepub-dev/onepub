@@ -10,6 +10,7 @@ import 'package:meta/meta.dart';
 import 'package:onepub/src/pub/source/hosted.dart';
 import 'package:settings_yaml/settings_yaml.dart';
 import 'package:yaml/yaml.dart';
+import 'package:url_builder/url_builder.dart';
 
 import 'onepub_paths.dart';
 import 'util/log.dart';
@@ -138,32 +139,6 @@ class OnePubSettings {
 
     if (queryParams != null) {
       endpoint += '?$queryParams';
-    }
-    return endpoint;
-  }
-
-  String urlJoin(String part1, String part2, [String? part3, String? part4]) {
-    var endpoint = urlStrip(part1);
-
-    endpoint = urlJoin2(endpoint, part2);
-    if (part3 != null) endpoint = urlJoin2(endpoint, part3);
-    if (part4 != null) endpoint = urlJoin2(endpoint, part4);
-    return endpoint;
-  }
-
-  String urlJoin2(String part1, String part2) {
-    return '${urlStrip(part1)}/${urlStrip(part2)}';
-  }
-
-  String urlStrip(String part1) {
-    String endpoint;
-    if (part1.startsWith('/')) {
-      endpoint = part1.substring(1);
-    } else {
-      endpoint = part1;
-    }
-    if (endpoint.endsWith('/')) {
-      endpoint = endpoint.substring(0, endpoint.length - 1);
     }
     return endpoint;
   }
