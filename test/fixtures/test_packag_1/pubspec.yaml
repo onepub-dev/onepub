@@ -1,15 +1,9 @@
 name: test_packag_1
 description: A simple command-line application.
 version: 1.0.0
-publish_to: https://onepub.dev
-# homepage: https://www.example.com
 
 environment:
-  sdk: '>=2.16.0-134.1.beta <3.0.0'
-
-
-# dependencies:
-#   path: ^1.8.0
+  sdk: '>=2.12.0 <3.0.0'
 
 dev_dependencies:
   lint_hard: ^1.0.0
