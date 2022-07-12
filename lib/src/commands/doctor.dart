@@ -43,6 +43,7 @@ class DoctorCommand extends Command<int> {
 
     print(blue('\nEnvironment'));
     envStatus('PUB_CACHE');
+    envStatus('PATH');
 
     tokenStatus();
 
@@ -53,14 +54,14 @@ class DoctorCommand extends Command<int> {
 
   void envStatus(String key) {
     if (Env().exists(key)) {
-      print('$key=${env[key]}');
+      print('$key: ${env[key]}');
     } else {
-      print('$key not found.');
+      print('$key: not set.');
     }
   }
 
   Future<void> _status() async {
-    print(blue('\nStatus'));
+    print(blue('Status'));
     if (OnePubTokenStore().isLoggedIn) {
       print('Logged In: true');
       print('Member: ${OnePubSettings().operatorEmail}');
