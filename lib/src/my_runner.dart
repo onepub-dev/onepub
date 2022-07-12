@@ -87,7 +87,7 @@ class MyRunner extends CommandRunner<int> implements PubTopLevel {
 
   void opubCommands() {
     argParser.addFlag('version', negatable: false, help: 'Print pub version.');
-    argParser.addFlag('debug', abbr: 'd', help: 'Enable versbose logging');
+    argParser.addFlag('debug', abbr: 'd', help: 'Enable verbose logging');
     argParser.addFlag('trace',
         help: 'Print debugging information when an error occurs.');
     argParser
@@ -137,7 +137,7 @@ class MyRunner extends CommandRunner<int> implements PubTopLevel {
   }
 
   void onepubCommands(CommandSet commandSet) {
-    argParser.addFlag('debug', abbr: 'd', help: 'Enable versbose logging');
+    argParser.addFlag('debug', abbr: 'd', help: 'Enable verbose logging');
     argParser.addFlag('version',
         help: 'Displays the onepub version no. and exits.');
 
