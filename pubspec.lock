@@ -491,6 +491,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.0.0"
+  url_builder:
+    dependency: "direct main"
+    description:
+      name: url_builder
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "1.0.0"
   usage:
     dependency: "direct main"
     description:
