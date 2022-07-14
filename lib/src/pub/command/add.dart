@@ -338,38 +338,43 @@ class AddCommand extends PubCommand {
     }
 
     /// The package to be added.
-    late final PackageRef ref;
-    final path = this.path;
-    if (hasGitOptions) {
-      final gitUrl = this.gitUrl;
-      if (gitUrl == null) {
-        usageException('The `--git-url` is required for git dependencies.');
-      }
-      Uri parsed;
-      try {
-        parsed = Uri.parse(gitUrl);
-      } on FormatException catch (e) {
-        usageException('The --git-url must be a valid url: ${e.message}.');
-      }
+    PackageRef? ref;
+    String? path = null;
+    if (includeSourceOptions) {
+      path = this.path;
+      if (hasGitOptions) {
+        final gitUrl = this.gitUrl;
+        if (gitUrl == null) {
+          usageException('The `--git-url` is required for git dependencies.');
+        }
+        Uri parsed;
+        try {
+          parsed = Uri.parse(gitUrl);
+        } on FormatException catch (e) {
+          usageException('The --git-url must be a valid url: ${e.message}.');
+        }
 
-      /// Process the git options to return the simplest representation to be
-      /// added to the pubspec.
+        /// Process the git options to return the simplest representation to be
+        /// added to the pubspec.
 
-      ref = PackageRef(
-        packageName,
-        GitDescription(
-          url: parsed.toString(),
-          containingDir: p.current,
-          ref: gitRef,
-          path: gitPath,
-        ),
-      );
-    } else if (path != null) {
-      ref = PackageRef(
-          packageName, PathDescription(p.absolute(path), p.isRelative(path)));
-    } else if (includeSourceOptions && sdk != null) {
-      ref = cache.sdk.parseRef(packageName, sdk);
-    } else {
+        ref = PackageRef(
+          packageName,
+          GitDescription(
+            url: parsed.toString(),
+            containingDir: p.current,
+            ref: gitRef,
+            path: gitPath,
+          ),
+        );
+      } else if (path != null) {
+        ref = PackageRef(
+            packageName, PathDescription(p.absolute(path), p.isRelative(path)));
+      } else if (includeSourceOptions && sdk != null) {
+        ref = cache.sdk.parseRef(packageName, sdk);
+      }
+    }
+
+    if (ref == null) {
       ref = PackageRef(
         packageName,
         HostedDescription(
