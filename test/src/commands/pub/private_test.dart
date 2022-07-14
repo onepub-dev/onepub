@@ -4,29 +4,31 @@
  */
 
 import 'package:dcli/dcli.dart' hide equals;
+import 'package:onepub/src/entry_point.dart';
+import 'package:onepub/src/my_runner.dart';
 import 'package:onepub/src/onepub_settings.dart';
 import 'package:onepub/src/version/version.g.dart';
+import 'package:scope/scope.dart';
 import 'package:test/test.dart';
 import 'package:url_builder/url_builder.dart';
 
-import 'cmd_runner.dart';
+import '../test_utils.dart';
 
 void main() {
-  test('private ...', () async {
-    var pathToRoot = DartProject.self.pathToProjectRoot;
+  test('cli: private ...', () async {
     var settings = OnePubSettings.load();
+
     final organisationName = settings.organisationName;
+    final packageName = 'test_packag_1';
 
-    withTempDir((workingDir) {
-      final packageName = 'test_packag_1';
-      copyTree(join(pathToRoot, 'test', 'fixtures', packageName), workingDir);
+    withTempProject(packageName, (dartProject) {
+      expect(dartProject.pubSpec.pubspec.publishTo, isNull);
 
-      var pathToPubSpec = join(workingDir, 'pubspec.yaml');
-      var pubSpec = PubSpec.fromFile(pathToPubSpec);
-      expect(pubSpec.pubspec.publishTo, isNull);
+      final size = stat(dartProject.pathToPubSpec).size;
 
       // run onepub private
-      var clean = runCmd('private', workingDirectory: workingDir);
+      var clean = runCmd('pub private',
+          workingDirectory: dartProject.pathToProjectRoot);
       var first = clean.first;
       expect(first, 'OnePub version: $packageVersion ');
 
@@ -44,11 +46,27 @@ void main() {
               'See ${urlJoin(OnePubSettings().onepubWebUrl, 'publish')}'),
           isTrue);
 
-      pubSpec = PubSpec.fromFile(pathToPubSpec);
+      final pubSpec = PubSpec.fromFile(dartProject.pathToPubSpec);
       expect(
           pubSpec.pubspec.publishTo.toString(),
           equals(
               '${urlJoin(settings.onepubApiUrl, settings.obfuscatedOrganisationId)}/'));
+
+      expect(stat(dartProject.pathToPubSpec).size, greaterThan(size));
+    });
+  });
+
+  test('cli: entrypoint ...', () async {
+    final packageName = 'test_packag_1';
+    withTempProject(packageName, (dartProject) {
+      final size = stat(dartProject.pathToPubSpec).size;
+      Scope()
+        ..value(unitTestWorkingDirectoryKey, dartProject.pathToProjectRoot)
+        ..run(() {
+          waitForEx(
+              entrypoint(['pub', 'private'], CommandSet.ONEPUB, 'onepub'));
+        });
+      expect(stat(dartProject.pathToPubSpec).size, greaterThan(size));
     });
   });
 }

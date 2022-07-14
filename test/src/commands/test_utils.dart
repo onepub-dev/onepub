@@ -24,3 +24,18 @@ List<String> runCmd(String command, {String? workingDirectory}) {
 
   return clean;
 }
+
+/// Creates a dart project in a temp directory from one of the
+/// test fixtures under test/fixtures. Pass the fixture directory
+/// as the [packageName].
+void withTempProject(
+    String projectName, void Function(DartProject dartProject) action) {
+  var pathToRoot = DartProject.self.pathToProjectRoot;
+  withTempDir((workingDir) {
+    copyTree(join(pathToRoot, 'test', 'fixtures', projectName), workingDir);
+
+    action(DartProject.fromPath(workingDir));
+  });
+}
+
+var pathToOnePubScript = join(DartProject.self.pathToBinDir, 'onepub.dart');

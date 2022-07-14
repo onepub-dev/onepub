@@ -10,5 +10,5 @@ import 'package:test/test.dart';
 void main() {
   test('logout ...', () async {
     await entrypoint(['logout'], CommandSet.ONEPUB, 'onepub');
-  });
+  }, tags: ['manual']);
 }

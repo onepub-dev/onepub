@@ -7,14 +7,16 @@ import 'package:onepub/src/onepub_settings.dart';
 import 'package:onepub/src/version/version.g.dart';
 import 'package:test/test.dart';
 
-import 'cmd_runner.dart';
+import 'test_utils.dart';
 
 void main() {
   test('onepub import --file', () async {
+    runCmd('export --file ');
     var clean = runCmd('import --file ');
 
     var settings = OnePubSettings.load();
     final organisationName = settings.organisationName;
+
 
     var first = clean.first;
     expect(first, 'OnePub version: $packageVersion ');

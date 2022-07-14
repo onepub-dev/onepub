@@ -6,7 +6,7 @@
 import 'package:onepub/src/version/version.g.dart';
 import 'package:test/test.dart';
 
-import 'cmd_runner.dart';
+import 'test_utils.dart';
 
 void main() {
   test('onepub doctor ...', () async {
