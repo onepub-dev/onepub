@@ -50,9 +50,7 @@ class OnePubTokenStore {
     return credentials.token!;
   }
 
-  Iterable<Credential> get credentials {
-    return tokenStore.credentials;
-  }
+  Iterable<Credential> get credentials => tokenStore.credentials;
 
   /// Removes the onepub token from the pub token store.
   void clearOldTokens() {

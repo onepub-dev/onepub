@@ -12,7 +12,7 @@ class OnePubPaths {
 
   OnePubPaths._internal(this._settingsRoot);
 
-  static OnePubPaths _self = OnePubPaths._internal(HOME);
+  static final OnePubPaths _self = OnePubPaths._internal(HOME);
 
   /// Path to the .batman settings directory
   String get pathToSettingsDir {
@@ -26,7 +26,7 @@ class OnePubPaths {
   }
 
   String get pathToTestSettings {
-    var pathToTest = DartProject.self.pathToTestDir;
+    final pathToTest = DartProject.self.pathToTestDir;
 
     return join(pathToTest, 'test_settings.yaml');
   }

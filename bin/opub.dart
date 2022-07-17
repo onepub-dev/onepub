@@ -8,5 +8,5 @@ import 'package:onepub/src/entry_point.dart';
 import 'package:onepub/src/my_runner.dart';
 
 void main(List<String> arguments) async {
-  await entrypoint(arguments, CommandSet.OPUB, 'onepub');
+  await entrypoint(arguments, CommandSet.opub, 'onepub');
 }

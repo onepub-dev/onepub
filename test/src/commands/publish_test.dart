@@ -8,6 +8,6 @@ import 'package:test/test.dart';
 
 void main() {
   test('logout ...', () async {
-    await entrypoint(['publish'], CommandSet.OPUB, 'opub');
+    await entrypoint(['publish'], CommandSet.opub, 'opub');
   });
 }

@@ -13,15 +13,14 @@ import 'pub/private.dart';
 /// Provides the abilty to work with global packages that are hosted
 /// as private packages on OnePub
 class PubCommand extends Command<int> {
-  @override
-  String get name => 'pub';
-  @override
-  String get description => blue('Work with packages.');
-
   ///
   PubCommand() : super() {
     addSubcommand(GlobalCommand());
     addSubcommand(AddPrivateCommand());
     addSubcommand(PrivateCommand());
   }
+  @override
+  String get name => 'pub';
+  @override
+  String get description => blue('Work with packages.');
 }

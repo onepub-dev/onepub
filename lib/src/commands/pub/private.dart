@@ -21,7 +21,7 @@ import '../../util/send_command.dart';
 ///
 class PrivateCommand extends Command<int> {
   ///
-  PrivateCommand() {}
+  PrivateCommand();
 
   @override
   bool get takesArguments => false;

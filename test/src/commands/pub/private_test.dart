@@ -16,10 +16,10 @@ import '../test_utils.dart';
 
 void main() {
   test('cli: private ...', () async {
-    var settings = OnePubSettings.load();
+    final settings = OnePubSettings.load();
 
     final organisationName = settings.organisationName;
-    final packageName = 'test_packag_1';
+    const packageName = 'test_packag_1';
 
     withTempProject(packageName, (dartProject) {
       expect(dartProject.pubSpec.pubspec.publishTo, isNull);
@@ -27,14 +27,15 @@ void main() {
       final size = stat(dartProject.pathToPubSpec).size;
 
       // run onepub private
-      var clean = runCmd('pub private',
+      final clean = runCmd('pub private',
           workingDirectory: dartProject.pathToProjectRoot);
-      var first = clean.first;
+      final first = clean.first;
       expect(first, 'OnePub version: $packageVersion ');
 
       expect(
           clean.contains(
-              '$packageName has been marked as a private package for the organisation $organisationName.'),
+              '$packageName has been marked as a private package for the '
+              'organisation $organisationName.'),
           isTrue);
 
       expect(
@@ -57,14 +58,14 @@ void main() {
   });
 
   test('cli: entrypoint ...', () async {
-    final packageName = 'test_packag_1';
+    const packageName = 'test_packag_1';
     withTempProject(packageName, (dartProject) {
       final size = stat(dartProject.pathToPubSpec).size;
       Scope()
         ..value(unitTestWorkingDirectoryKey, dartProject.pathToProjectRoot)
         ..run(() {
           waitForEx(
-              entrypoint(['pub', 'private'], CommandSet.ONEPUB, 'onepub'));
+              entrypoint(['pub', 'private'], CommandSet.onepub, 'onepub'));
         });
       expect(stat(dartProject.pathToPubSpec).size, greaterThan(size));
     });

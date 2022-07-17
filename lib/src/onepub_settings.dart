@@ -7,12 +7,12 @@ import 'dart:math';
 
 import 'package:dcli/dcli.dart';
 import 'package:meta/meta.dart';
-import 'package:onepub/src/pub/source/hosted.dart';
 import 'package:settings_yaml/settings_yaml.dart';
-import 'package:yaml/yaml.dart';
 import 'package:url_builder/url_builder.dart';
+import 'package:yaml/yaml.dart';
 
 import 'onepub_paths.dart';
+import 'pub/source/hosted.dart';
 import 'util/log.dart';
 
 void loadSettings() {
@@ -60,7 +60,7 @@ class OnePubSettings {
   late final SettingsYaml settings;
 
   /// Path to the onepub onepub.yaml file.
-  static late final String pathToSettings =
+  static final String pathToSettings =
       join(OnePubPaths().pathToSettingsDir, 'onepub.yaml');
 
   static const String defaultOnePubUrl = 'https://onepub.dev';

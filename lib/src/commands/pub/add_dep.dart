@@ -5,10 +5,10 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'package:dcli/dcli.dart';
-import 'package:onepub/src/pub/command/add.dart';
 
 import '../../exceptions.dart';
 import '../../onepub_settings.dart';
+import '../../pub/command/add.dart';
 import '../../util/one_pub_token_store.dart';
 
 /// Handles the `add` pub command. Adds a dependency to `pubspec.yaml` and gets
@@ -20,6 +20,7 @@ import '../../util/one_pub_token_store.dart';
 ///
 /// Currently supports only adding one dependency at a time.
 class AddPrivateCommand extends AddCommand {
+  AddPrivateCommand() : super(includeSourceOptions: false);
   @override
   String get name => 'add';
   @override
@@ -40,9 +41,8 @@ class AddPrivateCommand extends AddCommand {
   @override
   bool get isOffline => false;
 
+  @override
   bool get hasHostOptions => hostUrl != null;
-
-  AddPrivateCommand() : super(includeSourceOptions: false);
 
   @override
   Future<void> runProtected() async {

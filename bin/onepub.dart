@@ -14,5 +14,5 @@ void main(List<String> arguments) async {
 
   print('');
 
-  await entrypoint(arguments, CommandSet.ONEPUB, 'onepub');
+  await entrypoint(arguments, CommandSet.onepub, 'onepub');
 }

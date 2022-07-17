@@ -10,7 +10,7 @@ class TestSettings {
   late final SettingsYaml _settings;
 
   String get member => _settings.asString('member');
-  String get cicd_member => _settings.asString('cicd_member');
+  String get cicdMember => _settings.asString('cicd_member');
 
   String get onepubToken => _settings.asString('onepub_token');
 }

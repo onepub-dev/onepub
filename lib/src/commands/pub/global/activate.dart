@@ -17,7 +17,7 @@ import '../../../util/one_pub_token_store.dart';
 /// and then addes it
 class ActivateCommand extends PubCommand {
   ///
-  ActivateCommand() : super() {}
+  ActivateCommand() : super();
 
   @override
   String get description =>
@@ -27,8 +27,11 @@ class ActivateCommand extends PubCommand {
   String get name => 'activate';
 
   GlobalPackages? _globals;
-  late final SystemCache cache = SystemCache(isOffline: false);
+  @override
+  // ignore: overridden_fields
+  late final SystemCache cache = SystemCache();
 
+  @override
   GlobalPackages get globals => _globals ??= GlobalPackages(cache);
 
   late Iterable<String> args = argResults.rest;
@@ -46,7 +49,7 @@ run: onepub login
 
     final hostedUrl = OnePubSettings().onepubHostedUrl().toString();
 
-    var package = readArg('No package to activate given.');
+    final package = readArg('No package to activate given.');
 
     // Parse the version constraint, if there is one.
     var constraint = VersionConstraint.any;
@@ -58,7 +61,7 @@ run: onepub login
       }
     }
 
-    return await globals.activateHosted(
+    return globals.activateHosted(
       package,
       constraint,
       null, // all executables
@@ -71,7 +74,7 @@ run: onepub login
 
   String readArg([String error = '']) {
     if (args.isEmpty) usageException(error);
-    var arg = args.first;
+    final arg = args.first;
     args = args.skip(1);
     return arg;
   }

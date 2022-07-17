@@ -22,7 +22,7 @@ void main() {
         ..value(scopeKeyPathToSettings, pathToOnePubSettings)
         ..run(() {
           final onepubToken = testSettings.onepubToken;
-          var settings = OnePubSettings.load();
+          final settings = OnePubSettings.load();
           final organisationName = settings.organisationName;
 
           try {
@@ -31,9 +31,9 @@ void main() {
 onepubToken: "$onepubToken"
 ''');
             runCmd('export --file ');
-            var clean = runCmd('import --file ');
+            final clean = runCmd('import --file ');
 
-            var first = clean.first;
+            final first = clean.first;
             expect(first, 'OnePub version: $packageVersion ');
 
             expect(
@@ -45,11 +45,11 @@ onepubToken: "$onepubToken"
                     'Add the following environment variable to your CI/CD secrets.'),
                 isTrue);
 
-            var last = clean[(clean.length - 2)];
+            final last = clean[(clean.length - 2)];
             expect(last.startsWith('ONEPUB_SECRET='), isTrue);
 
             // check the secret has a guid
-            var parts = last.split('=');
+            final parts = last.split('=');
             expect(parts.length, equals(2));
             expect(parts[1].length, equals(36));
           } on DCliException {}

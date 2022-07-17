@@ -55,7 +55,8 @@ ${green('onepub import --ask')}
     }
 
     try {
-      final tempAuthTokenResponse = await breadButterAuth();
+      final bb = BreadButter();
+      final tempAuthTokenResponse = await bb.auth();
       if (tempAuthTokenResponse == null) {
         throw ExitException(
             exitCode: 1, message: 'Invalid response. onePubToken not returned');
@@ -108,11 +109,10 @@ ${green('onepub import --ask')}
     print(red(error));
   }
 
-  bool inSSH() {
-    return Env().exists('SSH_CLIENT') ||
-        Env().exists('SSH_CONNECTION') ||
-        Env().exists('SSH_TTY');
-  }
+  bool inSSH() =>
+      Env().exists('SSH_CLIENT') ||
+      Env().exists('SSH_CONNECTION') ||
+      Env().exists('SSH_TTY');
 }
 
 void showWelcome(

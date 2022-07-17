@@ -21,17 +21,21 @@ class DeactivateCommand extends PubCommand {
   String get name => 'deactivate';
 
   GlobalPackages? _globals;
-  late final SystemCache cache = SystemCache(isOffline: false);
+  @override
+  // ignore: overridden_fields
+  late final SystemCache cache = SystemCache();
 
+  @override
   GlobalPackages get globals => _globals ??= GlobalPackages(cache);
 
   late Iterable<String> args = argResults.rest;
 
   ///
+  @override
   Future<void> runProtected() async {
     OnePubSettings.load();
 
-    var package = readArg('No package to deactivate given.');
+    final package = readArg('No package to deactivate given.');
 
     if (!globals.deactivate(
       package,
@@ -40,7 +44,7 @@ class DeactivateCommand extends PubCommand {
 
   String readArg([String error = '']) {
     if (args.isEmpty) usageException(error);
-    var arg = args.first;
+    final arg = args.first;
     args = args.skip(1);
     return arg;
   }

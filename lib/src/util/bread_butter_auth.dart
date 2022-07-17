@@ -16,16 +16,19 @@ import 'package:shelf/shelf_io.dart' as shelf_io;
 import '../onepub_settings.dart';
 import 'send_command.dart';
 
-int _port = 42666;
+class BreadButter {
+  final int _port = 42666;
+  late final HttpServer server;
+  late final Completer<EndpointResponse?> completer;
 
-/// Return the auth token or null if the auth failed.
-Future<EndpointResponse?> breadButterAuth() async {
-  final onepubUrl = OnePubSettings.load().onepubWebUrl;
-  final authUrl = OnePubSettings().resolveWebEndPoint('clilogin');
+  /// Return the auth token or null if the auth failed.
+  Future<EndpointResponse?> auth() async {
+    final onepubUrl = OnePubSettings.load().onepubWebUrl;
+    final authUrl = OnePubSettings().resolveWebEndPoint('clilogin');
 
-  final encodedUrl = Uri.encodeFull(authUrl);
+    final encodedUrl = Uri.encodeFull(authUrl);
 
-  print('''
+    print('''
 To login to OnePub.
 
 From a web browser, go to 
@@ -33,18 +36,37 @@ ${blue(encodedUrl)}
 
 Waiting for your authorisation...''');
 
-  return _waitForResponse(onepubUrl);
-}
+    return _waitForResponse(onepubUrl);
+  }
 
-/// Returns a map with the response
-Future<EndpointResponse?> _waitForResponse(
-  String onepubWebUrl,
+  /// Returns a map with the response
+  Future<EndpointResponse?> _waitForResponse(
+    String onepubWebUrl,
 
-  // oauth2.AuthorizationCodeGrant grant
-) async {
-  final completer = Completer<EndpointResponse?>();
-  final server = await bindServer(_port);
-  var handlerCascade = (request) async {
+    // oauth2.AuthorizationCodeGrant grant
+  ) async {
+    completer = Completer<EndpointResponse?>();
+    server = await bindServer(_port);
+
+    final onepuburl = OnePubSettings().onepubUrl;
+    final headers = {'Access-Control-Allow-Origin': onepuburl!};
+    shelf.Response _cors(shelf.Response response) =>
+        response.change(headers: headers);
+
+    final _fixCORS = shelf.createMiddleware(responseHandler: _cors);
+
+// Pipeline handlers
+    final handler = const shelf.Pipeline()
+        .addMiddleware(_fixCORS)
+        //.addMiddleware(shelf.logRequests())
+        .addHandler(_oauthHandler);
+
+    shelf_io.serveRequests(server, handler);
+
+    return completer.future;
+  }
+
+  FutureOr<shelf.Response> _oauthHandler(shelf.Request request) async {
     await server.close();
 
     try {
@@ -82,61 +104,44 @@ Future<EndpointResponse?> _waitForResponse(
 
       return shelf.Response.internalServerError(body: e.toString());
     }
-  };
+  }
 
-  final onepuburl = OnePubSettings().onepubUrl;
-  var headers = {"Access-Control-Allow-Origin": onepuburl!};
-  shelf.Response _cors(shelf.Response response) =>
-      response.change(headers: headers);
+  /// Bind local server to handle oauth redirect
+  Future<HttpServer> bindServer(int port) async {
+    final server = await HttpMultiServer.loopback(port);
+    server.autoCompress = true;
+    return server;
+  }
 
-  shelf.Middleware _fixCORS = shelf.createMiddleware(responseHandler: _cors);
-
-// Pipeline handlers
-  final handler = const shelf.Pipeline()
-      .addMiddleware(_fixCORS)
-      //.addMiddleware(shelf.logRequests())
-      .addHandler(handlerCascade);
-
-  shelf_io.serveRequests(server, handler);
-
-  return completer.future;
-}
-
-/// Bind local server to handle oauth redirect
-Future<HttpServer> bindServer(int port) async {
-  final server = await HttpMultiServer.loopback(port);
-  server.autoCompress = true;
-  return server;
-}
-
-Map<String, String> queryToMap(String queryList) {
-  final map = <String, String>{};
-  for (final pair in queryList.split('&')) {
-    final split = _split(pair, '=');
-    if (split.isEmpty) {
-      continue;
+  Map<String, String> queryToMap(String queryList) {
+    final map = <String, String>{};
+    for (final pair in queryList.split('&')) {
+      final split = _split(pair, '=');
+      if (split.isEmpty) {
+        continue;
+      }
+      final key = _urlDecode(split[0]);
+      final value = split.length > 1 ? _urlDecode(split[1]) : '';
+      map[key] = value;
     }
-    final key = _urlDecode(split[0]);
-    final value = split.length > 1 ? _urlDecode(split[1]) : '';
-    map[key] = value;
+    return map;
   }
-  return map;
+
+  List<String> _split(String toSplit, String pattern) {
+    if (toSplit.isEmpty) {
+      return <String>[];
+    }
+
+    final index = toSplit.indexOf(pattern);
+    if (index == -1) {
+      return [toSplit];
+    }
+    return [
+      toSplit.substring(0, index),
+      toSplit.substring(index + pattern.length)
+    ];
+  }
+
+  String _urlDecode(String encoded) =>
+      Uri.decodeComponent(encoded.replaceAll('+', ' '));
 }
-
-List<String> _split(String toSplit, String pattern) {
-  if (toSplit.isEmpty) {
-    return <String>[];
-  }
-
-  final index = toSplit.indexOf(pattern);
-  if (index == -1) {
-    return [toSplit];
-  }
-  return [
-    toSplit.substring(0, index),
-    toSplit.substring(index + pattern.length)
-  ];
-}
-
-String _urlDecode(String encoded) =>
-    Uri.decodeComponent(encoded.replaceAll('+', ' '));

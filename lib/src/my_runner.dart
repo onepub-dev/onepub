@@ -8,26 +8,20 @@ import 'dart:io';
 import 'package:args/command_runner.dart';
 import 'package:dcli/dcli.dart';
 import 'package:scope/scope.dart';
-import 'package:onepub/src/pub/command.dart';
-import 'package:onepub/src/pub/log.dart' hide red;
-import 'package:onepub/src/util/config.dart';
 
 import 'commands/doctor.dart';
 import 'commands/export.dart';
-
 import 'commands/import.dart';
 import 'commands/login.dart';
 import 'commands/logout.dart';
-
 import 'commands/pub.dart' as onepub;
 import 'entry_point.dart';
 import 'exceptions.dart';
 import 'onepub_paths.dart';
 import 'onepub_settings.dart';
+import 'pub/command.dart';
 import 'pub/command/add.dart';
-
 import 'pub/command/cache.dart';
-
 import 'pub/command/deps.dart';
 import 'pub/command/downgrade.dart';
 import 'pub/command/get.dart';
@@ -43,11 +37,12 @@ import 'pub/command/upgrade.dart';
 import 'pub/command/uploader.dart';
 import 'pub/command/version.dart';
 import 'pub/io.dart';
+import 'pub/log.dart' hide red;
 import 'pub/log.dart' as plog;
-
+import 'util/config.dart';
 import 'version/version.g.dart';
 
-enum CommandSet { OPUB, ONEPUB }
+enum CommandSet { opub, onepub }
 
 ///
 ///
@@ -57,10 +52,10 @@ class MyRunner extends CommandRunner<int> implements PubTopLevel {
       : super(executableName, description) {
     try {
       switch (commandSet) {
-        case CommandSet.ONEPUB:
+        case CommandSet.onepub:
           onepubCommands(commandSet);
           break;
-        case CommandSet.OPUB:
+        case CommandSet.opub:
           opubCommands();
       }
     } on FormatException catch (e) {
@@ -80,43 +75,43 @@ class MyRunner extends CommandRunner<int> implements PubTopLevel {
       exit(0);
     }
 
-    if (commandSet == CommandSet.ONEPUB) {
+    if (commandSet == CommandSet.onepub) {
       install(dev: results['dev'] as bool);
     }
   }
 
   void opubCommands() {
-    argParser.addFlag('version', negatable: false, help: 'Print pub version.');
-    argParser.addFlag('debug',
-        negatable: false, abbr: 'd', help: 'Enable verbose logging');
-    argParser.addFlag('trace',
-        negatable: false,
-        help: 'Print debugging information when an error occurs.');
     argParser
-        .addOption('verbosity', help: 'Control output verbosity.', allowed: [
-      'error',
-      'warning',
-      'normal',
-      'io',
-      'solver',
-      'all'
-    ], allowedHelp: {
-      'error': 'Show only errors.',
-      'warning': 'Show only errors and warnings.',
-      'normal': 'Show errors, warnings, and user messages.',
-      'io': 'Also show IO operations.',
-      'solver': 'Show steps during version resolution.',
-      'all': 'Show all output including internal tracing messages.'
-    });
-    argParser.addFlag('verbose',
-        abbr: 'v', negatable: false, help: 'Shortcut for "--verbosity=all".');
-    argParser.addOption(
-      'directory',
-      abbr: 'C',
-      help: 'Run the subcommand in the directory<dir>.',
-      defaultsTo: '.',
-      valueHelp: 'dir',
-    );
+      ..addFlag('version', negatable: false, help: 'Print pub version.')
+      ..addFlag('debug',
+          negatable: false, abbr: 'd', help: 'Enable verbose logging')
+      ..addFlag('trace',
+          negatable: false,
+          help: 'Print debugging information when an error occurs.')
+      ..addOption('verbosity', help: 'Control output verbosity.', allowed: [
+        'error',
+        'warning',
+        'normal',
+        'io',
+        'solver',
+        'all'
+      ], allowedHelp: {
+        'error': 'Show only errors.',
+        'warning': 'Show only errors and warnings.',
+        'normal': 'Show errors, warnings, and user messages.',
+        'io': 'Also show IO operations.',
+        'solver': 'Show steps during version resolution.',
+        'all': 'Show all output including internal tracing messages.'
+      })
+      ..addFlag('verbose',
+          abbr: 'v', negatable: false, help: 'Shortcut for "--verbosity=all".')
+      ..addOption(
+        'directory',
+        abbr: 'C',
+        help: 'Run the subcommand in the directory<dir>.',
+        defaultsTo: '.',
+        valueHelp: 'dir',
+      );
     addCommand(LishCommand());
     addCommand(GetCommand());
     addCommand(AddCommand());
@@ -139,16 +134,16 @@ class MyRunner extends CommandRunner<int> implements PubTopLevel {
   }
 
   void onepubCommands(CommandSet commandSet) {
-    argParser.addFlag('debug',
-        negatable: false, abbr: 'd', help: 'Enable verbose logging');
-    argParser.addFlag('version',
-        negatable: false, help: 'Displays the onepub version no. and exits.');
-
-    argParser.addFlag('dev',
-        hide: true,
-        negatable: false,
-        help: 'Allows for configuration of localhost for '
-            'use in a development environment.');
+    argParser
+      ..addFlag('debug',
+          negatable: false, abbr: 'd', help: 'Enable verbose logging')
+      ..addFlag('version',
+          negatable: false, help: 'Displays the onepub version no. and exits.')
+      ..addFlag('dev',
+          hide: true,
+          negatable: false,
+          help: 'Allows for configuration of localhost for '
+              'use in a development environment.');
 
     addCommand(DoctorCommand());
     addCommand(OnePubLoginCommand());
@@ -179,10 +174,10 @@ class MyRunner extends CommandRunner<int> implements PubTopLevel {
 
     if (exists(ConfigCommand.testingFlagPath)) {
       if (OnePubSettings().onepubUrl == OnePubSettings.defaultOnePubUrl) {
-        print(('This system is configured for testing, but is also configured'
+        print('This system is configured for testing, but is also configured'
             ' for the production URL. If you need to change this, then delete '
             '${ConfigCommand.testingFlagPath} or use the --dev option to '
-            'change the URL'));
+            'change the URL');
         exit(1);
       }
     }
@@ -198,7 +193,7 @@ class MyRunner extends CommandRunner<int> implements PubTopLevel {
   String get directory {
     if (argResults.options.contains('directory') &&
         argResults.wasParsed('directory')) {
-      return argResults['directory'];
+      return argResults['directory'] as String;
     }
 
     /// if we are in a unit test and directory hasn't been passed
@@ -210,15 +205,13 @@ class MyRunner extends CommandRunner<int> implements PubTopLevel {
   }
 
   @override
-  bool get captureStackChains {
-    return trace || verbose || verbosityString == 'all';
-  }
+  bool get captureStackChains => trace || verbose || verbosityString == 'all';
 
   String get verbosityString {
     if (!argResults.options.contains('verbosity')) {
       return '';
     }
-    return argResults['verbosity'];
+    return argResults['verbosity'] as String;
   }
 
   @override
@@ -249,13 +242,13 @@ class MyRunner extends CommandRunner<int> implements PubTopLevel {
     if (!argResults.options.contains('trace')) {
       return false;
     }
-    return argResults['trace'];
+    return argResults['trace'] as bool;
   }
 
   bool get verbose {
     if (!argResults.options.contains('verbose')) {
       return false;
     }
-    return argResults['verbose'];
+    return argResults['verbose'] as bool;
   }
 }

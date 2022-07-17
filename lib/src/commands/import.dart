@@ -56,8 +56,8 @@ Use `onepub export` to obtain the OnePub token.
     if (OnePubTokenStore().isLoggedIn) {
       throw ExitException(
           exitCode: -1,
-          message:
-              'You may not import a token when you are logged in to the OnePub CLI.');
+          message: 'You may not import a token when you are logged in '
+              'to the OnePub CLI.');
     }
     final file = argResults!['file'] as bool;
     final ask = argResults!['ask'] as bool;
@@ -82,8 +82,7 @@ Use `onepub export` to obtain the OnePub token.
     // because the [sendCommand] expects the token to be
     // in the token store which it isn't
     // So we paass the auth header directly.
-    final headers = <String, String>{};
-    headers.addAll({'authorization': onepubToken});
+    final headers = <String, String>{}..addAll({'authorization': onepubToken});
 
     final response = await sendCommand(
         command: '/organisation/token', authorised: false, headers: headers);
@@ -101,7 +100,7 @@ Use `onepub export` to obtain the OnePub token.
         obfuscatedOrganisationId: organisationObfuscatedId,
         operatorEmail: 'not set during import');
 
-    print('${blue('Successfully logged into $organisationName.')}');
+    print(blue('Successfully logged into $organisationName.'));
   }
 
   /// pull the secret from onepub.export.yaml
@@ -141,13 +140,10 @@ Found: ${argResults!.rest.join(',')}''');
     return env[OnePubTokenStore.onepubSecretEnvKey]!;
   }
 
-  String fromUser() {
-    return ask('ONEPUB_SECRET:',
-        required: true,
-        validator: Ask.all([
-          Ask.regExp(r'[a-zA-Z0-9-]*',
-              error: 'The secret contains invalid characters.'),
-          Ask.lengthRange(36, 36),
-        ]));
-  }
+  String fromUser() => ask('ONEPUB_SECRET:',
+      validator: Ask.all([
+        Ask.regExp('[a-zA-Z0-9-]*',
+            error: 'The secret contains invalid characters.'),
+        Ask.lengthRange(36, 36),
+      ]));
 }

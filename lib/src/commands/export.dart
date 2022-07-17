@@ -18,7 +18,7 @@ class ExportCommand extends Command<int> {
   ///
   ExportCommand() {
     argParser
-      ..addFlag('file', abbr: 'f', defaultsTo: false, help: '''
+      ..addFlag('file', abbr: 'f', help: '''
 Save the OnePub token to a file.
 Pass in a filename or leave blank to use the default filename.''')
       ..addOption('user',
@@ -84,7 +84,7 @@ Pass in a filename or leave blank to use the default filename.''')
       var pathToFile = TokenExportFile.exportFilename;
       if (argResults!.rest.length == 1) {
         pathToFile = argResults!.rest[0];
-      } else if (argResults!.rest.length != 0) {
+      } else if (argResults!.rest.isNotEmpty) {
         throw ExitException(
             exitCode: 1, message: 'You may only pass one argument to --file.');
       }

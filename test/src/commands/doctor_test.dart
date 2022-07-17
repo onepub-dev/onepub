@@ -10,12 +10,12 @@ import 'test_utils.dart';
 
 void main() {
   test('onepub doctor ...', () async {
-    var clean = runCmd('doctor');
+    final clean = runCmd('doctor');
 
-    var first = clean.first;
+    final first = clean.first;
     expect(first, 'OnePub version: $packageVersion ');
 
-    var last = clean[(clean.length - 2)];
+    final last = clean[(clean.length - 2)];
     expect(last, 'OnePub: status healthy.');
 
     // check that we have each of the major headings

@@ -13,12 +13,12 @@ import 'test_utils.dart';
 
 void main() {
   test('onepub export env...', () async {
-    var clean = runCmd('export');
+    final clean = runCmd('export');
 
-    var settings = OnePubSettings.load();
+    final settings = OnePubSettings.load();
     final organisationName = settings.organisationName;
 
-    var first = clean.first;
+    final first = clean.first;
     expect(first, 'OnePub version: $packageVersion ');
 
     expect(clean.contains('Exporting OnePub token for $organisationName.'),
@@ -29,11 +29,11 @@ void main() {
             'Add the following environment variable to your CI/CD secrets.'),
         isTrue);
 
-    var last = clean[(clean.length - 2)];
+    final last = clean[(clean.length - 2)];
     expect(last.startsWith('ONEPUB_SECRET='), isTrue);
 
     // check the secret has a guid
-    var parts = last.split('=');
+    final parts = last.split('=');
     expect(parts.length, equals(2));
     expect(parts[1].length, equals(36));
   });
@@ -43,12 +43,12 @@ void main() {
         SettingsYaml.load(pathToSettings: join('test', 'test_settings.yaml'));
 
     final cicdUser = settings.asString('cicd_member');
-    var clean = runCmd('export --user $cicdUser');
+    final clean = runCmd('export --user $cicdUser');
 
-    var onepubSettings = OnePubSettings.load();
+    final onepubSettings = OnePubSettings.load();
     final organisationName = onepubSettings.organisationName;
 
-    var first = clean.first;
+    final first = clean.first;
     expect(first, 'OnePub version: $packageVersion ');
 
     expect(clean.contains('Exporting OnePub token for $organisationName.'),
@@ -59,11 +59,11 @@ void main() {
             'Add the following environment variable to your CI/CD secrets.'),
         isTrue);
 
-    var last = clean[(clean.length - 2)];
+    final last = clean[(clean.length - 2)];
     expect(last.startsWith('ONEPUB_SECRET='), isTrue);
 
     // check the secret has a guid
-    var parts = last.split('=');
+    final parts = last.split('=');
     expect(parts.length, equals(2));
     expect(parts[1].length, equals(36));
   });

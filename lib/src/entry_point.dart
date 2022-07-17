@@ -18,7 +18,7 @@ import 'util/log.dart' as ulog;
 /// Used by unit tests to alter the working directory a command runs in
 /// as onepub normally assumes it is operating in the pwd.
 ScopeKey<String> unitTestWorkingDirectoryKey =
-    ScopeKey<String>.withDefault(pwd, "WorkingDirectory");
+    ScopeKey<String>.withDefault(pwd, 'WorkingDirectory');
 
 Future<void> entrypoint(
   List<String> args,
@@ -26,16 +26,16 @@ Future<void> entrypoint(
   String program,
 ) async {
   try {
-    MyRunner runner = MyRunner(args, program, _description, commandSet);
+    final runner = MyRunner(args, program, _description, commandSet);
     try {
       runner.init();
       await runner.run(args);
     } on FormatException catch (e) {
-      ulog.logerr((e.message));
+      ulog.logerr(e.message);
       // this is an Exception (generally from the server, not a usage problem)
       //showUsage();
     } on UsageException catch (e) {
-      ulog.logerr((e.message));
+      ulog.logerr(e.message);
       showUsage(runner);
       // ignore: avoid_catches_without_on_clauses
     }
@@ -44,7 +44,7 @@ Future<void> entrypoint(
     exit(e.exitCode);
     // ignore: avoid_catches_without_on_clauses
   } catch (e) {
-    ulog.logerr((e.toString()));
+    ulog.logerr(e.toString());
   }
 }
 
@@ -53,5 +53,4 @@ void showUsage(MyRunner runner) {
   exit(1);
 }
 
-String get _description => '''
-${orange('OnePub CLI tools')}''';
+String get _description => orange('OnePub CLI tools');

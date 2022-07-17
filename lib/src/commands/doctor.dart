@@ -94,7 +94,7 @@ run: onepub login'''));
 void tokenStatus() {
   print(blue('\nRepository tokens'));
 
-  var store = OnePubTokenStore();
+  final store = OnePubTokenStore();
   if (!store.isLoggedIn) {
     print(red('No tokens found.'));
     return;

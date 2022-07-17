@@ -20,7 +20,7 @@ void main() {
       expect(pubSpec.dependencies.containsKey('node_mgmt_lib'), isFalse);
 
       // run onepub add <dep>
-      var progress = 'dart $pathToOnePubScript pub add node_mgmt_lib'
+      final progress = 'dart $pathToOnePubScript pub add node_mgmt_lib'
           .start(workingDirectory: dartProject.pathToProjectRoot);
       expect(progress.exitCode, equals(0));
 
@@ -31,14 +31,14 @@ void main() {
   });
 
   test('cli: entrypoint ...', () async {
-    final packageName = 'test_packag_1';
+    const packageName = 'test_packag_1';
     withTempProject(packageName, (dartProject) {
       final size = stat(dartProject.pathToPubSpec).size;
       Scope()
         ..value(unitTestWorkingDirectoryKey, dartProject.pathToProjectRoot)
         ..run(() {
           waitForEx(entrypoint(
-              ['pub', 'add', 'node_mgmt_lib'], CommandSet.ONEPUB, 'onepub'));
+              ['pub', 'add', 'node_mgmt_lib'], CommandSet.onepub, 'onepub'));
         });
       expect(stat(dartProject.pathToPubSpec).size, greaterThan(size));
     });

@@ -17,28 +17,28 @@ import 'package:settings_yaml/settings_yaml.dart';
 /// For details on installing dcli.
 ///
 void main(List<String> args) {
-  var pathToBin = DartProject.self.pathToBinDir;
+  final pathToBin = DartProject.self.pathToBinDir;
 
-  var pathToOnePubExe = join(pathToBin, 'onepub.dart');
+  final pathToOnePubExe = join(pathToBin, 'onepub.dart');
 
-  var settings =
+  final settings =
       SettingsYaml.load(pathToSettings: OnePubPaths().pathToTestSettings);
 
-  var user = settings.asString('member');
+  final user = settings.asString('member');
 
   print('Please login with $user account');
 
   /// prompt the user to login inot onepub.
   '$pathToOnePubExe login'.run;
 
-  var tokenStore = OnePubTokenStore();
+  final tokenStore = OnePubTokenStore();
   if (!tokenStore.isLoggedIn) {
     printerr(red('Login Failed. Tests run stopped'));
     exit(1);
   }
 
   final onepubSettings = OnePubSettings.load();
-  var url = onepubSettings.onepubApiUrl;
+  final url = onepubSettings.onepubApiUrl;
   final credentials = tokenStore.tokenStore.findCredential(Uri.parse(url));
 
   if (credentials == null) {
@@ -46,7 +46,7 @@ void main(List<String> args) {
     exit(1);
   }
 
-  var onePubToken = credentials.token;
+  final onePubToken = credentials.token;
 
   settings['OnePubToken'] = onePubToken;
   settings.save();
