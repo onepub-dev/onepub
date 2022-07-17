@@ -53,6 +53,12 @@ Use `onepub export` to obtain the OnePub token.
   ///
   Future<void> import() async {
     OnePubSettings.load();
+    if (OnePubTokenStore().isLoggedIn) {
+      throw ExitException(
+          exitCode: -1,
+          message:
+              'You may not import a token when you are logged in to the OnePub CLI.');
+    }
     final file = argResults!['file'] as bool;
     final ask = argResults!['ask'] as bool;
 
@@ -110,6 +116,12 @@ Found: ${argResults!.rest.join(',')}''');
       pathToTokenFile = join(pwd, TokenExportFile.exportFilename);
     } else {
       pathToTokenFile = argResults!.rest[0];
+    }
+
+    if (!exists(pathToTokenFile)) {
+      throw ExitException(
+          exitCode: 1,
+          message: "The token file '$pathToTokenFile', does not exist");
     }
 
     return TokenExportFile.load(pathToTokenFile).onepubToken;

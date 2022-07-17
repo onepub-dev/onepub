@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:args/command_runner.dart';
 import 'package:dcli/dcli.dart';
+import 'package:scope/scope.dart';
 
 import 'exceptions.dart';
 import 'my_runner.dart';
@@ -14,8 +15,16 @@ import 'util/log.dart' as ulog;
  * Written by Brett Sutton <bsutton@onepub.dev>, Jan 2022
  */
 
+/// Used by unit tests to alter the working directory a command runs in
+/// as onepub normally assumes it is operating in the pwd.
+ScopeKey<String> unitTestWorkingDirectoryKey =
+    ScopeKey<String>.withDefault(pwd, "WorkingDirectory");
+
 Future<void> entrypoint(
-    List<String> args, CommandSet commandSet, String program) async {
+  List<String> args,
+  CommandSet commandSet,
+  String program,
+) async {
   try {
     MyRunner runner = MyRunner(args, program, _description, commandSet);
     try {

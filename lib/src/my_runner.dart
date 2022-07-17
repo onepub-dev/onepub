@@ -7,6 +7,7 @@ import 'dart:io';
 
 import 'package:args/command_runner.dart';
 import 'package:dcli/dcli.dart';
+import 'package:scope/scope.dart';
 import 'package:onepub/src/pub/command.dart';
 import 'package:onepub/src/pub/log.dart' hide red;
 import 'package:onepub/src/util/config.dart';
@@ -19,6 +20,7 @@ import 'commands/login.dart';
 import 'commands/logout.dart';
 
 import 'commands/pub.dart' as onepub;
+import 'entry_point.dart';
 import 'exceptions.dart';
 import 'onepub_paths.dart';
 import 'onepub_settings.dart';
@@ -85,8 +87,10 @@ class MyRunner extends CommandRunner<int> implements PubTopLevel {
 
   void opubCommands() {
     argParser.addFlag('version', negatable: false, help: 'Print pub version.');
-    argParser.addFlag('debug', abbr: 'd', help: 'Enable verbose logging');
+    argParser.addFlag('debug',
+        negatable: false, abbr: 'd', help: 'Enable verbose logging');
     argParser.addFlag('trace',
+        negatable: false,
         help: 'Print debugging information when an error occurs.');
     argParser
         .addOption('verbosity', help: 'Control output verbosity.', allowed: [
@@ -135,12 +139,14 @@ class MyRunner extends CommandRunner<int> implements PubTopLevel {
   }
 
   void onepubCommands(CommandSet commandSet) {
-    argParser.addFlag('debug', abbr: 'd', help: 'Enable verbose logging');
+    argParser.addFlag('debug',
+        negatable: false, abbr: 'd', help: 'Enable verbose logging');
     argParser.addFlag('version',
-        help: 'Displays the onepub version no. and exits.');
+        negatable: false, help: 'Displays the onepub version no. and exits.');
 
     argParser.addFlag('dev',
         hide: true,
+        negatable: false,
         help: 'Allows for configuration of localhost for '
             'use in a development environment.');
 
@@ -190,10 +196,17 @@ class MyRunner extends CommandRunner<int> implements PubTopLevel {
 
   @override
   String get directory {
-    if (!argResults.options.contains('directory')) {
-      return '';
+    if (argResults.options.contains('directory') &&
+        argResults.wasParsed('directory')) {
+      return argResults['directory'];
     }
-    return argResults['directory'];
+
+    /// if we are in a unit test and directory hasn't been passed
+    if (Scope.hasScopeKey(unitTestWorkingDirectoryKey)) {
+      return Scope.use(unitTestWorkingDirectoryKey);
+    }
+    //  no working dir
+    return '';
   }
 
   @override

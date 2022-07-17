@@ -6,7 +6,7 @@
 import 'package:args/command_runner.dart';
 import 'package:dcli/dcli.dart';
 
-import 'pub/add_private.dart';
+import 'pub/add_dep.dart';
 import 'pub/global.dart';
 import 'pub/private.dart';
 

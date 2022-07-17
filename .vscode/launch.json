@@ -74,11 +74,11 @@
         },
 
         {
-            "name": "onepub private",
+            "name": "onepub pub private",
             "type": "dart",
             "request": "launch",
             "program": "bin/onepub.dart",
-            "args": ["private"],
+            "args": ["pub", "private"],
             "console": "terminal"
         },
 
@@ -120,11 +120,11 @@
 
 
         {
-            "name": "onepub private ",
+            "name": "onepub pub private ",
             "type": "dart",
             "request": "launch",
             "program": "/home/bsutton/git/onepub/onepub/bin/onepub.dart",
-            "args": ["private"],
+            "args": ["pub", "private"],
             "cwd": "/home/bsutton/git/dvault",
             "console": "terminal"
         },

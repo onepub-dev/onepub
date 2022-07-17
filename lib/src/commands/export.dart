@@ -18,11 +18,13 @@ class ExportCommand extends Command<int> {
   ///
   ExportCommand() {
     argParser
-      ..addFlag('file', abbr: 'f', help: 'Save the OnePub token to a file.')
+      ..addFlag('file', abbr: 'f', defaultsTo: false, help: '''
+Save the OnePub token to a file.
+Pass in a filename or leave blank to use the default filename.''')
       ..addOption('user',
           abbr: 'u',
-          help: 'Export the token of a CICD member.',
-          valueHelp: 'email address of a CI/CD Member');
+          help: 'Export the token of a CICD member rather than your token.',
+          valueHelp: 'email address of a CI/CD OnePub Member');
   }
 
   @override
@@ -79,18 +81,25 @@ class ExportCommand extends Command<int> {
         'Exporting OnePub token for ${OnePubSettings().organisationName}.'));
 
     if (file) {
-      final exportFile =
-          TokenExportFile(join(pwd, TokenExportFile.exportFilename))
-            ..onepubToken = onepubToken
-            ..save();
+      var pathToFile = TokenExportFile.exportFilename;
+      if (argResults!.rest.length == 1) {
+        pathToFile = argResults!.rest[0];
+      } else if (argResults!.rest.length != 0) {
+        throw ExitException(
+            exitCode: 1, message: 'You may only pass one argument to --file.');
+      }
+
+      final exportFile = TokenExportFile(pathToFile)
+        ..onepubToken = onepubToken
+        ..save();
 
       print('''
 
-Saved credentials to: ${truepath(exportFile.pathToExportFile)}.
+Saved OnePub token to: ${truepath(exportFile.pathToExportFile)}.
 
-Copy the onepub.token.yaml to your CI/CD environment and run:
+Copy the ${exportFile.pathToExportFile} to your CI/CD environment and run:
     
-    onepub import <path to credentials>
+    onepub import <path to OnePub token file>
 
 ''');
     } else {

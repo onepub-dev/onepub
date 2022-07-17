@@ -99,6 +99,7 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
             usageLineLength: lineLength) {
     argParser.addFlag('version', negatable: false, help: 'Print pub version.');
     argParser.addFlag('trace',
+     negatable: false, 
         help: 'Print debugging information when an error occurs.');
     argParser
         .addOption('verbosity', help: 'Control output verbosity.', allowed: [

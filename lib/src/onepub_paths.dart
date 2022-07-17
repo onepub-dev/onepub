@@ -3,22 +3,33 @@
  * Written by Brett Sutton <bsutton@onepub.dev>, Jan 2022
  */
 import 'package:dcli/dcli.dart';
+import 'package:scope/scope.dart';
+
+final scopeKeyPathToSettings = ScopeKey<String>('pathToSettings');
 
 class OnePubPaths {
   factory OnePubPaths() => _self;
-
-  factory OnePubPaths.forTest(String settingsRoot) =>
-      _self = OnePubPaths._internal(settingsRoot);
 
   OnePubPaths._internal(this._settingsRoot);
 
   static OnePubPaths _self = OnePubPaths._internal(HOME);
 
   /// Path to the .batman settings directory
-  late final String pathToSettingsDir =
-      env['ONEPUB_PATH'] ?? join(_settingsRoot, '.onepub');
+  String get pathToSettingsDir {
+    var pathToSettings = env['ONEPUB_PATH'] ?? join(_settingsRoot, '.onepub');
 
-  late final String pathToDotEnv = join(pathToSettingsDir, '.env');
+    // used by unit tests
+    if (Scope.hasScopeKey(scopeKeyPathToSettings)) {
+      pathToSettings = Scope.use(scopeKeyPathToSettings);
+    }
+    return pathToSettings;
+  }
+
+  String get pathToTestSettings {
+    var pathToTest = DartProject.self.pathToTestDir;
+
+    return join(pathToTest, 'test_settings.yaml');
+  }
 
   final String _settingsRoot;
 }

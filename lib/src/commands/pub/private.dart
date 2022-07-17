@@ -6,9 +6,12 @@
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
-import 'package:dcli/dcli.dart';
+import 'package:dcli/dcli.dart' hide PubSpec;
+import 'package:pubspec2/pubspec.dart';
+import 'package:scope/scope.dart';
 import 'package:url_builder/url_builder.dart';
 
+import '../../entry_point.dart';
 import '../../exceptions.dart';
 import '../../onepub_paths.dart';
 import '../../onepub_settings.dart';
@@ -18,7 +21,10 @@ import '../../util/send_command.dart';
 ///
 class PrivateCommand extends Command<int> {
   ///
-  PrivateCommand();
+  PrivateCommand() {}
+
+  @override
+  bool get takesArguments => false;
 
   @override
   String get description => '''
@@ -43,7 +49,8 @@ See ${urlJoin(OnePubSettings().onepubWebUrl, 'publish')}''';
           exitCode: 1, message: "You must run 'onepub login' first.");
     }
 
-    final project = DartProject.findProject(pwd);
+    final workingDirectory = Scope.use(unitTestWorkingDirectoryKey);
+    final project = DartProject.findProject(workingDirectory);
     if (project == null) {
       throw ExitException(
           exitCode: 1,
@@ -59,7 +66,7 @@ See ${urlJoin(OnePubSettings().onepubWebUrl, 'publish')}''';
     final currentOrganisationName = OnePubSettings().organisationName;
     final url = OnePubSettings().onepubHostedUrl().toString();
 
-    final pubspec = project.pubSpec.pubspec;
+    final pubspec = await PubSpec.loadFile(project.pathToPubSpec);
     if (pubspec.publishTo != null) {
       if (pubspec.publishTo.toString() == url) {
         print(orange('${pubspec.name} is already a private package.'));
