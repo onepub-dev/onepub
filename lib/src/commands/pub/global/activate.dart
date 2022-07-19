@@ -38,8 +38,6 @@ class ActivateCommand extends PubCommand {
 
   @override
   Future<void> runProtected() async {
-    OnePubSettings.load();
-
     if (!OnePubTokenStore().isLoggedIn) {
       throw ExitException(exitCode: 1, message: '''
 You must be logged in to run this command.
@@ -47,7 +45,7 @@ run: onepub login
   ''');
     }
 
-    final hostedUrl = OnePubSettings().onepubHostedUrl().toString();
+    final hostedUrl = OnePubSettings.use.onepubHostedUrl().toString();
 
     final package = readArg('No package to activate given.');
 
@@ -73,7 +71,9 @@ run: onepub login
   }
 
   String readArg([String error = '']) {
-    if (args.isEmpty) usageException(error);
+    if (args.isEmpty) {
+      usageException(error);
+    }
     final arg = args.first;
     args = args.skip(1);
     return arg;

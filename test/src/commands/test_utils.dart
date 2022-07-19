@@ -12,13 +12,18 @@ List<String> runCmd(String command, {String? workingDirectory}) {
   final pathToRoot = DartProject.self.pathToProjectRoot;
   final pathToOnePub = join(pathToRoot, 'bin', 'onepub.dart');
 
-  final results =
-      '$pathToOnePub $command'.toList(workingDirectory: workingDirectory);
+  final progress = Progress.capture();
+  '$pathToOnePub $command'.start(
+      workingDirectory: workingDirectory, progress: progress, nothrow: true);
+
+  if (progress.exitCode != 0) {
+    printerr(progress.toParagraph());
+  }
 
   final clean = <String>[];
 
   /// strip all of the ansi chars from results to make matching easier.
-  for (final result in results) {
+  for (final result in progress.lines) {
     clean.add(Ansi.strip(result));
   }
 

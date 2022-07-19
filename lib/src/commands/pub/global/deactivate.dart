@@ -5,7 +5,6 @@
 
 import 'package:dcli/dcli.dart';
 
-import '../../../onepub_settings.dart';
 import '../../../pub/command.dart';
 import '../../../pub/global_packages.dart';
 import '../../../pub/system_cache.dart';
@@ -33,17 +32,19 @@ class DeactivateCommand extends PubCommand {
   ///
   @override
   Future<void> runProtected() async {
-    OnePubSettings.load();
-
     final package = readArg('No package to deactivate given.');
 
     if (!globals.deactivate(
       package,
-    )) printerr(red("No package with the name '$package' found."));
+    )) {
+      printerr(red("No package with the name '$package' found."));
+    }
   }
 
   String readArg([String error = '']) {
-    if (args.isEmpty) usageException(error);
+    if (args.isEmpty) {
+      usageException(error);
+    }
     final arg = args.first;
     args = args.skip(1);
     return arg;

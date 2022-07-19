@@ -17,7 +17,6 @@ import 'commands/logout.dart';
 import 'commands/pub.dart' as onepub;
 import 'entry_point.dart';
 import 'exceptions.dart';
-import 'onepub_paths.dart';
 import 'onepub_settings.dart';
 import 'pub/command.dart';
 import 'pub/command/add.dart';
@@ -154,26 +153,24 @@ class MyRunner extends CommandRunner<int> implements PubTopLevel {
   }
 
   void install({required bool dev}) {
-    if (!exists(OnePubPaths().pathToSettingsDir)) {
-      createDir(OnePubPaths().pathToSettingsDir, recursive: true);
+    if (!exists(OnePubSettings.use.pathToSettingsDir)) {
+      createDir(OnePubSettings.use.pathToSettingsDir, recursive: true);
     }
 
-    if (!exists(OnePubSettings.pathToSettings)) {
-      OnePubSettings.pathToSettings.write('version: 1');
+    if (!exists(OnePubSettings.use.pathToSettings)) {
+      OnePubSettings.use.pathToSettings.write('version: 1');
     }
 
-    OnePubSettings.load();
-    if (OnePubSettings().onepubUrl == null ||
-        OnePubSettings().onepubUrl!.isEmpty ||
-        dev) {
-      OnePubSettings.load();
+    final settings = OnePubSettings.use;
+
+    if (settings.onepubUrl == null || settings.onepubUrl!.isEmpty || dev) {
       ConfigCommand().config(dev: dev);
 
       print(orange('Installed OnePub version: $packageVersion.'));
     }
 
     if (exists(ConfigCommand.testingFlagPath)) {
-      if (OnePubSettings().onepubUrl == OnePubSettings.defaultOnePubUrl) {
+      if (settings.onepubUrl == OnePubSettings.defaultOnePubUrl) {
         print('This system is configured for testing, but is also configured'
             ' for the production URL. If you need to change this, then delete '
             '${ConfigCommand.testingFlagPath} or use the --dev option to '
@@ -231,8 +228,12 @@ class MyRunner extends CommandRunner<int> implements PubTopLevel {
         return plog.Verbosity.all;
       default:
         // No specific verbosity given, so check for the shortcut.
-        if (verbose) return plog.Verbosity.all;
-        if (runningFromTest) return plog.Verbosity.testing;
+        if (verbose) {
+          return plog.Verbosity.all;
+        }
+        if (runningFromTest) {
+          return plog.Verbosity.testing;
+        }
         return plog.Verbosity.normal;
     }
   }

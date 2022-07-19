@@ -39,8 +39,6 @@ class OnePubLoginCommand extends Command<int> {
 
   @override
   Future<int> run() async {
-    loadSettings();
-
     if (inSSH()) {
       throw ExitException(exitCode: -1, message: """
 ${red('onepub login will not work from an ssh shell.')}
@@ -97,7 +95,8 @@ ${green('onepub import --ask')}
         showError(tempAuthTokenResponse);
       }
     } on FetchException {
-      printerr(red('Unable to connect to ${OnePubSettings().onepubApiUrl} . '
+      printerr(red('Unable to connect to '
+          '${OnePubSettings.use.onepubApiUrl}. '
           'Check your internet connection.'));
     }
     return 0;
@@ -124,7 +123,7 @@ void showWelcome(
     firstMessage = '''
 Welcome to OnePub.
 Read the getting started guide at:
-${orange('${OnePubSettings().onepubWebUrl}/getting-started')}
+${orange('${OnePubSettings.use.onepubWebUrl}/getting-started')}
 
 ''';
   }

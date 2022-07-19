@@ -25,7 +25,8 @@ Future<EndpointResponse> sendCommand(
     Map<String, String> headers = const <String, String>{},
     String? body,
     Method method = Method.get}) async {
-  final resolvedEndpoint = OnePubSettings().resolveApiEndPoint(command);
+  final settings = OnePubSettings.use;
+  final resolvedEndpoint = settings.resolveApiEndPoint(command);
 
   verbose(() => 'Sending command to $resolvedEndpoint');
 
@@ -35,7 +36,7 @@ Future<EndpointResponse> sendCommand(
     final client = HttpClient()..connectionTimeout = const Duration(seconds: 5);
 
     /// allow self signed/staged certs in dev
-    if (OnePubSettings().allowBadCertificates) {
+    if (settings.allowBadCertificates) {
       client.badCertificateCallback = (cert, host, port) => true;
     }
 

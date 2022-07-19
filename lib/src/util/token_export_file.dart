@@ -32,7 +32,7 @@ class TokenExportFile {
   late final String pathToExportFile;
   late final SettingsYaml settings;
 
-  void save() => settings.save();
+  void save() => waitForEx(settings.save());
 
   bool get hasToken => settings.validString(onepubTokenKey);
   String get onepubToken => settings.asString(onepubTokenKey);

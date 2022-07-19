@@ -8,6 +8,7 @@ import 'package:scope/scope.dart';
 
 import 'exceptions.dart';
 import 'my_runner.dart';
+import 'onepub_settings.dart';
 import 'util/log.dart' as ulog;
 
 /* Copyright (C) OnePub IP Pty Ltd - All Rights Reserved
@@ -26,19 +27,21 @@ Future<void> entrypoint(
   String program,
 ) async {
   try {
-    final runner = MyRunner(args, program, _description, commandSet);
-    try {
-      runner.init();
-      await runner.run(args);
-    } on FormatException catch (e) {
-      ulog.logerr(e.message);
-      // this is an Exception (generally from the server, not a usage problem)
-      //showUsage();
-    } on UsageException catch (e) {
-      ulog.logerr(e.message);
-      showUsage(runner);
-      // ignore: avoid_catches_without_on_clauses
-    }
+    withSettings(() {
+      final runner = MyRunner(args, program, _description, commandSet);
+      try {
+        runner.init();
+        waitForEx(runner.run(args));
+      } on FormatException catch (e) {
+        ulog.logerr(e.message);
+        // this is an Exception (generally from the server, not a usage problem)
+        //showUsage();
+      } on UsageException catch (e) {
+        ulog.logerr(e.message);
+        showUsage(runner);
+        // ignore: avoid_catches_without_on_clauses
+      }
+    });
   } on ExitException catch (e) {
     printerr('${red('Error:')} ${e.message}');
     exit(e.exitCode);

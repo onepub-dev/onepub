@@ -70,7 +70,7 @@
             "request": "launch",
             "program": "bin/onepub.dart",
             "args": ["import"],
-            "env": {"ONEPUB_SECRET" : "ABCDE"}
+            "env": {"ONEPUB_TOKEN" : "ABCDE"}
         },
 
         {

@@ -33,7 +33,7 @@ class AddPrivateCommand extends AddCommand {
 
   @override
   String? get hostUrl {
-    final url = OnePubSettings().onepubHostedUrl().toString();
+    final url = OnePubSettings.use.onepubHostedUrl().toString();
     print(url);
     return url;
   }
@@ -46,8 +46,6 @@ class AddPrivateCommand extends AddCommand {
 
   @override
   Future<void> runProtected() async {
-    OnePubSettings.load();
-
     if (!OnePubTokenStore().isLoggedIn) {
       throw ExitException(
           exitCode: 1, message: "You must run 'onepub login' first.");

@@ -15,8 +15,6 @@ class ConfigCommand {
   void config({required bool dev}) {
     print('Configure OnePub');
 
-    OnePubSettings.load();
-
     promptForConfig(dev: dev);
   }
 
@@ -27,8 +25,9 @@ class ConfigCommand {
       testingFlagPath.write('onepubtesting');
     }
 
-    OnePubSettings().onepubUrl = url;
-    OnePubSettings().save();
+    OnePubSettings.use
+      ..onepubUrl = url
+      ..save();
   }
 }
 

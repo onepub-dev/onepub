@@ -6,11 +6,11 @@ import 'dart:async';
 
 import 'package:args/command_runner.dart';
 import 'package:dcli/dcli.dart';
+import '../api/api.dart';
 import '../exceptions.dart';
 
 import '../onepub_settings.dart';
 import '../util/one_pub_token_store.dart';
-import '../util/send_command.dart';
 
 /// onepub Logout <email>
 ///     - if the user doesn't exists sends them an Logout.
@@ -26,8 +26,6 @@ class OnePubLogoutCommand extends Command<int> {
 
   @override
   Future<int> run() async {
-    loadSettings();
-
     if (argResults!.rest.isNotEmpty) {
       throw ExitException(exitCode: 1, message: red('''
 The logout command takes no arguments. Found ${argResults!.rest.join(',')}.
@@ -35,19 +33,16 @@ The logout command takes no arguments. Found ${argResults!.rest.join(',')}.
     }
 
     if (OnePubTokenStore().isLoggedIn) {
-      final results = await sendCommand(command: '/member/logout');
-
+      final response = await API().logout();
       OnePubTokenStore().clearOldTokens();
 
-      if (!results.success) {
-        final message = results.data['message']! as String;
-        if (!(message.startsWith('Your token is no longer valid') ||
-            message.startsWith('You must be logged in to run this command.'))) {
-          throw ExitException(exitCode: 1, message: message);
-        }
+      if (!response.success) {
+        throw ExitException(exitCode: 1, message: response.errorMessage!);
       }
+
       print(green('You have been logged out of the OnePub CLI for '
-          '${OnePubSettings().organisationName} on all your devices.'));
+          '${OnePubSettings.use.organisationName} '
+          'on all your devices.'));
     } else {
       OnePubTokenStore().clearOldTokens();
       print(orange('You are already logged out.'));

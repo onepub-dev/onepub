@@ -2,41 +2,38 @@
  * licensed under the GPL v2.
  * Written by Brett Sutton <bsutton@onepub.dev>, Jan 2022
  */
-import 'dart:io';
 import 'dart:math';
 
 import 'package:dcli/dcli.dart';
-import 'package:meta/meta.dart';
+import 'package:scope/scope.dart';
 import 'package:settings_yaml/settings_yaml.dart';
 import 'package:url_builder/url_builder.dart';
 import 'package:yaml/yaml.dart';
 
+import 'exceptions.dart';
 import 'onepub_paths.dart';
 import 'pub/source/hosted.dart';
 import 'util/log.dart';
 
-void loadSettings() {
-  if (!exists(OnePubSettings.pathToSettings)) {
-    logerr(red('''Something went wrong, could not find settings file.'''));
-    exit(1);
-  }
-  OnePubSettings.load();
-}
-
 class OnePubSettings {
-  factory OnePubSettings() => _self!;
-
   ///
-  factory OnePubSettings.load({bool showWarnings = false}) {
-    if (_self != null) {
-      return _self!;
+  OnePubSettings._internal({required bool create}) {
+    if (!exists(pathToSettings)) {
+      if (create) {
+        if (!exists(pathToSettingsDir)) {
+          createDir(pathToSettingsDir, recursive: true);
+        }
+        touch(pathToSettings, create: true);
+      } else {
+        logerr(red('''Something went wrong, could not find settings file.'''));
+        throw ExitException(
+            exitCode: 1,
+            message: 'Something went wrong, could not find settings file.');
+      }
     }
 
     try {
-      final settings = SettingsYaml.load(pathToSettings: pathToSettings);
-      _self =
-          OnePubSettings.loadFromSettings(settings, showWarnings: showWarnings);
-      return _self!;
+      _settings = SettingsYaml.load(pathToSettings: pathToSettings);
     } on YamlException catch (e) {
       logerr(red('Failed to load rules from $pathToSettings'));
       logerr(red(e.toString()));
@@ -48,20 +45,11 @@ class OnePubSettings {
     }
   }
 
-  @visibleForTesting
-  OnePubSettings.loadFromSettings(this.settings, {required this.showWarnings});
+  static final scopeKey = ScopeKey<OnePubSettings>('OnePubSettings');
+  static OnePubSettings get use => Scope.use(scopeKey);
 
   static const pubHostedUrlKey = 'onepubUrl';
-
-  static OnePubSettings? _self;
-
-  bool showWarnings;
-
-  late final SettingsYaml settings;
-
-  /// Path to the onepub onepub.yaml file.
-  static final String pathToSettings =
-      join(OnePubPaths().pathToSettingsDir, 'onepub.yaml');
+  late final SettingsYaml _settings;
 
   static const String defaultOnePubUrl = 'https://onepub.dev';
 
@@ -70,24 +58,39 @@ class OnePubSettings {
   ///static const String defaultWebBasePath = 'ui';
   static const String _defaultWebBasePath = '';
 
+  // Key of environement var used to alter the
+  // path to looking for the settings.
+  static const onepubPathEnvKey = 'ONEPUB_PATH';
+
+  /// Path to the .onepub settings directory
+  String get pathToSettingsDir {
+    final pathToSettings = env[onepubPathEnvKey] ?? join(HOME, '.onepub');
+
+    return pathToSettings;
+  }
+
+  /// Path to the onepub onepub.yaml file.
+  String get pathToSettings => join(pathToSettingsDir, 'onepub.yaml');
+
   /// allowBadCertificates
   /// During dev if we are using self signed cert we need to set this
-  static String allowBadCertificatesKey = 'allowBadCertificates';
+  static const String allowBadCertificatesKey = 'allowBadCertificates';
   bool get allowBadCertificates =>
-      settings.asBool(allowBadCertificatesKey, defaultValue: false);
+      _settings.asBool(allowBadCertificatesKey, defaultValue: false);
 
   /// pub token add strips the port if its 443 so we must as well
   /// so our process of checking that the url has been added to the
   /// token list works.
   String get onepubApiUrl => urlJoin(
-      settings.asString(pubHostedUrlKey, defaultValue: defaultOnePubUrl),
+      _settings.asString(pubHostedUrlKey, defaultValue: defaultOnePubUrl),
       _defaultApiBasePath);
 
   /// The url to the currently logged in organisation
-  static bool reportedNonStandard = false;
+  bool reportedNonStandard = false;
   Uri onepubHostedUrl([String? obfuscatedOrganisationId]) {
-    obfuscatedOrganisationId ??= OnePubSettings().obfuscatedOrganisationId;
-    final apiUrl = OnePubSettings().onepubApiUrl;
+    final settings = OnePubSettings.use;
+    obfuscatedOrganisationId ??= settings.obfuscatedOrganisationId;
+    final apiUrl = settings.onepubApiUrl;
     if (!reportedNonStandard &&
         apiUrl != '${OnePubSettings.defaultOnePubUrl}/api') {
       print(red('Using non-standard OnePub API url $apiUrl'));
@@ -99,32 +102,32 @@ class OnePubSettings {
   }
 
   String get onepubWebUrl => urlJoin(
-      settings.asString(pubHostedUrlKey, defaultValue: defaultOnePubUrl),
+      _settings.asString(pubHostedUrlKey, defaultValue: defaultOnePubUrl),
       _defaultWebBasePath);
 
-  set onepubUrl(String? url) => settings[pubHostedUrlKey] = url;
+  set onepubUrl(String? url) => _settings[pubHostedUrlKey] = url;
 
-  String? get onepubUrl => settings[pubHostedUrlKey] as String?;
+  String? get onepubUrl => _settings[pubHostedUrlKey] as String?;
 
   set obfuscatedOrganisationId(String obfuscatedOrganisationId) =>
-      settings['organisationId'] = obfuscatedOrganisationId;
-
-  String get obfuscatedOrganisationId => settings.asString('organisationId',
+      _settings['organisationId'] = obfuscatedOrganisationId;
+  String get obfuscatedOrganisationId => _settings.asString('organisationId',
       defaultValue: 'OrganisationId_not_set');
 
-  set organisationName(String organisationName) =>
-      settings['organisationName'] = organisationName;
+  String get organisationName => _settings.asString('organisationName');
+
+  set organisationName(String organisationName) {
+    _settings['organisationName'] = organisationName;
+  }
 
   set operatorEmail(String operatorEmail) =>
-      settings['operatorEmail'] = operatorEmail;
+      _settings['operatorEmail'] = operatorEmail;
+  String get operatorEmail => _settings.asString('operatorEmail');
 
-  String get organisationName => settings.asString('organisationName');
-  String get operatorEmail => settings.asString('operatorEmail');
-
-  void save() => settings.save();
+  void save() => waitForEx(_settings.save());
 
   String resolveApiEndPoint(String command, {String? queryParams}) {
-    var endpoint = urlJoin(OnePubSettings().onepubApiUrl, command);
+    var endpoint = urlJoin(OnePubSettings.use.onepubApiUrl, command);
 
     if (queryParams != null) {
       endpoint += '?$queryParams';
@@ -133,13 +136,22 @@ class OnePubSettings {
   }
 
   String resolveWebEndPoint(String command, {String? queryParams}) {
-    var endpoint = urlJoin(OnePubSettings().onepubWebUrl, command);
+    var endpoint = urlJoin(OnePubSettings.use.onepubWebUrl, command);
 
     if (queryParams != null) {
       endpoint += '?$queryParams';
     }
     return endpoint;
   }
+}
+
+void withSettings(void Function() action, {bool create = false}) {
+  withPaths(() => Scope()
+    ..value<OnePubSettings>(
+        OnePubSettings.scopeKey, OnePubSettings._internal(create: create))
+    ..run(() {
+      action();
+    }));
 }
 
 ///

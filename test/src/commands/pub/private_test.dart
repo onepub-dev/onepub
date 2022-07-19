@@ -12,48 +12,50 @@ import 'package:scope/scope.dart';
 import 'package:test/test.dart';
 import 'package:url_builder/url_builder.dart';
 
+import '../../test_settings.dart';
 import '../test_utils.dart';
 
 void main() {
   test('cli: private ...', () async {
-    final settings = OnePubSettings.load();
-
-    final organisationName = settings.organisationName;
     const packageName = 'test_packag_1';
 
     withTempProject(packageName, (dartProject) {
-      expect(dartProject.pubSpec.pubspec.publishTo, isNull);
+      withTestSettings((testSettings) {
+        final settings = OnePubSettings.use;
+        final organisationName = settings.organisationName;
+        expect(dartProject.pubSpec.pubspec.publishTo, isNull);
 
-      final size = stat(dartProject.pathToPubSpec).size;
+        final size = stat(dartProject.pathToPubSpec).size;
 
-      // run onepub private
-      final clean = runCmd('pub private',
-          workingDirectory: dartProject.pathToProjectRoot);
-      final first = clean.first;
-      expect(first, 'OnePub version: $packageVersion ');
+        // run onepub private
+        final clean = runCmd('pub private',
+            workingDirectory: dartProject.pathToProjectRoot);
+        final first = clean.first;
+        expect(first, 'OnePub version: $packageVersion ');
 
-      expect(
-          clean.contains(
-              '$packageName has been marked as a private package for the '
-              'organisation $organisationName.'),
-          isTrue);
+        expect(
+            clean.contains(
+                '$packageName has been marked as a private package for the '
+                'organisation $organisationName.'),
+            isTrue);
 
-      expect(
-          clean.contains(
-              "Run 'dart/flutter pub publish' to publish $packageName to OnePub"),
-          isTrue);
-      expect(
-          clean.contains(
-              'See ${urlJoin(OnePubSettings().onepubWebUrl, 'publish')}'),
-          isTrue);
+        expect(
+            clean.contains(
+                "Run 'dart/flutter pub publish' to publish $packageName to OnePub"),
+            isTrue);
+        expect(
+            clean.contains(
+                'See ${urlJoin(OnePubSettings.use.onepubWebUrl, 'publish')}'),
+            isTrue);
 
-      final pubSpec = PubSpec.fromFile(dartProject.pathToPubSpec);
-      expect(
-          pubSpec.pubspec.publishTo.toString(),
-          equals(
-              '${urlJoin(settings.onepubApiUrl, settings.obfuscatedOrganisationId)}/'));
+        final pubSpec = PubSpec.fromFile(dartProject.pathToPubSpec);
+        expect(
+            pubSpec.pubspec.publishTo.toString(),
+            equals(
+                '${urlJoin(settings.onepubApiUrl, settings.obfuscatedOrganisationId)}/'));
 
-      expect(stat(dartProject.pathToPubSpec).size, greaterThan(size));
+        expect(stat(dartProject.pathToPubSpec).size, greaterThan(size));
+      });
     });
   });
 

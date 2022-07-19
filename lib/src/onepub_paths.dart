@@ -5,25 +5,12 @@
 import 'package:dcli/dcli.dart';
 import 'package:scope/scope.dart';
 
-final scopeKeyPathToSettings = ScopeKey<String>('pathToSettings');
-
 class OnePubPaths {
-  factory OnePubPaths() => _self;
+  OnePubPaths._internal(); // this._settingsRoot);
 
-  OnePubPaths._internal(this._settingsRoot);
+  static OnePubPaths get use => Scope.use(scopeKey);
 
-  static final OnePubPaths _self = OnePubPaths._internal(HOME);
-
-  /// Path to the .batman settings directory
-  String get pathToSettingsDir {
-    var pathToSettings = env['ONEPUB_PATH'] ?? join(_settingsRoot, '.onepub');
-
-    // used by unit tests
-    if (Scope.hasScopeKey(scopeKeyPathToSettings)) {
-      pathToSettings = Scope.use(scopeKeyPathToSettings);
-    }
-    return pathToSettings;
-  }
+  static final scopeKey = ScopeKey<OnePubPaths>('OnePubPaths');
 
   String get pathToTestSettings {
     final pathToTest = DartProject.self.pathToTestDir;
@@ -31,5 +18,13 @@ class OnePubPaths {
     return join(pathToTest, 'test_settings.yaml');
   }
 
-  final String _settingsRoot;
+  // final String _settingsRoot;
+}
+
+void withPaths(void Function() action) {
+  Scope()
+    ..value(OnePubPaths.scopeKey, OnePubPaths._internal())
+    ..run(() {
+      action();
+    });
 }

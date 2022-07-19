@@ -1,0 +1,10 @@
+name: test_packag_2
+version: 1.6.0
+homepage: https://github.com
+publish_to: https://squarephone.biz/api/jjbxpsdavu/
+description: A simple command-line application.
+environment: 
+  sdk: '>=2.12.0 <3.0.0'
+dev_dependencies: 
+  analyzer: ^2.3.0
+  lint_hard: ^1.0.0

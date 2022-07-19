@@ -12,7 +12,7 @@ import '../token_store/io.dart';
 import '../token_store/token_store.dart';
 
 class OnePubTokenStore {
-  static const onepubSecretEnvKey = 'ONEPUB_SECRET';
+  static const onepubSecretEnvKey = 'ONEPUB_TOKEN';
 
   void save(
       {required String onepubToken,
@@ -20,28 +20,31 @@ class OnePubTokenStore {
       required String organisationName,
       required String operatorEmail}) {
     withEnvironment(() {
-      OnePubSettings().obfuscatedOrganisationId = obfuscatedOrganisationId;
-      OnePubSettings().organisationName = organisationName;
-      OnePubSettings().operatorEmail = operatorEmail;
-      OnePubSettings().save();
+      final settings = OnePubSettings.use
+        ..obfuscatedOrganisationId = obfuscatedOrganisationId
+        ..organisationName = organisationName
+        ..operatorEmail = operatorEmail
+        ..save();
       clearOldTokens();
       tokenStore.addCredential(Credential.token(
-          OnePubSettings().onepubHostedUrl(obfuscatedOrganisationId),
-          onepubToken));
+          settings.onepubHostedUrl(obfuscatedOrganisationId), onepubToken));
     }, environment: {onepubSecretEnvKey: onepubToken});
   }
 
 // True if we have a onepub token.
-  bool get isLoggedIn =>
-      tokenStore.findCredential(OnePubSettings()
-          .onepubHostedUrl(OnePubSettings().obfuscatedOrganisationId)) !=
-      null;
+  bool get isLoggedIn {
+    final settings = OnePubSettings.use;
+    return tokenStore.findCredential(
+            settings.onepubHostedUrl(settings.obfuscatedOrganisationId)) !=
+        null;
+  }
 
   /// throws [StateError] if called when not logged in.
   /// returns the onepubToken.
   String fetch() {
-    final credentials = tokenStore.findCredential(OnePubSettings()
-        .onepubHostedUrl(OnePubSettings().obfuscatedOrganisationId));
+    final settings = OnePubSettings.use;
+    final credentials = tokenStore.findCredential(
+        settings.onepubHostedUrl(settings.obfuscatedOrganisationId));
 
     if (credentials == null || credentials.token == null) {
       throw StateError('You may not call fetch when not logged in');
@@ -54,10 +57,11 @@ class OnePubTokenStore {
 
   /// Removes the onepub token from the pub token store.
   void clearOldTokens() {
+    final settings = OnePubSettings.use;
     tokenStore.removeMatchingCredential(
-        validateAndNormalizeHostedUrl(OnePubSettings().onepubApiUrl));
+        validateAndNormalizeHostedUrl(settings.onepubApiUrl));
     // tokenStore
-    //  .removeCredential(_hostedUrl(OnePubSettings()
+    //  .removeCredential(_hostedUrl(OnePubSettings.use
     // .obfuscatedOrganisationId));
   }
 

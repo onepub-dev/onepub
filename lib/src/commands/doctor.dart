@@ -9,10 +9,9 @@ import 'dart:io';
 import 'package:args/command_runner.dart';
 import 'package:dcli/dcli.dart';
 
+import '../api/api.dart';
 import '../onepub_settings.dart';
-import '../util/log.dart';
 import '../util/one_pub_token_store.dart';
-import '../util/send_command.dart';
 
 ///
 class DoctorCommand extends Command<int> {
@@ -27,28 +26,24 @@ class DoctorCommand extends Command<int> {
 
   @override
   int run() {
-    if (!exists(OnePubSettings.pathToSettings)) {
-      logerr(red('''Something went wrong, could not find settings file.'''));
-      exit(1);
-    }
-    OnePubSettings.load();
+    withSettings(() {
+      print(blue('Dart'));
+      print('Dart version: ${DartSdk().version}');
+      print('Dart path: ${DartSdk().pathToDartExe}');
 
-    print(blue('Dart'));
-    print('Dart version: ${DartSdk().version}');
-    print('Dart path: ${DartSdk().pathToDartExe}');
+      print(blue('\nURLs'));
+      print('Web site: ${OnePubSettings.use.onepubWebUrl}');
+      print('API endpoint: ${OnePubSettings.use.onepubApiUrl}');
 
-    print(blue('\nURLs'));
-    print('Web site: ${OnePubSettings().onepubWebUrl}');
-    print('API endpoint: ${OnePubSettings().onepubApiUrl}');
+      print(blue('\nEnvironment'));
+      envStatus('PUB_CACHE');
+      envStatus('PATH');
 
-    print(blue('\nEnvironment'));
-    envStatus('PUB_CACHE');
-    envStatus('PATH');
+      tokenStatus();
 
-    tokenStatus();
-
-    print('');
-    _status();
+      print('');
+      _status();
+    });
     return 0;
   }
 
@@ -64,25 +59,24 @@ class DoctorCommand extends Command<int> {
     print(blue('Status'));
     if (OnePubTokenStore().isLoggedIn) {
       print('Logged In: true');
-      print('Member: ${OnePubSettings().operatorEmail}');
-      print('Organisation: ${OnePubSettings().organisationName}');
+      print('Member: ${OnePubSettings.use.operatorEmail}');
+      print('Organisation: ${OnePubSettings.use.organisationName}');
     } else {
       print(orange('''
 You are not logged into OnePub.
 run: onepub login'''));
     }
     try {
-      const endpoint = '/status';
       echo('checking status...  ');
 
-      final response = await sendCommand(command: endpoint, authorised: false);
+      final status = await API().status();
 
-      if (response.status == 200) {
+      if (status.statusCode == 200) {
         print('');
-        print(green(response.data['message']! as String));
+        print(green(status.message));
       } else {
         print('');
-        print(red(response.data['message']! as String));
+        print(red(status.message));
       }
     } on IOException catch (e) {
       printerr(red(e.toString()));

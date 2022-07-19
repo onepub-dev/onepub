@@ -23,8 +23,9 @@ class BreadButter {
 
   /// Return the auth token or null if the auth failed.
   Future<EndpointResponse?> auth() async {
-    final onepubUrl = OnePubSettings.load().onepubWebUrl;
-    final authUrl = OnePubSettings().resolveWebEndPoint('clilogin');
+    final settings = OnePubSettings.use;
+    final onepubUrl = settings.onepubWebUrl;
+    final authUrl = settings.resolveWebEndPoint('clilogin');
 
     final encodedUrl = Uri.encodeFull(authUrl);
 
@@ -48,7 +49,8 @@ Waiting for your authorisation...''');
     completer = Completer<EndpointResponse?>();
     server = await bindServer(_port);
 
-    final onepuburl = OnePubSettings().onepubUrl;
+    final settings = OnePubSettings.use;
+    final onepuburl = settings.onepubUrl;
     final headers = {'Access-Control-Allow-Origin': onepuburl!};
     shelf.Response _cors(shelf.Response response) =>
         response.change(headers: headers);
