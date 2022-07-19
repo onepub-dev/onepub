@@ -46,8 +46,8 @@ Future<void> entrypoint(
     printerr('${red('Error:')} ${e.message}');
     exit(e.exitCode);
     // ignore: avoid_catches_without_on_clauses
-  } catch (e) {
-    ulog.logerr(e.toString());
+  } catch (e, s) {
+    ulog.logerr('$e\n$s');
   }
 }
 
