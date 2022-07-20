@@ -1,3 +1,18 @@
+# 1.3.0
+- applied lint_hard
+- renamed add_private to add.
+- restructured the command set so all package related commands are under pub.
+- Improvements to the help output and general cli output from each command.
+- Added PATH to the output of onepub doctor.
+- Updated license files to reflect actual and intended usage.
+- Added global deactivate. change command structure of global to be pub global to match dart pub commands.
+- Added onepub global activate command to make it easy to activate packages hosted by onepub.
+- upgraded third party tar library.
+- Now saving the opeartor email into the OnePubSettings file so that onepub doctor can print it out.
+- Fixed spelling in login for failed auth.
+- colour coded the error message displayed by onepub login when you try to use it from an ssh shell.
+- improved unit tests.
+
 # 1.2.4
 - Fixes #37
 

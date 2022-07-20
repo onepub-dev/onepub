@@ -1,7 +1,7 @@
 name: test_packag_2
-version: 1.6.0
+version: 1.7.0
 homepage: https://github.com
-publish_to: https://squarephone.biz/api/jjbxpsdavu/
+publish_to: https://onepub.dev/api/jbbxpsdavu/
 description: A simple command-line application.
 environment: 
   sdk: '>=2.12.0 <3.0.0'

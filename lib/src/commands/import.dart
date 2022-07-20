@@ -82,7 +82,6 @@ Use `onepub export` to obtain the OnePub token.
         throw ExitException(exitCode: 1, message: organisation.errorMessage!);
       }
 
-
       OnePubTokenStore().save(
           onepubToken: onepubToken,
           organisationName: organisation.name,

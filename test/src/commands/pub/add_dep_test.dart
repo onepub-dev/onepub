@@ -13,7 +13,6 @@ import '../test_utils.dart';
 
 void main() {
   setUpAll(() {
-    
     // publish the test_packag_2 so we can depend on it.
     final pathToTestPackage2 =
         join(DartProject.self.pathToTestDir, 'fixtures', 'test_packag_2');

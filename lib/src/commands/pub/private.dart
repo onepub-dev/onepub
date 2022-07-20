@@ -80,7 +80,7 @@ See ${urlJoin(OnePubSettings.use.onepubWebUrl, 'publish')}''';
         print(orange('${pubspec.name} is already a private package of '
             '${organisation.name}'));
       }
-      if (!confirm('Do you want to update the organisation to '
+      if (!confirm('Do you want to change the organisation to '
           '$currentOrganisationName?')) {
         print(red('Action cancelled'));
         return;
