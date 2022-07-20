@@ -1,3 +1,6 @@
+# 1.3.1
+- Fixed errors raised by the static analyzer.
+
 # 1.3.0
 - applied lint_hard
 - renamed add_private to add.

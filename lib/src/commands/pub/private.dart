@@ -7,7 +7,7 @@ import 'dart:io';
 
 import 'package:args/command_runner.dart';
 import 'package:dcli/dcli.dart' hide PubSpec;
-import 'package:pubspec2/pubspec.dart';
+import 'package:pubspec2/pubspec2.dart';
 import 'package:scope/scope.dart';
 import 'package:url_builder/url_builder.dart';
 
