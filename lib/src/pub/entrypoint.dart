@@ -789,7 +789,7 @@ class Entrypoint {
 
     late PackageConfig cfg;
     try {
-      cfg = PackageConfig.fromJson(json.decode(packageConfigRaw));
+      cfg = PackageConfig.fromJson(json.decode(packageConfigRaw) as Object);
     } on FormatException {
       badPackageConfig();
     }

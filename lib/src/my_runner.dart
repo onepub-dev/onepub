@@ -38,7 +38,6 @@ import 'pub/command/version.dart';
 import 'pub/io.dart';
 import 'pub/log.dart' hide red;
 import 'pub/log.dart' as plog;
-import 'util/config.dart';
 import 'version/version.g.dart';
 
 enum CommandSet { opub, onepub }
@@ -150,34 +149,6 @@ class MyRunner extends CommandRunner<int> implements PubTopLevel {
     addCommand(ImportCommand());
     addCommand(ExportCommand());
     addCommand(onepub.PubCommand());
-  }
-
-  void install({required bool dev}) {
-    if (!exists(OnePubSettings.use.pathToSettingsDir)) {
-      createDir(OnePubSettings.use.pathToSettingsDir, recursive: true);
-    }
-
-    if (!exists(OnePubSettings.use.pathToSettings)) {
-      OnePubSettings.use.pathToSettings.write('version: 1');
-    }
-
-    final settings = OnePubSettings.use;
-
-    if (settings.onepubUrl == null || settings.onepubUrl!.isEmpty || dev) {
-      ConfigCommand().config(dev: dev);
-
-      print(orange('Installed OnePub version: $packageVersion.'));
-    }
-
-    if (exists(ConfigCommand.testingFlagPath)) {
-      if (settings.onepubUrl == OnePubSettings.defaultOnePubUrl) {
-        print('This system is configured for testing, but is also configured'
-            ' for the production URL. If you need to change this, then delete '
-            '${ConfigCommand.testingFlagPath} or use the --dev option to '
-            'change the URL');
-        exit(1);
-      }
-    }
   }
 
   List<String> args;

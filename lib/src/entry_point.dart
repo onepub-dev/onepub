@@ -41,7 +41,7 @@ Future<void> entrypoint(
         showUsage(runner);
         // ignore: avoid_catches_without_on_clauses
       }
-    });
+    }, create: true);
   } on ExitException catch (e) {
     printerr('${red('Error:')} ${e.message}');
     exit(e.exitCode);

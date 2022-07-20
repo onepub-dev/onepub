@@ -1,3 +1,6 @@
+# 1.3.2
+- fixed a 'first time' bug with the login.
+
 # 1.3.1
 - Fixed errors raised by the static analyzer.
 

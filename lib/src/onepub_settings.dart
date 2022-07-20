@@ -2,18 +2,21 @@
  * licensed under the GPL v2.
  * Written by Brett Sutton <bsutton@onepub.dev>, Jan 2022
  */
+import 'dart:io';
 import 'dart:math';
 
 import 'package:dcli/dcli.dart';
 import 'package:scope/scope.dart';
 import 'package:settings_yaml/settings_yaml.dart';
 import 'package:url_builder/url_builder.dart';
+import 'package:validators2/validators.dart';
 import 'package:yaml/yaml.dart';
 
 import 'exceptions.dart';
 import 'onepub_paths.dart';
 import 'pub/source/hosted.dart';
 import 'util/log.dart';
+import 'version/version.g.dart';
 
 class OnePubSettings {
   ///
@@ -152,6 +155,71 @@ void withSettings(void Function() action, {bool create = false}) {
     ..run(() {
       action();
     }));
+}
+
+void install({required bool dev}) {
+  if (!exists(OnePubSettings.use.pathToSettingsDir)) {
+    createDir(OnePubSettings.use.pathToSettingsDir, recursive: true);
+  }
+
+  if (!exists(OnePubSettings.use.pathToSettings)) {
+    OnePubSettings.use.pathToSettings.write('version: 1');
+  }
+
+  final settings = OnePubSettings.use;
+
+  if (settings.onepubUrl == null || settings.onepubUrl!.isEmpty || dev) {
+    config(dev: dev);
+
+    print(orange('Installed OnePub version: $packageVersion.'));
+  }
+
+  if (exists(testingFlagPath)) {
+    if (settings.onepubUrl == OnePubSettings.defaultOnePubUrl) {
+      print('This system is configured for testing, but is also configured'
+          ' for the production URL. If you need to change this, then delete '
+          '$testingFlagPath or use the --dev option to '
+          'change the URL');
+      exit(1);
+    }
+  }
+}
+
+///
+void config({required bool dev}) {
+  print('Configure OnePub');
+
+  promptForConfig(dev: dev);
+}
+
+final testingFlagPath = join(HOME, '.onepubtesting');
+
+void promptForConfig({required bool dev}) {
+  var url = OnePubSettings.defaultOnePubUrl;
+  if (dev) {
+    url = ask('OnePub URL:', validator: UrlValidator(), defaultValue: url);
+    testingFlagPath.write('onepubtesting');
+  }
+
+  OnePubSettings.use
+    ..onepubUrl = url
+    ..save();
+}
+
+class UrlValidator extends AskValidator {
+  @override
+  String validate(String line) {
+    final finalLine = line.trim().toLowerCase();
+
+    if (!line.startsWith('https://')) {
+      throw AskValidatorException(red('Must start with https://'));
+    }
+    final fqdn = finalLine.replaceFirst('https://', '');
+    if (!isFQDN(fqdn)) {
+      throw AskValidatorException(red('Invalid FQDN.'));
+    }
+    return finalLine;
+  }
 }
 
 ///
