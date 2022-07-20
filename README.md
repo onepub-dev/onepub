@@ -8,7 +8,7 @@ OnePub lets you use the existing Dart tooling (dart pub publish | flutter pub pu
 
 OnePub includes a free plan for personal use.
 
-To take it for a spin register at:
+To take it for a spin by registering at:
 https://onepub.dev
 
 Full documentation is available at:
