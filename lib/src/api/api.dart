@@ -2,6 +2,7 @@ import 'dart:io';
 
 import '../util/send_command.dart';
 import 'logout.dart';
+import 'member_create.dart';
 import 'onepub_token.dart';
 import 'organisation.dart';
 import 'status.dart';
@@ -67,5 +68,14 @@ class API {
   Future<void> createPackage(String packageName, String team) async {
     final endpoint = 'package/create/$packageName/team/$team';
     await sendCommand(command: endpoint);
+  }
+
+  Future<MemberCreate> createMember(
+      String userEmail, String firstname, String lastname) async {
+    final endpoint =
+        'member/create?email=$userEmail&firstname=$firstname&lastname=$lastname';
+    final response = await sendCommand(command: endpoint);
+
+    return MemberCreate(response);
   }
 }
