@@ -1,3 +1,7 @@
+# 1.4.0
+- added ability to create a member for testing during the unit test auth.
+- delete tool dir so analysis runs.
+
 # 1.3.2
 - fixed a 'first time' bug with the login.
 

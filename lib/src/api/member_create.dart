@@ -13,7 +13,6 @@ class MemberCreate {
     if (!response.success) {
       errorMessage = response.data['message']! as String;
     }
-
   }
 
   late final bool _success;
