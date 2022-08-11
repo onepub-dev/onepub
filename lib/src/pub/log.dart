@@ -63,6 +63,8 @@ final _bold = getAnsi('\u001b[1m');
 /// By default, [error] and [warning] messages are printed to sterr. [message]
 /// messages are printed to stdout, and others are ignored.
 class Level {
+  const Level._(this.name);
+
   /// An error occurred and an operation could not be completed.
   ///
   /// Usually shown to the user on stderr.
@@ -89,8 +91,6 @@ class Level {
   /// operation.
   static const fine = Level._('FINE');
 
-  const Level._(this.name);
-
   final String name;
 
   @override
@@ -100,6 +100,8 @@ class Level {
 /// An enum type to control which log levels are displayed and how they are
 /// displayed.
 class Verbosity {
+  const Verbosity._(this.name, this._loggers);
+
   /// Silence all logging.
   static const none = Verbosity._('none', {
     Level.error: null,
@@ -180,8 +182,6 @@ class Verbosity {
     Level.fine: _logToStderrWithLabel
   });
 
-  const Verbosity._(this.name, this._loggers);
-
   final String name;
   final Map<Level, void Function(_Entry entry)?> _loggers;
 
@@ -194,10 +194,9 @@ class Verbosity {
 
 /// A single log entry.
 class _Entry {
+  _Entry(this.level, this.lines);
   final Level level;
   final List<String> lines;
-
-  _Entry(this.level, this.lines);
 }
 
 /// Logs [message] at [Level.error].
@@ -232,7 +231,7 @@ void fine(message) => write(Level.fine, message);
 /// Logs [message] at [level].
 void write(Level level, message) {
   message = message.toString();
-  var lines = splitLines(message);
+  final lines = splitLines(message);
 
   // Discard a trailing newline. This is useful since StringBuffers often end
   // up with an extra newline at the end from using [writeln].
@@ -240,9 +239,9 @@ void write(Level level, message) {
     lines.removeLast();
   }
 
-  var entry = _Entry(level, lines);
+  final entry = _Entry(level, lines);
 
-  var logFn = verbosity._loggers[level];
+  final logFn = verbosity._loggers[level];
   if (logFn != null) logFn(entry);
 
   _transcript.add(entry);
@@ -252,14 +251,14 @@ void write(Level level, message) {
 /// level.
 void process(
     String executable, List<String> arguments, String workingDirectory) {
-  io("Spawning \"$executable ${arguments.join(' ')}\" in "
+  io('Spawning "$executable ${arguments.join(' ')}" in '
       '${p.absolute(workingDirectory)}');
 }
 
 /// Logs the results of running [executable].
 void processResult(String executable, PubProcessResult result) {
   // Log it all as one message so that it shows up as a single unit in the logs.
-  var buffer = StringBuffer();
+  final buffer = StringBuffer();
   buffer.writeln('Finished $executable. Exit code ${result.exitCode}.');
 
   void dumpOutput(String name, List<String> output) {
@@ -268,7 +267,7 @@ void processResult(String executable, PubProcessResult result) {
     } else {
       buffer.writeln('$name:');
       var numLines = 0;
-      for (var line in output) {
+      for (final line in output) {
         if (++numLines > 1000) {
           buffer.writeln('[${output.length - 1000}] more lines of output '
               'truncated...]');
@@ -290,7 +289,7 @@ void processResult(String executable, PubProcessResult result) {
 void exception(exception, [StackTrace? trace]) {
   if (exception is SilentException) return;
 
-  var chain = trace == null ? Chain.current() : Chain.forTrace(trace);
+  final chain = trace == null ? Chain.current() : Chain.forTrace(trace);
 
   // This is basically the top-level exception handler so that we don't
   // spew a stack trace on our users.
@@ -357,9 +356,9 @@ Before making this file public, make sure to remove any sensitive information!
 
 Pub version: ${sdk.version}
 Created: ${DateTime.now().toIso8601String()}
-FLUTTER_ROOT: ${Platform.environment['FLUTTER_ROOT'] ?? '<not set>'}
-PUB_HOSTED_URL: ${Platform.environment['PUB_HOSTED_URL'] ?? '<not set>'}
-PUB_CACHE: "${Platform.environment['PUB_CACHE'] ?? '<not set>'}"
+FLUTTER_ROOT: ${Platform.environment['FLUTTER_ROOT'] ?? '<not set and not used>'}
+PUB_HOSTED_URL: ${Platform.environment['PUB_HOSTED_URL'] ?? '<not set and not used>'}
+PUB_CACHE: "${Platform.environment['PUB_CACHE'] ?? '<not set and not used>'}"
 Command: $command
 Platform: ${Platform.operatingSystem}
 ''');
@@ -423,7 +422,7 @@ Future<T> warningsOnlyUnlessTerminal<T>(FutureOr<T> Function() callback) async {
 Future<T> progress<T>(String message, Future<T> Function() callback) {
   _stopProgress();
 
-  var progress = Progress(message);
+  final progress = Progress(message);
   _animatedProgress = progress;
   return callback().whenComplete(progress.stop);
 }
@@ -434,11 +433,9 @@ Future<T> spinner<T>(String message, Future<T> Function() callback,
   if (condition) {
     _stopProgress();
 
-    var progress = Progress(message);
+    final progress = Progress(message);
     _animatedProgress = progress;
-    return callback().whenComplete(() {
-      progress.stopAndClear();
-    });
+    return callback().whenComplete(progress.stopAndClear);
   }
   return callback();
 }
@@ -484,9 +481,7 @@ String bold(text) => '$_bold$text$_none';
 /// that supports that.
 ///
 /// Use this for text that's less important than the text around it.
-String gray(text) {
-  return '$_gray$text$_none';
-}
+String gray(text) => '$_gray$text$_none';
 
 /// Wraps [text] in the ANSI escape codes to color it cyan when on a platform
 /// that supports that.
@@ -523,14 +518,13 @@ String yellow(text) => _addColor(text, _yellow);
 /// Returns [text] colored using the given [colorCode].
 ///
 /// This is resilient to the text containing other colors or bold text.
-String _addColor(Object text, String colorCode) {
-  return colorCode +
-      text
-          .toString()
-          .replaceAll(_none, _none + colorCode)
-          .replaceAll(_noColor, _none + colorCode) +
-      _noColor;
-}
+String _addColor(Object text, String colorCode) =>
+    colorCode +
+    text
+        .toString()
+        .replaceAll(_none, _none + colorCode)
+        .replaceAll(_noColor, _none + colorCode) +
+    _noColor;
 
 /// Log function that prints the message to stdout.
 void _logToStdout(_Entry entry) {
@@ -562,7 +556,7 @@ void _printToStream(StringSink sink, _Entry entry, {required bool showLabel}) {
   _stopProgress();
 
   var firstLine = true;
-  for (var line in entry.lines) {
+  for (final line in entry.lines) {
     if (showLabel) {
       if (firstLine) {
         sink.write('${entry.level.name}: ');
@@ -591,7 +585,7 @@ class _JsonLogger {
   ///
   /// Always prints to stdout.
   void error(error, [stackTrace]) {
-    var errorJson = {'error': error.toString()};
+    final errorJson = {'error': error.toString()};
 
     if (stackTrace == null && error is Error) stackTrace = error.stackTrace;
     if (stackTrace != null) {

@@ -51,7 +51,7 @@ class DoctorCommand extends Command<int> {
     if (Env().exists(key)) {
       print('$key: ${env[key]}');
     } else {
-      print('$key: not set.');
+      print('$key: not set and not used.');
     }
   }
 
