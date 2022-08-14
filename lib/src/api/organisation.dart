@@ -12,10 +12,10 @@ class Organisation {
 
     if (!response.success) {
       errorMessage = response.data['message']! as String;
+    } else {
+      name = response.data['organisationName'] as String? ?? '';
+      obfuscatedId = response.data['obfuscatedId']! as String? ?? '';
     }
-
-    name = response.data['organisationName']! as String;
-    obfuscatedId = response.data['obfuscatedId']! as String;
   }
 
   late final bool _success;
