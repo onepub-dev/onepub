@@ -13,7 +13,6 @@ import 'package:validators2/validators.dart';
 import 'package:yaml/yaml.dart';
 
 import 'exceptions.dart';
-import 'onepub_paths.dart';
 import 'pub/source/hosted.dart';
 import 'util/log.dart';
 import 'version/version.g.dart';
@@ -148,13 +147,16 @@ class OnePubSettings {
   }
 }
 
+/// Injects an OnePubSettings into the scope.
+/// If [create] is true then an empy settings file will
+/// be created.
 void withSettings(void Function() action, {bool create = false}) {
-  withPaths(() => Scope()
+  Scope()
     ..value<OnePubSettings>(
         OnePubSettings.scopeKey, OnePubSettings._internal(create: create))
     ..run(() {
       action();
-    }));
+    });
 }
 
 void install({required bool dev}) {
