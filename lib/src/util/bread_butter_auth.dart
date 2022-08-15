@@ -30,9 +30,9 @@ class BreadButter {
     final encodedUrl = Uri.encodeFull(authUrl);
 
     print('''
-To login to OnePub.
+To login to OnePub...
 
-From a web browser, go to 
+From a web browser, go to: 
 ${blue(encodedUrl)}
 
 Waiting for your authorisation...''');
