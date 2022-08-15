@@ -16,7 +16,7 @@ class PubCommand extends Command<int> {
   ///
   PubCommand() : super() {
     addSubcommand(GlobalCommand());
-    addSubcommand(AddPrivateCommand());
+    addSubcommand(AddPrivateDependencyCommand());
     addSubcommand(PrivateCommand());
   }
   @override

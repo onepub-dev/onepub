@@ -19,8 +19,8 @@ import '../../util/one_pub_token_store.dart';
 /// bound in a ^x.y.z constraint.
 ///
 /// Currently supports only adding one dependency at a time.
-class AddPrivateCommand extends AddCommand {
-  AddPrivateCommand() : super(includeSourceOptions: false);
+class AddPrivateDependencyCommand extends AddCommand {
+  AddPrivateDependencyCommand() : super(includeSourceOptions: false);
   @override
   String get name => 'add';
   @override
