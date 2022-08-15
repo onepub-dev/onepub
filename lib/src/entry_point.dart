@@ -16,19 +16,22 @@ import 'util/log.dart' as ulog;
  * Written by Brett Sutton <bsutton@onepub.dev>, Jan 2022
  */
 
-/// Used by unit tests to alter the working directory a command runs in
-/// as onepub normally assumes it is operating in the pwd.
+/// Used by unit tests to alter the working directory a command runs.
 ScopeKey<String> unitTestWorkingDirectoryKey =
-    ScopeKey<String>.withDefault(pwd, 'WorkingDirectory');
+    ScopeKey<String>('WorkingDirectory');
 
+/// The [args] list should contain the command to be run
+/// followed by the arguments to be passed to the command.
+///
+/// The [executableName] is used when displaying help.
 Future<void> entrypoint(
   List<String> args,
   CommandSet commandSet,
-  String program,
+  String executableName,
 ) async {
   try {
     withSettings(() {
-      final runner = MyRunner(args, program, _description, commandSet);
+      final runner = MyRunner(args, executableName, _description, commandSet);
       try {
         runner.init();
         waitForEx(runner.run(args));
