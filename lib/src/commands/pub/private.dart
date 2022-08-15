@@ -49,8 +49,7 @@ See ${urlJoin(OnePubSettings.use.onepubWebUrl, 'publish')}''';
           exitCode: 1, message: "You must run 'onepub login' first.");
     }
 
-    final workingDirectory = Scope.use(unitTestWorkingDirectoryKey);
-    final project = DartProject.findProject(workingDirectory);
+    final project = DartProject.findProject(getWorkingDirectory());
     if (project == null) {
       throw ExitException(
           exitCode: 1,
@@ -97,6 +96,16 @@ Run 'dart/flutter pub publish' to publish ${pubspecUpdated.name} to OnePub
 
 See ${urlJoin(settings.onepubWebUrl, 'publish')}
 ''');
+  }
+
+  /// Working directory defaults to the pwd but a unit test
+  /// can alter it.
+  String getWorkingDirectory() {
+    final workingDirectory = Scope.use(
+      unitTestWorkingDirectoryKey,
+      withDefault: () => pwd,
+    );
+    return workingDirectory;
   }
 
   /// get the organisation name
