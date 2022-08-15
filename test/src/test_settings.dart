@@ -1,12 +1,10 @@
 import 'package:dcli/dcli.dart';
-import 'package:onepub/src/onepub_paths.dart';
 import 'package:onepub/src/onepub_settings.dart';
 import 'package:settings_yaml/settings_yaml.dart';
 
 class TestSettings {
   TestSettings() {
-    _settings =
-        SettingsYaml.load(pathToSettings: OnePubPaths.use.pathToTestSettings);
+    _settings = SettingsYaml.load(pathToSettings: pathToTestSettings);
   }
 
   late final SettingsYaml _settings;
@@ -29,29 +27,38 @@ class TestSettings {
       _settings['organisationId'] = obsfucatedId;
 
   void save() => waitForEx(_settings.save());
+
+  String get pathToTestSettings {
+    final pathToTest = DartProject.self.pathToTestDir;
+
+    return join(pathToTest, 'test_settings.yaml');
+  }
 }
 
+/// Initialises a OnePubSettings file in a tmp directory
+/// copying its initial state from the test_settings.yaml file
+/// in the project 'test' directory.
 void withTestSettings(void Function(TestSettings testSettings) action,
     {bool forAuthentication = false}) {
   withTempDir((tempSettingsDir) {
+    // control the location of the onepub settings file.
     withEnvironment(() {
-      withPaths(() {
-        withSettings(() {
-          final settings = OnePubSettings.use;
-          final testSettings = TestSettings();
+      withSettings(() {
+        final settings = OnePubSettings.use;
+        final testSettings = TestSettings();
 
-          if (!forAuthentication) {
-            settings
-              ..organisationName = testSettings.organisationName
-              ..obfuscatedOrganisationId = testSettings.organisationId;
-          }
+        if (!forAuthentication) {
           settings
-            ..onepubUrl = testSettings.onepubUrl
-            ..save();
+            ..operatorEmail = testSettings.member
+            ..organisationName = testSettings.organisationName
+            ..obfuscatedOrganisationId = testSettings.organisationId;
+        }
+        settings
+          ..onepubUrl = testSettings.onepubUrl
+          ..save();
 
-          action(testSettings);
-        }, create: true);
-      });
+        action(testSettings);
+      }, create: true);
     }, environment: {OnePubSettings.onepubPathEnvKey: tempSettingsDir});
   });
 }
