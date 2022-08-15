@@ -62,14 +62,16 @@ void main() {
   test('cli: entrypoint ...', () async {
     const packageName = 'test_packag_1';
     withTempProject(packageName, (dartProject) {
-      final size = stat(dartProject.pathToPubSpec).size;
-      Scope()
-        ..value(unitTestWorkingDirectoryKey, dartProject.pathToProjectRoot)
-        ..run(() {
-          waitForEx(
-              entrypoint(['pub', 'private'], CommandSet.onepub, 'onepub'));
-        });
-      expect(stat(dartProject.pathToPubSpec).size, greaterThan(size));
+      withTestSettings((testSettings) {
+        final size = stat(dartProject.pathToPubSpec).size;
+        Scope()
+          ..value(unitTestWorkingDirectoryKey, dartProject.pathToProjectRoot)
+          ..run(() {
+            waitForEx(
+                entrypoint(['pub', 'private'], CommandSet.onepub, 'onepub'));
+          });
+        expect(stat(dartProject.pathToPubSpec).size, greaterThan(size));
+      });
     });
   });
 }
