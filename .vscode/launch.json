@@ -113,8 +113,9 @@
             "name": "onepub pub global activate",
             "type": "dart",
             "request": "launch",
-            "program": "bin/onepub.dart",
-            "args": ["pub", "global","activate","dcli"],
+            "program": "/home/bsutton/git/onepub/onepub/bin/onepub.dart",
+            "cwd": "/home/bsutton/git/setversion",
+            "args": ["pub", "global","activate","setversion"],
             "console": "terminal"
         },
 
