@@ -1,3 +1,7 @@
+# 1.4.1
+- fix: null check error when token has expired and we attempt to get the organisation via the api.
+- Improved the onepub doctor message when PUB_CACHE isn't set.
+
 # 1.4.0
 - added ability to create a member for testing during the unit test auth.
 - delete tool dir so analysis runs.

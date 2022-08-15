@@ -1,5 +1,5 @@
 name: onepub
-version: 1.4.0
+version: 1.4.1
 homepage: https://onepub.dev
 documentation: https://docs.onepub.dev
 description: Command line tools for onepub.dev including a replacement pub command.
