@@ -6,6 +6,7 @@ import 'dart:async';
 
 import 'package:args/command_runner.dart';
 import 'package:dcli/dcli.dart';
+import 'package:dcli/docker.dart';
 
 import '../exceptions.dart';
 import '../onepub_settings.dart';
@@ -39,9 +40,23 @@ class OnePubLoginCommand extends Command<int> {
 
   @override
   Future<int> run() async {
+    /// we need to provide different instructions if its a remote
+    /// or local docker session.
+    /// remote session will always be over ssh
+    /// but local ones won't
+    if (DockerShell.inDocker) {
+      printerr(orange('''
+OnePub Login will no work inside a Docker container.
+Instead from outside the container run:
+onepub docker login <container>
+'''));
+    }
     if (inSSH()) {
       throw ExitException(exitCode: -1, message: """
 ${red('onepub login will not work from an ssh shell.')}
+
+${orange('${OnePubSettings.use.onepubWebUrl}/guides/ssh')}
+https://docs.onepub.dev/guides/ssh
 
 Instead:
 Exit your ssh session and run:
@@ -111,7 +126,9 @@ ${green('onepub import --ask')}
   bool inSSH() =>
       Env().exists('SSH_CLIENT') ||
       Env().exists('SSH_CONNECTION') ||
-      Env().exists('SSH_TTY');
+      Env().exists('SSH_TTY') ||
+      Env().exists('SSH_AUTH_SOCK') ||
+      Env().exists('SSH_AGENT_PID');
 }
 
 void showWelcome(
