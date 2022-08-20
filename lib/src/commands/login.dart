@@ -103,9 +103,6 @@ class OnePubLoginCommand extends Command<int> {
     if (inSSH()) {
       throw ExitException(exitCode: -1, message: """
 ${red('onepub login will not work from an ssh shell.')}
-    
-${orange('${OnePubSettings.use.onepubWebUrl}/guides/ssh')}
-https://docs.onepub.dev/guides/ssh
 
 Instead:
 Exit your ssh session and run:
@@ -113,6 +110,9 @@ ${green('onepub export')}
 
 Restart your ssh session and run:
 ${green('onepub import --ask')}
+
+See the documentation for full details and alternate techniques:
+${orange('${OnePubSettings.use.onepubWebUrl}/guides/ssh')}
 """);
     }
   }
