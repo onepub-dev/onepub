@@ -1,18 +1,35 @@
-# See here for image contents: https://github.com/microsoft/vscode-dev-containers/tree/v0.245.0/containers/ubuntu/.devcontainer/base.Dockerfile
+# Update VARIANT in devcontainer.json to pick a Dart version
+ARG VARIANT=2
+FROM dart:${VARIANT}
 
-# [Choice] Ubuntu version (use ubuntu-22.04 or ubuntu-18.04 on local arm64/Apple Silicon): ubuntu-22.04, ubuntu-20.04, ubuntu-18.04
-ARG VARIANT="jammy"
-FROM mcr.microsoft.com/vscode/devcontainers/base:0-${VARIANT}
+# [Option] Install zsh
+ARG INSTALL_ZSH="true"
+# [Option] Upgrade OS packages to their latest versions
+ARG UPGRADE_PACKAGES="false"
+
+# Install needed packages and setup non-root user. Use a separate RUN statement to add your own dependencies.
+ARG USERNAME=vscode
+ARG USER_UID=1000
+ARG USER_GID=$USER_UID
+COPY library-scripts/*.sh /tmp/library-scripts/
+RUN apt-get update && /bin/bash /tmp/library-scripts/common-debian.sh "${INSTALL_ZSH}" "${USERNAME}" "${USER_UID}" "${USER_GID}" "${UPGRADE_PACKAGES}" "true" "true" \
+    && apt-get clean -y && rm -rf /var/lib/apt/lists/* /tmp/library-scripts
+
+# Add bin location to path
+ENV PUB_CACHE="/usr/local/share/pub-cache"
+ENV PATH="${PUB_CACHE}/bin:${PATH}"
+RUN if ! cat /etc/group | grep -e "^pub-cache:" > /dev/null 2>&1; then groupadd -r pub-cache; fi \
+    && usermod -a -G pub-cache ${USERNAME} \
+    && umask 0002 \
+    && mkdir -p ${PUB_CACHE} \
+    && chown :pub-cache ${PUB_CACHE} \
+    && sed -i -e "s/export PATH=/export PATH=\/usr\/local\/share\/pub-cache:/" /etc/profile.d/00-restore-env.sh \
+    #
+    # Fix incorrect privs if present on directories - https://github.com/dart-lang/dart-docker/issues/62, https://github.com/dart-lang/sdk/issues/47093
+    && chmod 755 "$DART_SDK" "$DART_SDK/bin"
 
 # [Optional] Uncomment this section to install additional OS packages.
 # RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
 #     && apt-get -y install --no-install-recommends <your-package-list-here>
 
-
-RUN apt update && apt install apt-transport-https
-
- RUN wget -qO- https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo gpg --dearmor -o /usr/share/keyrings/dart.gpg
-
- RUN echo 'deb [signed-by=/usr/share/keyrings/dart.gpg arch=amd64] https://storage.googleapis.com/download.dartlang.org/linux/debian stable main' | sudo tee /etc/apt/sources.list.d/dart_stable.list
-
-RUN apt update && apt install dart
+RUN dart pub global activate onepub

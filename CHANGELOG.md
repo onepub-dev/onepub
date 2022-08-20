@@ -1,3 +1,8 @@
+# 1.4.2
+- Added docker shell detection to the login command with instructions on how work with docker.
+- Fixed the path to the ssh guide in the login error.
+- Improved the cli login message.
+
 # 1.4.1
 - fix: null check error when token has expired and we attempt to get the organisation via the api.
 - Improved the onepub doctor message when PUB_CACHE isn't set.

@@ -1,12 +1,25 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the README at:
-// https://github.com/microsoft/vscode-dev-containers/tree/v0.245.0/containers/ubuntu
+// https://github.com/microsoft/vscode-dev-containers/tree/v0.245.0/containers/dart
 {
-	"name": "Ubuntu",
+	"name": "Dart (Community)",
 	"build": {
 		"dockerfile": "Dockerfile",
-		// Update 'VARIANT' to pick an Ubuntu version: jammy / ubuntu-22.04, focal / ubuntu-20.04, bionic /ubuntu-18.04
-		// Use ubuntu-22.04 or ubuntu-18.04 on local arm64/Apple Silicon.
-		"args": { "VARIANT": "ubuntu-22.04" }
+		// Update VARIANT to pick a Dart version
+		"args": {
+			"VARIANT": "2",
+			"UPGRADE_PACKAGES": "true"
+		}
+	},
+
+	// Configure tool-specific properties.
+	"customizations": {
+		// Configure properties specific to VS Code.
+		"vscode": {
+			// Add the IDs of extensions you want installed when the container is created.
+			"extensions": [
+				"dart-code.dart-code"
+			]
+		}
 	},
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
@@ -17,13 +30,9 @@
 
 	// Comment out to connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root.
 	"remoteUser": "vscode",
-	"features": {
-		"git": "latest",
-		"github-cli": "latest"
-	},
+
 	"mounts": [
-		"source=${localEnv:HOME}/.config/dart/pub-tokens.json,target=${containerEnv:HOME}/.config/dart/pub-tokens.json,type=bind,consistency=cached",
-		"source=${localEnv:HOME}/.onepub/onepub.yaml,target=${containerEnv:HOME}/.onepub/onepub.yaml,type=bind,consistency=cached"
+		"source=${localEnv:HOME}/.config/dart/pub-tokens.json,target=/home/vscode/.config/dart/pub-tokens.json,type=bind,consistency=cached",
+		"source=${localEnv:HOME}/.onepub/onepub.yaml,target=/home/vscode/.onepub/onepub.yaml,type=bind,consistency=cached"
 	]
-	
 }
