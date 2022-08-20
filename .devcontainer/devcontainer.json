@@ -20,5 +20,10 @@
 	"features": {
 		"git": "latest",
 		"github-cli": "latest"
-	}
+	},
+	"mounts": [
+		"source=${localEnv:HOME}/.config/dart/pub-tokens.json,target=${containerEnv:HOME}/.config/dart/pub-tokens.json,type=bind,consistency=cached",
+		"source=${localEnv:HOME}/.onepub/onepub.yaml,target=${containerEnv:HOME}/.onepub/onepub.yaml,type=bind,consistency=cached"
+	]
+	
 }
