@@ -44,28 +44,10 @@ class OnePubLoginCommand extends Command<int> {
     /// or local docker session.
     /// remote session will always be over ssh
     /// but local ones won't
-    if (DockerShell.inDocker) {
-      printerr(orange('''
-OnePub Login will no work inside a Docker container.
-Instead from outside the container run:
-onepub docker login <container>
-'''));
-    }
-    if (inSSH()) {
-      throw ExitException(exitCode: -1, message: """
-${red('onepub login will not work from an ssh shell.')}
 
-${orange('${OnePubSettings.use.onepubWebUrl}/guides/ssh')}
-https://docs.onepub.dev/guides/ssh
+    checkForSSH();
 
-Instead:
-Exit your ssh session and run:
-${green('onepub export')}
-
-Restart your ssh session and run:
-${green('onepub import --ask')}
-""");
-    }
+    checkForDocker();
 
     try {
       final bb = BreadButter();
@@ -117,6 +99,42 @@ ${green('onepub import --ask')}
     return 0;
   }
 
+  void checkForSSH() {
+    if (inSSH()) {
+      throw ExitException(exitCode: -1, message: """
+${red('onepub login will not work from an ssh shell.')}
+    
+${orange('${OnePubSettings.use.onepubWebUrl}/guides/ssh')}
+https://docs.onepub.dev/guides/ssh
+
+Instead:
+Exit your ssh session and run:
+${green('onepub export')}
+
+Restart your ssh session and run:
+${green('onepub import --ask')}
+""");
+    }
+  }
+
+  void checkForDocker() {
+    if (DockerShell.inDocker) {
+      throw ExitException(exitCode: -1, message: """
+${red('onepub login will not work within a Docker shell.')}
+    
+Instead:
+Exit your docker session and run:
+${green('onepub export')}
+
+Restart your docker session and run:
+${green('onepub import --ask')}
+
+See the documentation for full details and alternate techniques:
+${orange('https://docs.onepub.dev/guides/docker')}
+""");
+    }
+  }
+
   void showError(EndpointResponse endPointResponse) {
     final error = endPointResponse.data['message']! as String;
 
@@ -127,7 +145,6 @@ ${green('onepub import --ask')}
       Env().exists('SSH_CLIENT') ||
       Env().exists('SSH_CONNECTION') ||
       Env().exists('SSH_TTY') ||
-      Env().exists('SSH_AUTH_SOCK') ||
       Env().exists('SSH_AGENT_PID');
 }
 
