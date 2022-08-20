@@ -112,7 +112,7 @@ Restart your ssh session and run:
 ${green('onepub import --ask')}
 
 See the documentation for full details and alternate techniques:
-${orange('${OnePubSettings.use.onepubWebUrl}/guides/ssh')}
+${orange('https://docs.onepub.dev/guides/ssh')}
 """);
     }
   }
