@@ -123,7 +123,7 @@ Found: ${argResults!.rest.join(',')}''');
     if (!Env().exists(OnePubTokenStore.onepubSecretEnvKey)) {
       throw ExitException(exitCode: 1, message: '''
     The OnePub environment variable ${OnePubTokenStore.onepubSecretEnvKey} doesn't exist.
-    Have you added it to your CI/CD secrets?.''');
+    Add it to your CI/CD secrets?.''');
     }
 
     return env[OnePubTokenStore.onepubSecretEnvKey]!;
