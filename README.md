@@ -6,7 +6,7 @@ OnePub is to Dart what NPM is to JavaScript and JFrog to Java.
 
 OnePub lets you use the existing Dart tooling (dart pub publish | flutter pub publish) to publish packages to your own private repository.
 
-OnePub includes a free plan for personal use.
+OnePub includes a free plan for small teams.
 
 To take it for a spin by registering at:
 https://onepub.dev
@@ -15,8 +15,16 @@ Full documentation is available at:
 
 https://docs.onepub.dev
 
+## Installing
+To install onepub run:
 
-## opub
+```bash
+dart pub global activate onepub
+onepub login
+```
+The `onepub login` command will register you with OnePub.
+
+# opub
 
 With Google deprecating the pub command in favour of using `flutter pub` or `dart pub`
 we have created a replacement `opub` command for the lazy ones amoungst us (like me).
