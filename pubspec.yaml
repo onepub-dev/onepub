@@ -1,8 +1,8 @@
 name: onepub
-version: 1.4.3
+version: 1.4.4
 homepage: https://onepub.dev
 documentation: https://docs.onepub.dev
-description: Command line tools for onepub.dev including a replacement pub command.
+description: Command line tools for the OnePub private Dart/Flutter repository.
 repository: https://github.com/onepub-dev/onepub
 environment: 
   sdk: '>=2.12.1 <3.0.0'

@@ -1,3 +1,6 @@
+# 1.4.4
+- Updated the pubspec description.
+
 # 1.4.3
 - updated the readme to make it more suitable for pub.dev.
 - Added additional diagnostic details to onepub doctor.
