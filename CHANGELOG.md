@@ -1,3 +1,8 @@
+# 1.4.3
+- updated the readme to make it more suitable for pub.dev.
+- Added additional diagnostic details to onepub doctor.
+- changed doctor to refer to the member and organisation as the 'Active' member and organisation to reflect that we can be logged into multiple organisations.
+
 # 1.4.2
 - Added docker shell detection to the login command with instructions on how work with docker.
 - Fixed the path to the ssh guide in the login error.
