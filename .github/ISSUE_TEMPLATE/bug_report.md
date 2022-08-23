@@ -32,7 +32,7 @@ Run onepub doctor and post the output here:
 onepub doctor
 ```
 
-If you are having paths problems then run:
+If you are having path problems then run:
 ```
 <path to dart>/dart pub global run  onepub:onepub doctor
 ```
