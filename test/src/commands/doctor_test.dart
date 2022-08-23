@@ -3,6 +3,7 @@
  * Written by Brett Sutton <bsutton@onepub.dev>, Jan 2022
  */
 
+import 'package:dcli/dcli.dart';
 import 'package:onepub/src/version/version.g.dart';
 import 'package:test/test.dart';
 
@@ -21,7 +22,7 @@ void main() {
       expect(last, 'OnePub: status healthy.');
 
       // check that we have each of the major headings
-      expect(clean.contains('Dart'), isTrue);
+      expect(clean.contains('Dart version: ${DartSdk().version}'), isTrue);
       expect(clean.contains('URLs'), isTrue);
       expect(clean.contains('Environment'), isTrue);
       expect(clean.contains('Repository tokens'), isTrue);

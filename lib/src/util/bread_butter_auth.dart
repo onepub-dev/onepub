@@ -83,7 +83,8 @@ Waiting for your authorisation...''');
         final response = await sendCommand(
             command: '/member/oauth'
                 '?app_id=$appId&authentication_token=$token',
-            authorised: false);
+            authorised: false,
+            commandType: CommandType.cli);
 
         if (!response.success) {
           completer.complete(response);

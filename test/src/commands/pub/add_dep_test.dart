@@ -4,8 +4,10 @@
  */
 
 import 'package:dcli/dcli.dart' hide equals;
+import 'package:onepub/src/api/api.dart';
 import 'package:onepub/src/entry_point.dart';
 import 'package:onepub/src/my_runner.dart';
+import 'package:pub_semver/pub_semver.dart';
 import 'package:scope/scope.dart';
 import 'package:test/test.dart';
 
@@ -14,30 +16,32 @@ import '../test_utils.dart';
 
 void main() {
   setUpAll(() {
-    withTestSettings((testSettings) {
-      // publish the test_packag_2 so we can depend on it.
-      final pathToTestPackage2 =
-          join(DartProject.self.pathToTestDir, 'fixtures', 'test_packag_2');
-      final pathToOnePub = join(DartProject.self.pathToBinDir, 'onepub.dart');
+    const packageName = 'test_packag_2';
+    withTempProject(packageName, (dartProject) {
+      withTestSettings((testSettings) {
+        final pathToOnePub = join(DartProject.self.pathToBinDir, 'onepub.dart');
+        final pathToProjectRoot = dartProject.pathToProjectRoot;
 
-      // increment the package 2 version number so we can publish it.
-      final pathToPackage2Pubspec = join(pathToTestPackage2, 'pubspec.yaml');
-      final pubspec = PubSpec.fromFile(pathToPackage2Pubspec);
-      final version = pubspec.version!;
-      pubspec
-        ..version = version.nextMinor
-        ..saveToFile(pathToPackage2Pubspec);
+        // increment the package 2 version number so we can publish it.
+        final pathToPackage2Pubspec = dartProject.pathToPubSpec;
+        final pubspec = PubSpec.fromFile(pathToPackage2Pubspec);
+        final versions = waitForEx(
+            API().fetchVersions(testSettings.organisationId, packageName));
+        pubspec
+          ..version = Version.parse(versions.latest.version).nextMinor
+          ..saveToFile(pathToPackage2Pubspec);
 
-      // add new version to change log to stop pub publish complaining.
-      join(pathToTestPackage2, 'CHANGELOG.md')
-          .append('# ${pubspec.version.toString()}');
+        // add new version to change log to stop pub publish complaining.
+        join(pathToProjectRoot, 'CHANGELOG.md')
+            .append('# ${pubspec.version.toString()}');
 
-      '$pathToOnePub pub private'.start(
-          workingDirectory: pathToTestPackage2,
-          progress: Progress.printStdErr());
-      'dart pub publish --force'.start(
-          workingDirectory: pathToTestPackage2,
-          progress: Progress.printStdErr());
+        '$pathToOnePub pub private'.start(
+            workingDirectory: pathToProjectRoot,
+            progress: Progress.printStdErr());
+        'dart pub publish --force'.start(
+            workingDirectory: pathToProjectRoot,
+            progress: Progress.printStdErr());
+      });
     });
   });
   test('add_dependency ...', () async {

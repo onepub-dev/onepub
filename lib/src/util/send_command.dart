@@ -21,6 +21,7 @@ enum Method { get, post }
 
 Future<EndpointResponse> sendCommand(
     {required String command,
+    required CommandType commandType,
     bool authorised = true,
     Map<String, String> headers = const <String, String>{},
     String? body,
@@ -43,7 +44,7 @@ Future<EndpointResponse> sendCommand(
     final response =
         await _startRequest(client, method, uri, headers, body, authorised);
 
-    return await _processData(client, response);
+    return await _processData(client, response, commandType);
   } on SocketException catch (e) {
     throw FetchException.fromException(e);
   } finally {}
@@ -99,6 +100,7 @@ void _addHeaders(Map<String, String> _headers, HttpClientRequest request) {
 Future<EndpointResponse> _processData(
   HttpClient client,
   HttpClientResponse response,
+  CommandType commandType,
 ) async {
   final completer = Completer<EndpointResponse>();
 
@@ -128,7 +130,8 @@ Future<EndpointResponse> _processData(
       await subscription.cancel();
       client.close();
 
-      completer.complete(EndpointResponse(response.statusCode, body));
+      completer
+          .complete(EndpointResponse(response.statusCode, body, commandType));
     },
     // ignore: avoid_types_on_closure_parameters
     onError: (Object e, StackTrace st) async {
@@ -143,9 +146,20 @@ Future<EndpointResponse> _processData(
   return completer.future;
 }
 
-class EndpointResponse {
-  EndpointResponse(this.status, StringBuffer body) : _body = body.toString();
+enum CommandType {
+  pub,
 
+  /// api used by the dart pub commands.
+  cli
+
+  /// api used by onepub.
+}
+
+class EndpointResponse {
+  EndpointResponse(this.status, StringBuffer body, this.commandType)
+      : _body = body.toString();
+
+  CommandType commandType;
   int status;
   final String _body;
 
@@ -171,18 +185,37 @@ class EndpointResponse {
 
   void _parse() {
     if (!_parsed) {
-      final decodedResponse = _bodyAsJsonMap(_body);
-
-      if (decodedResponse.keys.contains('success')) {
-        _data = decodedResponse['success'] as Map<String, Object?>;
-        _success = true;
-      } else if (decodedResponse.keys.contains('error')) {
-        _data = decodedResponse['error'] as Map<String, Object?>;
-        _success = false;
+      if (commandType == CommandType.cli) {
+        _parseCli();
       } else {
-        throw UnexpectedHttpResponseException(message: _body);
+        _parsePub();
       }
+
       _parsed = true;
+    }
+  }
+
+  void _parseCli() {
+    final decodedResponse = _bodyAsJsonMap(_body);
+
+    if (decodedResponse.keys.contains('success')) {
+      _data = decodedResponse['success'] as Map<String, Object?>;
+      _success = true;
+    } else if (decodedResponse.keys.contains('error')) {
+      _data = decodedResponse['error'] as Map<String, Object?>;
+      _success = false;
+    } else {
+      throw UnexpectedHttpResponseException(message: _body);
+    }
+  }
+
+  // Used to parse responses from 'pub' specific end points
+  void _parsePub() {
+    if (status == 200) {
+      _success = true;
+      _data = _bodyAsJsonMap(_body);
+    } else {
+      _success = false;
     }
   }
 

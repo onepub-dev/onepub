@@ -6,13 +6,15 @@ import 'member_create.dart';
 import 'onepub_token.dart';
 import 'organisation.dart';
 import 'status.dart';
+import 'versions.dart';
 
 class API {
   Future<Status> status() async {
     try {
       const endpoint = '/status';
 
-      final response = await sendCommand(command: endpoint, authorised: false);
+      final response = await sendCommand(
+          command: endpoint, authorised: false, commandType: CommandType.cli);
 
       return Status(response.status, response.data['message']! as String);
     } on IOException {
@@ -22,7 +24,8 @@ class API {
 
   Future<Logout> logout() async {
     const endpoint = '/member/logout';
-    final response = await sendCommand(command: endpoint);
+    final response =
+        await sendCommand(command: endpoint, commandType: CommandType.cli);
 
     return Logout(response);
   }
@@ -32,7 +35,8 @@ class API {
   /// The member must be logged in to the cli.
   Future<OnePubToken> fetchMemberToken(String memberEmail) async {
     final endpoint = 'member/token/$memberEmail';
-    final response = await sendCommand(command: endpoint);
+    final response =
+        await sendCommand(command: endpoint, commandType: CommandType.cli);
 
     return OnePubToken(response);
   }
@@ -49,14 +53,18 @@ class API {
     const endpoint = '/organisation/token';
 
     final response = await sendCommand(
-        command: endpoint, authorised: false, headers: headers);
+        command: endpoint,
+        authorised: false,
+        headers: headers,
+        commandType: CommandType.cli);
 
     return Organisation(response);
   }
 
   Future<Organisation> fetchOrganisationById(String obfuscatedId) async {
     final endpoint = 'organisation/$obfuscatedId';
-    final response = await sendCommand(command: endpoint);
+    final response =
+        await sendCommand(command: endpoint, commandType: CommandType.cli);
 
     /// we push the id into the map so we can share a common
     /// constructor with [fetchOrganisation]
@@ -67,15 +75,26 @@ class API {
   /// Creates a (empty) package owned by [team]
   Future<void> createPackage(String packageName, String team) async {
     final endpoint = 'package/create/$packageName/team/$team';
-    await sendCommand(command: endpoint);
+    await sendCommand(command: endpoint, commandType: CommandType.cli);
   }
 
   Future<MemberCreate> createMember(
       String userEmail, String firstname, String lastname) async {
     final endpoint =
         'member/create?email=$userEmail&firstname=$firstname&lastname=$lastname';
-    final response = await sendCommand(command: endpoint);
+    final response =
+        await sendCommand(command: endpoint, commandType: CommandType.cli);
 
     return MemberCreate(response);
+  }
+
+  /// Fetches the list of published version for [packageName]
+  Future<Versions> fetchVersions(
+      String obsfucatedOrganisationId, String packageName) async {
+    final endpoint = '$obsfucatedOrganisationId/api/packages/$packageName';
+    final response =
+        await sendCommand(command: endpoint, commandType: CommandType.pub);
+
+    return Versions(response);
   }
 }
