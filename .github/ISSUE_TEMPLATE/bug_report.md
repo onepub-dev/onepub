@@ -23,6 +23,21 @@ A clear and concise description of what you expected to happen.
 **Screenshots**
 If applicable, add screenshots to help explain your problem.
 
+** Problems with CLI tooling **
+If your issue is with the OnePub CLI tooling then:
+
+Run onepub doctor and post the output here:
+
+```
+onepub doctor
+```
+
+If you are having paths problems then run:
+```
+<path to dart>/dart pub global run  onepub:onepub doctor
+```
+
+
 **Desktop (please complete the following information):**
  - OS: [e.g. iOS]
  - Browser [e.g. chrome, safari]
