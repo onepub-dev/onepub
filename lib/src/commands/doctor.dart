@@ -27,24 +27,29 @@ class DoctorCommand extends Command<int> {
   @override
   int run() {
     withSettings(() {
-      print(blue('Dart'));
-      print('Dart version: ${DartSdk().version}');
-      print('Dart path: ${DartSdk().pathToDartExe}');
-
-      print(blue('\nURLs'));
-      print('Web site: ${OnePubSettings.use.onepubWebUrl}');
-      print('API endpoint: ${OnePubSettings.use.onepubApiUrl}');
-
-      print(blue('\nEnvironment'));
-      envStatus('PUB_CACHE');
-      envStatus('PATH');
+      _printPlatform();
+      _printURLs();
+      _printEnvironment();
+      _printShell();
 
       tokenStatus();
-
-      print('');
       _status();
     });
     return 0;
+  }
+
+  void _printURLs() {
+    print('');
+
+    print(blue('\nURLs'));
+    print('Web site: ${OnePubSettings.use.onepubWebUrl}');
+    print('API endpoint: ${OnePubSettings.use.onepubApiUrl}');
+  }
+
+  void _printEnvironment() {
+    print(blue('\nEnvironment'));
+    envStatus('PUB_CACHE');
+    _printPATH();
   }
 
   void envStatus(String key) {
@@ -55,7 +60,36 @@ class DoctorCommand extends Command<int> {
     }
   }
 
+  void _printPATH() {
+    print('PATH');
+    for (final path in PATH) {
+      final line = privatePath(path);
+      var error = '';
+      if (!exists(path)) {
+        error = red(' ERROR: path does not exist.');
+      }
+      _colprint(['', line, error]);
+    }
+  }
+
+  void _printShell() {
+    print('');
+    print(blue('Shell Settings'));
+    _colprint([r'$SHELL', env['SHELL'] ?? '']);
+
+    final shell = Shell.current;
+    _colprint(['detected', shell.name]);
+
+    if (shell.hasStartScript) {
+      final startScriptPath = shell.pathToStartScript;
+      _colprint(['Start script', privatePath(startScriptPath ?? 'not found')]);
+    } else {
+      _colprint(['Start sript', 'not supported by shell']);
+    }
+  }
+
   Future<void> _status() async {
+    print('');
     print(blue('Status'));
     if (OnePubTokenStore().isLoggedIn) {
       print('Logged In: true');
@@ -97,4 +131,26 @@ void tokenStatus() {
   for (final credential in store.credentials) {
     print(credential.url);
   }
+}
+
+void _printPlatform() {
+  print(blue('Platform'));
+
+  _colprint(['OS', Platform.operatingSystem]);
+  print(
+    Format().row(
+      ['OS version', Platform.operatingSystemVersion],
+      widths: [17, -1],
+    ),
+  );
+  _colprint(['Path separator', Platform.pathSeparator]);
+  print('');
+
+  print('Dart version: ${DartSdk().version}');
+  print('Dart path: ${DartSdk().pathToDartExe}');
+}
+
+void _colprint(List<String?> cols) {
+  //cols[0] = green(cols[0]);
+  print(Format().row(cols, widths: [15, 35, -1], delimiter: ' '));
 }
