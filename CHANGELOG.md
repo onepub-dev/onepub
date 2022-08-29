@@ -1,3 +1,8 @@
+# 1.4.5
+- Modified the ssh detection and removed SSH_AGENT_PID as this is
+  used on the local machine to indicate the PID of the local ssh agent
+  and not an indicator that we are in an ssh session.
+
 # 1.4.4
 - Updated the pubspec description.
 

@@ -144,8 +144,10 @@ ${orange('https://docs.onepub.dev/guides/docker')}
   bool inSSH() =>
       Env().exists('SSH_CLIENT') ||
       Env().exists('SSH_CONNECTION') ||
-      Env().exists('SSH_TTY') ||
-      Env().exists('SSH_AGENT_PID');
+      Env().exists('SSH_TTY');
+  // removed as I think this is set if a user
+  //runs ssa-agent to start the ssh-agent on their local machine.
+  // Env().exists('SSH_AGENT_PID');
 }
 
 void showWelcome(
