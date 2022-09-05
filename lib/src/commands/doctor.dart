@@ -48,6 +48,7 @@ class DoctorCommand extends Command<int> {
 
   void _printEnvironment() {
     print(blue('\nEnvironment'));
+    _colprint(['Pub Cache:', privatePath(PubCache().pathTo)]);
     envStatus('PUB_CACHE');
     _printPATH();
   }
