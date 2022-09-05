@@ -25,15 +25,15 @@ class DoctorCommand extends Command<int> {
   String get name => 'doctor';
 
   @override
-  int run() {
-    withSettings(() {
+  Future<int> run() async {
+    await withSettings(() async {
       _printPlatform();
       _printURLs();
       _printEnvironment();
       _printShell();
 
       tokenStatus();
-      _status();
+      await _status();
     });
     return 0;
   }
@@ -42,8 +42,8 @@ class DoctorCommand extends Command<int> {
     print('');
 
     print(blue('\nURLs'));
-    print('Web site: ${OnePubSettings.use.onepubWebUrl}');
-    print('API endpoint: ${OnePubSettings.use.onepubApiUrl}');
+    _colprint(['Web site:', OnePubSettings.use.onepubWebUrl]);
+    _colprint(['API endpoint:', OnePubSettings.use.onepubApiUrl]);
   }
 
   void _printEnvironment() {
@@ -54,14 +54,14 @@ class DoctorCommand extends Command<int> {
 
   void envStatus(String key) {
     if (Env().exists(key)) {
-      print('$key: ${env[key]}');
+      _colprint(['$key:', env[key]]);
     } else {
-      print('$key: not set and not used.');
+      _colprint(['$key:', 'not set and not used.']);
     }
   }
 
   void _printPATH() {
-    print('PATH');
+    print('PATH:');
     for (final path in PATH) {
       final line = privatePath(path);
       var error = '';
@@ -75,16 +75,16 @@ class DoctorCommand extends Command<int> {
   void _printShell() {
     print('');
     print(blue('Shell Settings'));
-    _colprint([r'$SHELL', env['SHELL'] ?? '']);
+    _colprint([r'$SHELL:', env['SHELL'] ?? '']);
 
     final shell = Shell.current;
-    _colprint(['detected', shell.name]);
+    _colprint(['Detected:', shell.name]);
 
     if (shell.hasStartScript) {
       final startScriptPath = shell.pathToStartScript;
-      _colprint(['Start script', privatePath(startScriptPath ?? 'not found')]);
+      _colprint(['Start script:', privatePath(startScriptPath ?? 'not found')]);
     } else {
-      _colprint(['Start sript', 'not supported by shell']);
+      _colprint(['Start script:', 'not supported by shell']);
     }
   }
 
@@ -92,9 +92,9 @@ class DoctorCommand extends Command<int> {
     print('');
     print(blue('Status'));
     if (OnePubTokenStore().isLoggedIn) {
-      print('Logged In: true');
-      print('Active Member: ${OnePubSettings.use.operatorEmail}');
-      print('Active Organisation: ${OnePubSettings.use.organisationName}');
+      _colprint(['Logged In:', 'true']);
+      _colprint(['Active Member:', OnePubSettings.use.operatorEmail]);
+      _colprint(['Organisation:', OnePubSettings.use.organisationName]);
     } else {
       print(orange('''
 You are not logged into OnePub.
@@ -136,18 +136,15 @@ void tokenStatus() {
 void _printPlatform() {
   print(blue('Platform'));
 
-  _colprint(['OS', Platform.operatingSystem]);
-  print(
-    Format().row(
-      ['OS version', Platform.operatingSystemVersion],
-      widths: [17, -1],
-    ),
+  _colprint(['OS:', Platform.operatingSystem]);
+  _colprint(
+    ['OS version:', Platform.operatingSystemVersion],
   );
-  _colprint(['Path separator', Platform.pathSeparator]);
+  _colprint(['Path separator:', Platform.pathSeparator]);
   print('');
 
-  print('Dart version: ${DartSdk().version}');
-  print('Dart path: ${DartSdk().pathToDartExe}');
+  _colprint(['Dart version:', DartSdk().version]);
+  _colprint(['Dart path:', DartSdk().pathToDartExe]);
 }
 
 void _colprint(List<String?> cols) {
