@@ -45,52 +45,20 @@ class OnePubLoginCommand extends Command<int> {
     /// remote session will always be over ssh
     /// but local ones won't
 
-    checkForSSH();
-
-    checkForDocker();
-
     try {
       final bb = BreadButter();
-      final tempAuthTokenResponse = await bb.auth();
-      if (tempAuthTokenResponse == null) {
-        throw ExitException(
-            exitCode: 1, message: 'Invalid response. onePubToken not returned');
-      }
+      final auth = await bb.auth();
 
-      if (tempAuthTokenResponse.success) {
-        final onepubToken =
-            tempAuthTokenResponse.data['onePubToken'] as String?;
-        final firstLogin = tempAuthTokenResponse.data['firstLogin'] as bool?;
-        final operatorEmail =
-            tempAuthTokenResponse.data['operatorEmail'] as String?;
-        final organisationName =
-            tempAuthTokenResponse.data['organisationName'] as String?;
-        final obfuscatedOrganisationId =
-            tempAuthTokenResponse.data['obfuscatedOrganisationId'] as String?;
-        if (onepubToken == null ||
-            firstLogin == null ||
-            organisationName == null ||
-            operatorEmail == null ||
-            obfuscatedOrganisationId == null) {
-          print(tempAuthTokenResponse.data);
-          throw ExitException(
-              exitCode: 1,
-              message: 'Invalid response. missing authorization data');
-        }
+      OnePubTokenStore().save(
+          onepubToken: auth.onepubToken,
+          organisationName: auth.organisationName,
+          obfuscatedOrganisationId: auth.obfuscatedOrganisationId,
+          operatorEmail: auth.operatorEmail);
 
-        OnePubTokenStore().save(
-            onepubToken: onepubToken,
-            organisationName: organisationName,
-            obfuscatedOrganisationId: obfuscatedOrganisationId,
-            operatorEmail: operatorEmail);
-
-        showWelcome(
-            firstLogin: firstLogin,
-            organisationName: organisationName,
-            operator: operatorEmail);
-      } else {
-        showError(tempAuthTokenResponse);
-      }
+      showWelcome(
+          firstLogin: auth.firstLogin,
+          organisationName: auth.organisationName,
+          operator: auth.operatorEmail);
     } on FetchException {
       printerr(red('Unable to connect to '
           '${OnePubSettings.use.onepubApiUrl}. '
