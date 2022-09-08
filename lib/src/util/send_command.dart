@@ -198,8 +198,8 @@ class EndpointResponse {
   void _parseCli() {
     final decodedResponse = _bodyAsJsonMap(_body);
 
-    if (decodedResponse.keys.contains('success')) {
-      _data = decodedResponse['success'] as Map<String, Object?>;
+    if (decodedResponse.keys.contains('body')) {
+      _data = decodedResponse['body'] as Map<String, Object?>;
       _success = true;
     } else if (decodedResponse.keys.contains('error')) {
       _data = decodedResponse['error'] as Map<String, Object?>;
