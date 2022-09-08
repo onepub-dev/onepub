@@ -35,12 +35,12 @@ import '../../../test/src/test_settings.dart';
 /// All code that runs (including setup) needs to use a temp settings.yaml
 /// as it will be the only one to have the correct details.
 ///
-void main(List<String> args) {
+Future<void> main(List<String> args) async {
   final pathToBin = DartProject.self.pathToBinDir;
 
   final pathToOnePubExe = join(pathToBin, 'onepub.dart');
 
-  withTestSettings((testSettings) {
+  await withTestSettings((testSettings) {
     final operatorEmail = testSettings.member;
     // final operatorEmail = OnePubSettings.use.operatorEmail;
 

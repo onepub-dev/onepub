@@ -12,7 +12,7 @@ import 'test_utils.dart';
 
 void main() {
   test('onepub doctor ...', () async {
-    withTestSettings((testSettings) {
+    await withTestSettings((testSettings) {
       final clean = runCmd('doctor');
 
       final first = clean.first;

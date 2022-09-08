@@ -17,8 +17,8 @@ import '../test_utils.dart';
 void main() {
   setUpAll(() {
     const packageName = 'test_packag_2';
-    withTempProject(packageName, (dartProject) {
-      withTestSettings((testSettings) {
+    withTempProject(packageName, (dartProject) async {
+      await withTestSettings((testSettings) {
         final pathToOnePub = join(DartProject.self.pathToBinDir, 'onepub.dart');
         final pathToProjectRoot = dartProject.pathToProjectRoot;
 

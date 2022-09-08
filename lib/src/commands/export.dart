@@ -41,7 +41,7 @@ Pass in a filename or leave blank to use the default filename.''')
 
   ///
   Future<void> export() async {
-    withSettings(() {
+    await withSettings(() async {
       // if (!exists(OnePubSettings.use.pathToSettingsDir)) {
       //   createDir(OnePubSettings.use.pathToSettingsDir, recursive: true);
       // }
@@ -49,8 +49,10 @@ Pass in a filename or leave blank to use the default filename.''')
       final user = argResults!['user'] as String?;
 
       if (!OnePubTokenStore().isLoggedIn) {
-        throw ExitException(
-            exitCode: 1, message: "You must run 'onepub login' first.");
+       throw ExitException(exitCode: 1, message: '''
+You must be logged in to run this command.
+run: onepub login
+  ''');
       }
 
       final String onepubToken;

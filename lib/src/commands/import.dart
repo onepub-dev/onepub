@@ -52,7 +52,7 @@ Use `onepub export` to obtain the OnePub token.
 
   ///
   Future<void> import() async {
-    withSettings(() {
+    await withSettings(() async {
       // if (OnePubTokenStore().isLoggedIn) {
       //   throw ExitException(
       //       exitCode: -1,
@@ -109,7 +109,7 @@ Found: ${argResults!.rest.join(',')}''');
     if (!exists(pathToTokenFile)) {
       throw ExitException(
           exitCode: 1,
-          message: "The token file '$pathToTokenFile', does not exist");
+          message: "The OnePub token file '$pathToTokenFile', does not exist");
     }
 
     return TokenExportFile.load(pathToTokenFile).onepubToken;

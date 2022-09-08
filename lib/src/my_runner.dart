@@ -38,7 +38,6 @@ import 'pub/command/version.dart';
 import 'pub/io.dart';
 import 'pub/log.dart' hide red;
 import 'pub/log.dart' as plog;
-import 'version/version.g.dart';
 
 enum CommandSet { opub, onepub }
 
@@ -69,7 +68,7 @@ class MyRunner extends CommandRunner<int> implements PubTopLevel {
 
     final version = results['version'] as bool == true;
     if (version == true) {
-      print('onepub $packageVersion');
+      // no output required as the startup logic already prints the version.
       exit(0);
     }
 

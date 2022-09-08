@@ -126,6 +126,7 @@ class OnePubSettings {
       _settings['operatorEmail'] = operatorEmail;
   String get operatorEmail => _settings.asString('operatorEmail');
 
+  // ignore: discarded_futures
   void save() => waitForEx(_settings.save());
 
   String resolveApiEndPoint(String command, {String? queryParams}) {
@@ -150,13 +151,14 @@ class OnePubSettings {
 /// Injects an OnePubSettings into the scope.
 /// If [create] is true then an empy settings file will
 /// be created.
-void withSettings(void Function() action, {bool create = false}) {
-  Scope()
+Future<void> withSettings(Future<void> Function() action,
+    {bool create = false}) async {
+  final scope = Scope()
     ..value<OnePubSettings>(
-        OnePubSettings.scopeKey, OnePubSettings._internal(create: create))
-    ..run(() {
-      action();
-    });
+        OnePubSettings.scopeKey, OnePubSettings._internal(create: create));
+  await scope.run(() async {
+    await action();
+  });
 }
 
 void install({required bool dev}) {
