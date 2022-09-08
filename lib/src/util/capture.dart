@@ -25,7 +25,7 @@ class DCliZone {
     };
 
     // ignore: flutter_style_todos
-    /// TODO: we need to some how await this.
+    /// TODO: we need to somehow await this.
     runZonedGuarded(
       body,
       (e, st) {},
