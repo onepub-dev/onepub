@@ -7,3 +7,4 @@ build/
 .history
 .failed_tracker
 onepub.token.yaml
+test/test_settings.yaml
