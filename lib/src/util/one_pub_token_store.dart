@@ -41,7 +41,7 @@ class OnePubTokenStore {
 
   /// throws [StateError] if called when not logged in.
   /// returns the onepubToken.
-  String fetch() {
+  String load() {
     final settings = OnePubSettings.use;
     final credentials = tokenStore.findCredential(
         settings.onepubHostedUrl(settings.obfuscatedOrganisationId));
