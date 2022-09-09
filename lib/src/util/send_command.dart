@@ -61,7 +61,7 @@ You must be logged in to run this command.
 run: onepub login
   ''');
     }
-    final onepubToken = OnePubTokenStore().fetch();
+    final onepubToken = OnePubTokenStore().load();
 
     _headers.addAll({'authorization': onepubToken});
   }

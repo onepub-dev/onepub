@@ -93,6 +93,9 @@ ${magenta('Please login with the $operatorEmail account')}
           printerr(red('Failed to create member: ${result.errorMessage}'));
           exit(1);
         }
+        print('Its OK test member already exists');
+      } else {
+        print('Created test member.');
       }
     });
   }, forAuthentication: true);
