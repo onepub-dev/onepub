@@ -14,7 +14,7 @@ import 'test_utils.dart';
 
 void main() {
   test('onepub export env...', () async {
-    await withTestSettings((testSettings) {
+    await withTestSettings((testSettings) async {
       final clean = runCmd('export');
 
       final settings = OnePubSettings.use;
@@ -42,7 +42,7 @@ void main() {
   });
 
   test('onepub export CI/CD...', () async {
-    await withTestSettings((testSettings) {
+    await withTestSettings((testSettings) async {
       final settings =
           SettingsYaml.load(pathToSettings: join('test', 'test_settings.yaml'));
 

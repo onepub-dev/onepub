@@ -40,25 +40,19 @@ Future<void> main(List<String> args) async {
 
   final pathToOnePubExe = join(pathToBin, 'onepub.dart');
 
-  await withTestSettings((testSettings) {
+  await withTestSettings((testSettings) async {
     final operatorEmail = testSettings.member;
-    // final operatorEmail = OnePubSettings.use.operatorEmail;
-
-    // final loginRequired =
-    //     !OnePubTokenStore().isLoggedIn || operatorEmail != user;
-
-    // if (loginRequired) {
     print('''
 
 ${magenta('Please login with the $operatorEmail account')}
 ''');
 
     /// prompt the user to login into onepub.
-    '$pathToOnePubExe login'.run;
+    'dart $pathToOnePubExe login'.run;
     // }
     // we need to force a reload of OnePubSettings
     // as the login will have updated it.
-    withSettings(() async {
+    await withSettings(() async {
       final tokenStore = OnePubTokenStore();
       if (!tokenStore.isLoggedIn) {
         printerr(red('Login Failed. Tests run stopped'));

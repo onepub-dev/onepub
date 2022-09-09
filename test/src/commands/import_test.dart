@@ -24,7 +24,7 @@ void main() {
 }
 
 Future<void> withFile(String command, String pathToImportFile) async {
-  await withTestSettings((testSettings) {
+  await withTestSettings((testSettings) async {
     final onepubToken = testSettings.onepubToken;
     final settings = OnePubSettings.use;
     final organisationName = settings.organisationName;

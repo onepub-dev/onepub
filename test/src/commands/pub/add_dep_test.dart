@@ -18,7 +18,7 @@ void main() {
   setUpAll(() {
     const packageName = 'test_packag_2';
     withTempProject(packageName, (dartProject) async {
-      await withTestSettings((testSettings) {
+      await withTestSettings((testSettings) async {
         final pathToOnePub = join(DartProject.self.pathToBinDir, 'onepub.dart');
         final pathToProjectRoot = dartProject.pathToProjectRoot;
 
@@ -48,7 +48,7 @@ void main() {
     Settings().setVerbose(enabled: false);
 
     withTempProject('test_packag_1', (dartProject) {
-      withTestSettings((testSettings) {
+      withTestSettings((testSettings) async {
         var pubSpec = dartProject.pubSpec;
         expect(pubSpec.dependencies.containsKey('test_packag_2'), isFalse);
 
@@ -67,7 +67,7 @@ void main() {
   test('cli: entrypoint ...', () async {
     const packageName = 'test_packag_1';
     withTempProject(packageName, (dartProject) {
-      withTestSettings((testSettings) {
+      withTestSettings((testSettings) async {
         final size = stat(dartProject.pathToPubSpec).size;
         Scope()
           ..value(unitTestWorkingDirectoryKey, dartProject.pathToProjectRoot)
