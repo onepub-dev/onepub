@@ -34,7 +34,7 @@ Future<void> entrypoint(
       final runner = MyRunner(args, executableName, _description, commandSet);
       try {
         runner.init();
-        waitForEx(runner.run(args));
+        await runner.run(args);
       } on FormatException catch (e) {
         printerr(e.message);
         // this is an Exception (generally from the server, not a usage problem)
