@@ -6,6 +6,7 @@
 import 'package:dcli/dcli.dart';
 import 'package:pub_semver/pub_semver.dart';
 
+import '../../../api/api.dart';
 import '../../../exceptions.dart';
 import '../../../onepub_settings.dart';
 import '../../../pub/command.dart';
@@ -59,6 +60,7 @@ run: onepub login
       }
     }
 
+    await API().checkVersion();
     return globals.activateHosted(
       package,
       constraint,

@@ -64,6 +64,7 @@ run: onepub login
               message: 'The supplied user must be a valid email address. '
                   'Found $user');
         }
+        await API().checkVersion();
         final response = waitForEx(API().fetchMemberToken(user));
 
         if (response.success) {

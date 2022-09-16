@@ -33,6 +33,7 @@ The logout command takes no arguments. Found ${argResults!.rest.join(',')}.
     }
 
     if (OnePubTokenStore().isLoggedIn) {
+      await API().checkVersion();
       final response = await API().logout();
       OnePubTokenStore().clearOldTokens();
 

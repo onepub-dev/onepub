@@ -73,6 +73,7 @@ run: onepub login
         return;
       }
 
+      await API().checkVersion();
       final organisation = await getOrganisation(obfuscatedOrganisationId);
       if (organisation == null) {
         print(orange('${pubspec.name} is already a private package '

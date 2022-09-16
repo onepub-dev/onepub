@@ -77,7 +77,8 @@ Use `onepub export` to obtain the OnePub token.
         onepubToken = fromSecret();
       }
 
-      final organisation = waitForEx(API().fetchOrganisation(onepubToken));
+      await API().checkVersion();
+      final organisation = await API().fetchOrganisation(onepubToken);
       if (!organisation.success) {
         throw ExitException(exitCode: 1, message: organisation.errorMessage!);
       }
