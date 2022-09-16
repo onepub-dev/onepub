@@ -1,6 +1,11 @@
 import 'dart:io';
 
+import 'package:pub_semver/pub_semver.dart';
+
+import '../exceptions.dart';
 import '../util/send_command.dart';
+import '../version/version.g.dart';
+import 'auth_response.dart';
 import 'logout.dart';
 import 'member_create.dart';
 import 'onepub_token.dart';
@@ -9,6 +14,19 @@ import 'status.dart';
 import 'versions.dart';
 
 class API {
+  Future<void> checkVersion() async {
+    final result = await status();
+
+    if (result.version.major != Version.parse(packageVersion).major) {
+      throw ExitException(exitCode: -1, message: '''
+The server's major version "${result.version.major}" does not match your onepub version.
+
+Please upgrade onepub by running:
+dart pub global activate onepub
+          ''');
+    }
+  }
+
   Future<Status> status() async {
     try {
       const endpoint = '/status';
@@ -16,10 +34,21 @@ class API {
       final response = await sendCommand(
           command: endpoint, authorised: false, commandType: CommandType.cli);
 
-      return Status(response.status, response.data['message']! as String);
+      return Status(response.status, response.data['message']! as String,
+          response.data['version'] as String?);
     } on IOException {
-      return Status(500, 'Connection failed');
+      return Status(500, 'Connection failed', null);
     }
+  }
+
+  /// See if the user has completed the oauth login
+  Future<AuthResponse> awaitLogin(String authToken) async {
+    final response = await sendCommand(
+        command: 'member/awaitLogin/$authToken',
+        commandType: CommandType.cli,
+        authorised: false);
+
+    return AuthResponse.parse(response);
   }
 
   Future<Logout> logout() async {
