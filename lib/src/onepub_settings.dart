@@ -148,7 +148,7 @@ class OnePubSettings {
   }
 }
 
-/// Injects an OnePubSettings into the scope.
+/// Injects a OnePubSettings into the scope.
 /// If [create] is true then an empy settings file will
 /// be created.
 Future<void> withSettings(Future<void> Function() action,
@@ -166,6 +166,7 @@ void install({required bool dev}) {
     createDir(OnePubSettings.use.pathToSettingsDir, recursive: true);
   }
 
+  // creaet default settings file.
   if (!exists(OnePubSettings.use.pathToSettings)) {
     OnePubSettings.use.pathToSettings.write('version: 1');
   }
@@ -181,7 +182,7 @@ void install({required bool dev}) {
   if (exists(testingFlagPath)) {
     if (settings.onepubUrl == OnePubSettings.defaultOnePubUrl) {
       print('This system is configured for testing, but is also configured'
-          ' for the production URL. If you need to change this, then delete '
+          ' with the production URL. If you need to change this, then delete '
           '$testingFlagPath or use the --dev option to '
           'change the URL');
       exit(1);
