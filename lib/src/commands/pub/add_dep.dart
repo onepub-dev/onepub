@@ -6,6 +6,7 @@
 
 import 'package:dcli/dcli.dart';
 
+import '../../api/api.dart';
 import '../../exceptions.dart';
 import '../../onepub_settings.dart';
 import '../../pub/command/add.dart';
@@ -47,9 +48,12 @@ class AddPrivateDependencyCommand extends AddCommand {
   @override
   Future<void> runProtected() async {
     if (!OnePubTokenStore().isLoggedIn) {
-      throw ExitException(
-          exitCode: 1, message: "You must run 'onepub login' first.");
+      throw ExitException(exitCode: 1, message: '''
+You must be logged in to run this command.
+run: onepub login
+  ''');
     }
+    await API().checkVersion();
     await super.runProtected();
   }
 }

@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// ignore_for_file: sort_constructors_first, prefer_expression_function_bodies
+
 import 'dart:io';
 import 'dart:isolate';
 
@@ -10,6 +12,7 @@ import 'package:http/http.dart' as http;
 import 'package:stack_trace/stack_trace.dart';
 import 'package:yaml/yaml.dart';
 
+import '../exceptions.dart';
 import 'dart.dart';
 
 /// An exception class for exceptions that are intended to be seen by the user.
@@ -107,14 +110,15 @@ class PackageNotFoundException extends WrappedException {
 /// Returns whether [error] is a user-facing error object.
 ///
 /// This includes both [ApplicationException] and any dart:io errors.
-bool isUserFacingException(error) {
-  // TODO(nweiz): unify this list with _userFacingExceptions when issue 5897 is
-  // fixed.
+bool isUserFacingException(Object error) {
+// TODO(nweiz): unify this list with _userFacingExceptions when issue 5897 is
+// fixed.
   return error is ApplicationException ||
       error is AnalyzerErrorGroup ||
       error is IsolateSpawnException ||
       error is IOException ||
       error is http.ClientException ||
       error is YamlException ||
-      error is UsageException;
+      error is UsageException ||
+      error is ExitException;
 }

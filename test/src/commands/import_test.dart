@@ -13,7 +13,7 @@ import 'test_utils.dart';
 
 void main() {
   test('onepub import --file', () async {
-    withFile('import --file', 'onepub.token.yaml');
+    await withFile('import --file', 'onepub.token.yaml');
   });
 
   test('onepub import --file afile.yaml', () async {
@@ -23,8 +23,8 @@ void main() {
   });
 }
 
-void withFile(String command, String pathToImportFile) {
-  withTestSettings((testSettings) {
+Future<void> withFile(String command, String pathToImportFile) async {
+  await withTestSettings((testSettings) async {
     final onepubToken = testSettings.onepubToken;
     final settings = OnePubSettings.use;
     final organisationName = settings.organisationName;

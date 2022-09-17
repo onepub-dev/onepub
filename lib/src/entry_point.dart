@@ -16,7 +16,7 @@ import 'util/log.dart' as ulog;
  * Written by Brett Sutton <bsutton@onepub.dev>, Jan 2022
  */
 
-/// Used by unit tests to alter the working directory a command runs.
+/// Used by unit tests to alter the working directory a command runs in.
 ScopeKey<String> unitTestWorkingDirectoryKey =
     ScopeKey<String>('WorkingDirectory');
 
@@ -30,23 +30,28 @@ Future<void> entrypoint(
   String executableName,
 ) async {
   try {
-    withSettings(() {
+    await withSettings(() async {
       final runner = MyRunner(args, executableName, _description, commandSet);
       try {
         runner.init();
-        waitForEx(runner.run(args));
+        await runner.run(args);
       } on FormatException catch (e) {
-        ulog.logerr(e.message);
+        printerr(e.message);
         // this is an Exception (generally from the server, not a usage problem)
         //showUsage();
       } on UsageException catch (e) {
-        ulog.logerr(e.message);
-        showUsage(runner);
-        // ignore: avoid_catches_without_on_clauses
+        printerr(e.message);
+        printerr('');
+        printerr(e.usage);
       }
     }, create: true);
   } on ExitException catch (e) {
-    printerr('${red('Error:')} ${e.message}');
+    printerr(e.message);
+    // final firstLine = e.message.split('\n').first;
+    // final rest = e.message.split('\n').skip(1).join('\n');
+    // printerr(red('Error: $firstLine'));
+    // printerr('');
+    // printerr(rest);
     exit(e.exitCode);
     // ignore: avoid_catches_without_on_clauses
   } catch (e, s) {
@@ -59,4 +64,4 @@ void showUsage(MyRunner runner) {
   exit(1);
 }
 
-String get _description => orange('OnePub CLI tools');
+String get _description => orange('OnePub CLI tools.');

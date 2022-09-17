@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:dcli/dcli.dart';
+import 'package:dcli_core/dcli_core.dart' as core;
 import 'package:onepub/src/onepub_settings.dart';
 import 'package:settings_yaml/settings_yaml.dart';
 
@@ -26,6 +29,7 @@ class TestSettings {
   set organisationId(String obsfucatedId) =>
       _settings['organisationId'] = obsfucatedId;
 
+  // ignore: discarded_futures
   void save() => waitForEx(_settings.save());
 
   String get pathToTestSettings {
@@ -38,12 +42,13 @@ class TestSettings {
 /// Initialises a OnePubSettings file in a tmp directory
 /// copying its initial state from the test_settings.yaml file
 /// in the project 'test' directory.
-void withTestSettings(void Function(TestSettings testSettings) action,
-    {bool forAuthentication = false}) {
-  withTempDir((tempSettingsDir) {
+Future<void> withTestSettings(
+    Future<void> Function(TestSettings testSettings) action,
+    {bool forAuthentication = false}) async {
+  await core.withTempDir((tempSettingsDir) async {
     // control the location of the onepub settings file.
-    withEnvironment(() {
-      withSettings(() {
+    await withEnvironment(() async {
+      await withSettings(() async {
         final settings = OnePubSettings.use;
         final testSettings = TestSettings();
 
@@ -57,7 +62,7 @@ void withTestSettings(void Function(TestSettings testSettings) action,
           ..onepubUrl = testSettings.onepubUrl
           ..save();
 
-        action(testSettings);
+        await action(testSettings);
       }, create: true);
     }, environment: {OnePubSettings.onepubPathEnvKey: tempSettingsDir});
   });

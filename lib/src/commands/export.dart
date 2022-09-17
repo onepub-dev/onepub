@@ -41,7 +41,7 @@ Pass in a filename or leave blank to use the default filename.''')
 
   ///
   Future<void> export() async {
-    withSettings(() {
+    await withSettings(() async {
       // if (!exists(OnePubSettings.use.pathToSettingsDir)) {
       //   createDir(OnePubSettings.use.pathToSettingsDir, recursive: true);
       // }
@@ -49,8 +49,10 @@ Pass in a filename or leave blank to use the default filename.''')
       final user = argResults!['user'] as String?;
 
       if (!OnePubTokenStore().isLoggedIn) {
-        throw ExitException(
-            exitCode: 1, message: "You must run 'onepub login' first.");
+        throw ExitException(exitCode: 1, message: '''
+You must be logged in to run this command.
+run: onepub login
+  ''');
       }
 
       final String onepubToken;
@@ -62,6 +64,7 @@ Pass in a filename or leave blank to use the default filename.''')
               message: 'The supplied user must be a valid email address. '
                   'Found $user');
         }
+        await API().checkVersion();
         final response = waitForEx(API().fetchMemberToken(user));
 
         if (response.success) {
@@ -70,7 +73,7 @@ Pass in a filename or leave blank to use the default filename.''')
           throw ExitException(exitCode: 1, message: response.errorMessage!);
         }
       } else {
-        onepubToken = OnePubTokenStore().fetch();
+        onepubToken = OnePubTokenStore().load();
       }
       print(orange('Exporting OnePub token for '
           '${OnePubSettings.use.organisationName}.'));

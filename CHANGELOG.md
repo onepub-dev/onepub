@@ -1,3 +1,21 @@
+# 2.0.0
+- BREAKING: re-wrote login to use pure server side rather than requiring the browser to connect via local host. This is to get around local firewalls, the brave browser and the inability to login from an ssh session or a local docker container. All of these scenarios should now work.
+- Added version checks into the api to ensure the onepub client is running
+  against a compatible onepub client.
+- doctor now checks for a compatible server version no.
+- improvements to the auth pre test hook.
+- Added missing future/await to return of withTestSystem callback.
+- renamed OnePubTokenStore.fetch to load as fetch implies an http request rather then a local file.
+- moved to dcli 1.20.2 as 1.20.1 didn't actually correctly support dart 2.12 whilst 1.20.2 does.
+- Added unit test for missing sub command.
+- Change the structure of the REST json response from onepub to expect 'body' rather than 'success' for the body of the response.
+- Added capture function from dcli 2.x to help with unit testing.
+- Added ExitException to list of user facing exceptions.
+- Changed logout json response to always have non-null error message.
+- Added missing awaits after testing code against dart 2.18 improved formatting of usage statements. Improved formatting/messaging of errors.
+- Added the .pub-cache path to the doctor output.
+- improved the formatting of the doctor command.
+
 # 1.4.5
 - Modified the ssh detection and removed SSH_AGENT_PID as this is
   used on the local machine to indicate the PID of the local ssh agent

@@ -45,8 +45,10 @@ See ${urlJoin(OnePubSettings.use.onepubWebUrl, 'publish')}''';
   ///
   Future<void> private() async {
     if (!OnePubTokenStore().isLoggedIn) {
-      throw ExitException(
-          exitCode: 1, message: "You must run 'onepub login' first.");
+      throw ExitException(exitCode: 1, message: '''
+You must be logged in to run this command.
+run: onepub login
+  ''');
     }
 
     final project = DartProject.findProject(getWorkingDirectory());
@@ -71,6 +73,7 @@ See ${urlJoin(OnePubSettings.use.onepubWebUrl, 'publish')}''';
         return;
       }
 
+      await API().checkVersion();
       final organisation = await getOrganisation(obfuscatedOrganisationId);
       if (organisation == null) {
         print(orange('${pubspec.name} is already a private package '

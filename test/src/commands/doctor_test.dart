@@ -12,17 +12,25 @@ import 'test_utils.dart';
 
 void main() {
   test('onepub doctor ...', () async {
-    withTestSettings((testSettings) {
+    await withTestSettings((testSettings) async {
       final clean = runCmd('doctor');
 
       final first = clean.first;
       expect(first, 'OnePub version: $packageVersion ');
 
-      final last = clean[(clean.length - 2)];
-      expect(last, 'OnePub: status healthy.');
+      final status = clean[(clean.length - 4)];
+      expect(status, 'OnePub: status healthy.');
+
+      final version = clean[(clean.length - 2)];
+      expect(version.startsWith('Server Version'), isTrue);
 
       // check that we have each of the major headings
-      expect(clean.contains('Dart version: ${DartSdk().version}'), isTrue);
+      expect(clean.contains('Platform'), isTrue);
+      expect(
+          clean.any((element) =>
+              element.contains('Dart version:') &&
+              element.contains(DartSdk().version)),
+          isTrue);
       expect(clean.contains('URLs'), isTrue);
       expect(clean.contains('Environment'), isTrue);
       expect(clean.contains('Repository tokens'), isTrue);

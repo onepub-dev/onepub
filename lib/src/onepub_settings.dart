@@ -126,6 +126,7 @@ class OnePubSettings {
       _settings['operatorEmail'] = operatorEmail;
   String get operatorEmail => _settings.asString('operatorEmail');
 
+  // ignore: discarded_futures
   void save() => waitForEx(_settings.save());
 
   String resolveApiEndPoint(String command, {String? queryParams}) {
@@ -147,16 +148,17 @@ class OnePubSettings {
   }
 }
 
-/// Injects an OnePubSettings into the scope.
+/// Injects a OnePubSettings into the scope.
 /// If [create] is true then an empy settings file will
 /// be created.
-void withSettings(void Function() action, {bool create = false}) {
-  Scope()
+Future<void> withSettings(Future<void> Function() action,
+    {bool create = false}) async {
+  final scope = Scope()
     ..value<OnePubSettings>(
-        OnePubSettings.scopeKey, OnePubSettings._internal(create: create))
-    ..run(() {
-      action();
-    });
+        OnePubSettings.scopeKey, OnePubSettings._internal(create: create));
+  await scope.run(() async {
+    await action();
+  });
 }
 
 void install({required bool dev}) {
@@ -164,6 +166,7 @@ void install({required bool dev}) {
     createDir(OnePubSettings.use.pathToSettingsDir, recursive: true);
   }
 
+  // creaet default settings file.
   if (!exists(OnePubSettings.use.pathToSettings)) {
     OnePubSettings.use.pathToSettings.write('version: 1');
   }
@@ -179,7 +182,7 @@ void install({required bool dev}) {
   if (exists(testingFlagPath)) {
     if (settings.onepubUrl == OnePubSettings.defaultOnePubUrl) {
       print('This system is configured for testing, but is also configured'
-          ' for the production URL. If you need to change this, then delete '
+          ' with the production URL. If you need to change this, then delete '
           '$testingFlagPath or use the --dev option to '
           'change the URL');
       exit(1);

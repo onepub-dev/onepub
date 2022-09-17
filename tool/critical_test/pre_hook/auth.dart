@@ -35,30 +35,24 @@ import '../../../test/src/test_settings.dart';
 /// All code that runs (including setup) needs to use a temp settings.yaml
 /// as it will be the only one to have the correct details.
 ///
-void main(List<String> args) {
+Future<void> main(List<String> args) async {
   final pathToBin = DartProject.self.pathToBinDir;
 
   final pathToOnePubExe = join(pathToBin, 'onepub.dart');
 
-  withTestSettings((testSettings) {
+  await withTestSettings((testSettings) async {
     final operatorEmail = testSettings.member;
-    // final operatorEmail = OnePubSettings.use.operatorEmail;
-
-    // final loginRequired =
-    //     !OnePubTokenStore().isLoggedIn || operatorEmail != user;
-
-    // if (loginRequired) {
     print('''
 
 ${magenta('Please login with the $operatorEmail account')}
 ''');
 
     /// prompt the user to login into onepub.
-    '$pathToOnePubExe login'.run;
+    'dart $pathToOnePubExe login'.run;
     // }
     // we need to force a reload of OnePubSettings
     // as the login will have updated it.
-    withSettings(() async {
+    await withSettings(() async {
       final tokenStore = OnePubTokenStore();
       if (!tokenStore.isLoggedIn) {
         printerr(red('Login Failed. Tests run stopped'));
@@ -99,6 +93,9 @@ ${magenta('Please login with the $operatorEmail account')}
           printerr(red('Failed to create member: ${result.errorMessage}'));
           exit(1);
         }
+        print('Its OK test member already exists');
+      } else {
+        print('Created test member.');
       }
     });
   }, forAuthentication: true);
