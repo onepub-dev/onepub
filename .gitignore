@@ -8,3 +8,5 @@ build/
 .failed_tracker
 onepub.token.yaml
 test/test_settings.yaml
+bin/onepub
+bin/opub

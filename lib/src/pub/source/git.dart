@@ -48,21 +48,21 @@ class GitSource extends CachedSource {
       throw FormatException('The description must be a Git URL or a map '
           "with a 'url' key.");
     } else {
-      final descriptionUrl = description['url'];
+      final descriptionUrl = description['url'] as String?;
       if (descriptionUrl is! String) {
         throw FormatException(
             "The 'url' field of a description must be a string.");
       }
       url = descriptionUrl;
 
-      final descriptionRef = description['ref'];
+      final descriptionRef = description['ref'] as String?;
       if (descriptionRef is! String?) {
         throw FormatException("The 'ref' field of the description must be a "
             'string.');
       }
       ref = descriptionRef;
 
-      final descriptionPath = description['path'];
+      final descriptionPath = description['path'] as String?;
       if (descriptionPath is! String?) {
         throw FormatException("The 'path' field of the description must be a "
             'string.');
@@ -82,26 +82,26 @@ class GitSource extends CachedSource {
   }
 
   @override
-  PackageId parseId(String name, Version version, description,
+  PackageId parseId(String name, Version version, dynamic description,
       {String? containingDir}) {
     if (description is! Map) {
       throw FormatException("The description must be a map with a 'url' "
           'key.');
     }
 
-    var ref = description['ref'];
+    var ref = description['ref'] as String?;
     if (ref != null && ref is! String) {
       throw FormatException("The 'ref' field of the description must be a "
           'string.');
     }
 
-    final resolvedRef = description['resolved-ref'];
+    final resolvedRef = description['resolved-ref'] as String?;
     if (resolvedRef is! String) {
       throw FormatException("The 'resolved-ref' field of the description "
           'must be a string.');
     }
 
-    final url = description['url'];
+    final url = description['url'] as String;
     return PackageId(
         name,
         version,
@@ -487,7 +487,7 @@ class GitSource extends CachedSource {
   /// [ref].
   ///
   /// This assumes that the canonical clone already exists.
-  Future _updateRepoCache(
+  Future<void> _updateRepoCache(
     PackageRef ref,
     SystemCache cache,
   ) async {
@@ -574,7 +574,7 @@ class GitSource extends CachedSource {
   ///
   /// If [shallow] is true, creates a shallow clone that contains no history
   /// for the repository.
-  Future _clone(
+  Future<void> _clone(
     String from,
     String to, {
     bool mirror = false,
@@ -597,7 +597,7 @@ class GitSource extends CachedSource {
   }
 
   /// Checks out the reference [ref] in [repoPath].
-  Future _checkOut(String repoPath, String ref) {
+  Future<void> _checkOut(String repoPath, String ref) {
     return git
         .run(['checkout', ref], workingDir: repoPath).then((result) => null);
   }

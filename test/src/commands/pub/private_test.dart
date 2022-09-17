@@ -19,8 +19,8 @@ void main() {
   test('cli: private ...', () async {
     const packageName = 'test_packag_1';
 
-    withTempProject(packageName, (dartProject) {
-      withTestSettings((testSettings) async {
+    await withTempProject(packageName, (dartProject) async {
+      await withTestSettings((testSettings) async {
         final settings = OnePubSettings.use;
         final organisationName = settings.organisationName;
         expect(dartProject.pubSpec.pubspec.publishTo, isNull);
@@ -61,8 +61,8 @@ void main() {
 
   test('cli: entrypoint ...', () async {
     const packageName = 'test_packag_1';
-    withTempProject(packageName, (dartProject) {
-      withTestSettings((testSettings) async {
+    await withTempProject(packageName, (dartProject) async {
+      await withTestSettings((testSettings) async {
         final size = stat(dartProject.pathToPubSpec).size;
         Scope()
           ..value(unitTestWorkingDirectoryKey, dartProject.pathToProjectRoot)

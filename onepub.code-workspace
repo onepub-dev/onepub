@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../dcli-2.12"
+		},
+		{
+			"path": "../onepub-deploy"
+		}
+	],
+	"settings": {}
+}

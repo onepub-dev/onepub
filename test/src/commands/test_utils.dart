@@ -4,6 +4,7 @@
  */
 
 import 'package:dcli/dcli.dart' hide equals;
+import 'package:dcli_core/dcli_core.dart' as core;
 
 /// Runs a onepub command on the cli and returns the output
 /// stripped of any ansi chars.
@@ -13,7 +14,7 @@ List<String> runCmd(String command, {String? workingDirectory}) {
   final pathToOnePub = join(pathToRoot, 'bin', 'onepub.dart');
 
   final progress = Progress.capture();
-  '$pathToOnePub $command'.start(
+  'dart $pathToOnePub $command'.start(
       workingDirectory: workingDirectory, progress: progress, nothrow: true);
 
   if (progress.exitCode != 0) {
@@ -33,13 +34,13 @@ List<String> runCmd(String command, {String? workingDirectory}) {
 /// Creates a dart project in a temp directory from one of the
 /// test fixtures under test/fixtures. Pass the fixture directory
 /// as the [projectName].
-void withTempProject(
-    String projectName, void Function(DartProject dartProject) action) {
+Future<void> withTempProject(String projectName,
+    Future<void> Function(DartProject dartProject) action) async {
   final pathToRoot = DartProject.self.pathToProjectRoot;
-  withTempDir((workingDir) {
+  await core.withTempDir((workingDir) async {
     copyTree(join(pathToRoot, 'test', 'fixtures', projectName), workingDir);
 
-    action(DartProject.fromPath(workingDir));
+    await action(DartProject.fromPath(workingDir));
   });
 }
 

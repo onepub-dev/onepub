@@ -2,6 +2,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+// ignore: cascade_invocations
+
 import 'dart:async';
 import 'dart:io';
 
@@ -42,14 +44,13 @@ String topLevelProgram = 'onepub';
 
 class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
   @override
-  String? get directory => argResults['directory'];
+  String? get directory => argResults['directory'] as String;
 
   @override
-  bool get captureStackChains {
-    return argResults['trace'] ||
-        argResults['verbose'] ||
-        argResults['verbosity'] == 'all';
-  }
+  bool get captureStackChains =>
+      argResults['trace'] as bool ||
+      argResults['verbose'] as bool ||
+      argResults['verbosity'] as String == 'all';
 
   @override
   Verbosity get verbosity {
@@ -68,14 +69,14 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
         return log.Verbosity.all;
       default:
         // No specific verbosity given, so check for the shortcut.
-        if (argResults['verbose']) return log.Verbosity.all;
+        if (argResults['verbose'] as bool) return log.Verbosity.all;
         if (runningFromTest) return log.Verbosity.testing;
         return log.Verbosity.normal;
     }
   }
 
   @override
-  bool get trace => argResults['trace'];
+  bool get trace => argResults['trace'] as bool;
 
   ArgResults? _argResults;
 
@@ -94,10 +95,12 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
   String get usageFooter =>
       'See https://dart.dev/tools/pub/cmd for detailed documentation.';
 
+  // ignore: sort_constructors_first
   PubCommandRunner()
       : super('pub', 'Pub is a package manager for Dart.',
             usageLineLength: lineLength) {
     argParser.addFlag('version', negatable: false, help: 'Print pub version.');
+
     argParser.addFlag('trace',
         negatable: false,
         help: 'Print debugging information when an error occurs.');
@@ -165,7 +168,7 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
   Future<int?> runCommand(ArgResults topLevelResults) async {
     _checkDepsSynced();
 
-    if (topLevelResults['version']) {
+    if (topLevelResults['version'] != null) {
       log.message('Pub ${sdk.version}');
       return 0;
     }
