@@ -2,3 +2,5 @@ test
 tool
 onepub.token.yaml
 dart_test.yaml
+bin/onepub
+bin/opub
