@@ -118,6 +118,9 @@ Future<EndpointResponse> _processData(
       /// do overlapping io.
       subscription.pause();
 
+      verbose(() => 'received (hex): ${toHex(newBytes)}');
+      verbose(() => 'received (ascii): ${toAscii(newBytes)}');
+
       /// we have new data to save.
       body.write(utf8.decode(newBytes));
 
@@ -236,4 +239,38 @@ class EndpointResponse {
 
   @override
   String toString() => 'status: $status, data: ${data.toString()}';
+}
+
+String toHex(List<int> bytes) {
+  final hex = StringBuffer();
+  for (final val in bytes) {
+    hex
+      ..write(val.toRadixString(16).padLeft(2, '0'))
+      ..write(' ');
+  }
+  return hex.toString();
+}
+
+String toAscii(List<int> bytes) {
+  final ascii = StringBuffer();
+  for (final val in bytes) {
+    final char = isPrintable(val) ? String.fromCharCode(val) : ' ';
+
+    ascii.write(char);
+  }
+
+  return ascii.toString();
+}
+
+bool isPrintable(int codeUnit) {
+  var printable = true;
+
+  if (codeUnit < 33) {
+    printable = false;
+  }
+  if (codeUnit >= 127) {
+    printable = false;
+  }
+
+  return printable;
 }
