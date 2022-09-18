@@ -154,6 +154,11 @@ void _printPlatform() {
   _colprint(
     ['OS version:', Platform.operatingSystemVersion],
   );
+
+  _colprint(
+    ['Locale:', Platform.localeName],
+  );
+
   _colprint(['Path separator:', Platform.pathSeparator]);
   print('');
 
