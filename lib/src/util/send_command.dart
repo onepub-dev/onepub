@@ -107,6 +107,18 @@ Future<EndpointResponse> _processData(
 
   final body = StringBuffer();
 
+  if (Settings().isVerbose) {
+    verbose(() =>
+        'Chunked Transfer Encodeing: ${response.headers.chunkedTransferEncoding}');
+    verbose(() => 'Content Length: ${response.headers.contentLength}');
+    verbose(() => 'Content Type: ${response.headers.contentType}');
+    verbose(() => 'Date: ${response.headers.date}');
+    verbose(() => 'Expires: ${response.headers.expires}');
+    verbose(() => 'Host: ${response.headers.host}');
+    verbose(() =>
+        'Persistent Connection: ${response.headers.persistentConnection}');
+  }
+
   // var lengthReceived = 0;
   // final contentLength = response.contentLength;
   // we have a response.
