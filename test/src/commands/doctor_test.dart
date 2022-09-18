@@ -7,7 +7,7 @@ import 'package:dcli/dcli.dart';
 import 'package:onepub/src/version/version.g.dart';
 import 'package:test/test.dart';
 
-import '../test_settings.dart';
+import '../../test_settings.dart';
 import 'test_utils.dart';
 
 void main() {

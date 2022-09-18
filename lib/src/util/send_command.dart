@@ -29,7 +29,8 @@ Future<EndpointResponse> sendCommand(
   final settings = OnePubSettings.use;
   final resolvedEndpoint = settings.resolveApiEndPoint(command);
 
-  verbose(() => 'Sending command to $resolvedEndpoint');
+  verbose(() => 'Sending command: $resolvedEndpoint');
+  verbose(() => 'Sending body: $body');
 
   final uri = Uri.parse(resolvedEndpoint);
 

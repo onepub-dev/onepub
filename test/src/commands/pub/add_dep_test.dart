@@ -11,7 +11,7 @@ import 'package:pub_semver/pub_semver.dart';
 import 'package:scope/scope.dart';
 import 'package:test/test.dart';
 
-import '../../test_settings.dart';
+import '../../../test_settings.dart';
 import '../test_utils.dart';
 
 void main() {

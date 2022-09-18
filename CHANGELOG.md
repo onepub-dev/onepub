@@ -1,3 +1,7 @@
+# 2.0.1
+- Added logging of data recieved in both hex and ascii.
+- added locale to onepub doctor.
+
 # 2.0.0
 - BREAKING: re-wrote login to use pure server side rather than requiring the browser to connect via local host. This is to get around local firewalls, the brave browser and the inability to login from an ssh session or a local docker container. All of these scenarios should now work.
 - Added version checks into the api to ensure the onepub client is running

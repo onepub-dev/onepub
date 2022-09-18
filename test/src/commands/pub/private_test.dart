@@ -12,7 +12,7 @@ import 'package:scope/scope.dart';
 import 'package:test/test.dart';
 import 'package:url_builder/url_builder.dart';
 
-import '../../test_settings.dart';
+import '../../../test_settings.dart';
 import '../test_utils.dart';
 
 void main() {

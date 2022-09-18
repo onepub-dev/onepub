@@ -7,7 +7,7 @@ import 'package:onepub/src/api/api.dart';
 import 'package:onepub/src/onepub_settings.dart';
 import 'package:onepub/src/util/one_pub_token_store.dart';
 
-import '../../../test/src/test_settings.dart';
+import '../../../test/test_settings.dart';
 
 /// Called by Critical Test when running unit tests
 ///
