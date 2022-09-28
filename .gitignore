@@ -10,3 +10,4 @@ onepub.token.yaml
 test/test_settings.yaml
 bin/onepub
 bin/opub
+pubspec_overrides.yaml
