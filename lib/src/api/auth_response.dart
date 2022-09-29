@@ -30,8 +30,16 @@ class AuthResponse {
       }
       return auth;
     } else {
-      throw ExitException(
-          exitCode: 1, message: 'Login failed: ${response.data['error']}');
+      var show = '';
+      final error = response.data['error'] as String?;
+      final message = response.data['message'] as String?;
+      if (error != null) {
+        show = error;
+      } else if (message != null) {
+        show = message;
+      }
+
+      throw ExitException(exitCode: 1, message: 'Login failed: $show');
     }
   }
 
