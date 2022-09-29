@@ -35,6 +35,7 @@ dependencies:
   shelf: 1.2.0
   source_span: 1.8.1
   stack_trace: 1.10.0
+  token_store: ^1.0.0
   typed_data: 1.3.0
   url_builder: 1.0.0
   usage: 4.0.2

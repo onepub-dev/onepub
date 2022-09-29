@@ -4,12 +4,8 @@
  */
 
 import 'package:dcli/dcli.dart';
+import 'package:token_store/token_store.dart';
 import '../onepub_settings.dart';
-
-import '../token_store/credential.dart';
-import '../token_store/hosted.dart';
-import '../token_store/io.dart';
-import '../token_store/token_store.dart';
 
 class OnePubTokenStore {
   static const onepubSecretEnvKey = 'ONEPUB_TOKEN';
@@ -65,5 +61,5 @@ class OnePubTokenStore {
     // .obfuscatedOrganisationId));
   }
 
-  TokenStore get tokenStore => TokenStore(dartConfigDir);
+  TokenStore get tokenStore => TokenStore();
 }

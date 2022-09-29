@@ -108,8 +108,8 @@ Future<EndpointResponse> _processData(
   final body = StringBuffer();
 
   if (Settings().isVerbose) {
-    verbose(() =>
-        'Chunked Transfer Encodeing: ${response.headers.chunkedTransferEncoding}');
+    verbose(() => 'Chunked Transfer Encodeing: '
+        '${response.headers.chunkedTransferEncoding}');
     verbose(() => 'Content Length: ${response.headers.contentLength}');
     verbose(() => 'Content Type: ${response.headers.contentType}');
     verbose(() => 'Date: ${response.headers.date}');
