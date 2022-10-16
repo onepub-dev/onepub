@@ -132,8 +132,8 @@ Found: ${argResults!.rest.join(',')}''');
 
   String fromUser() => ask('ONEPUB_TOKEN:',
       validator: Ask.all([
-        Ask.regExp('[a-zA-Z0-9-]*',
+        Ask.regExp('[a-zA-Z0-9-=]*',
             error: 'The secret contains invalid characters.'),
-        Ask.lengthRange(36, 36),
+        Ask.lengthRange(56, 56),
       ]));
 }
