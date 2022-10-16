@@ -4,6 +4,8 @@
  */
 
 import 'package:dcli/dcli.dart' hide equals;
+import 'package:onepub/src/entry_point.dart';
+import 'package:onepub/src/my_runner.dart';
 import 'package:onepub/src/onepub_settings.dart';
 import 'package:onepub/src/version/version.g.dart';
 import 'package:test/test.dart';
@@ -13,17 +15,26 @@ import 'test_utils.dart';
 
 void main() {
   test('onepub import --file', () async {
-    await withFile('import --file', 'onepub.token.yaml');
+    await withTokenFile('import --file', 'onepub.token.yaml', _runCliCommand);
   });
 
   test('onepub import --file afile.yaml', () async {
-    withTempFile((onepubTokenFile) {
-      withFile('import --file $onepubTokenFile', onepubTokenFile);
+    await withTempFile((onepubTokenFile) async {
+      await withTokenFile(
+          'import --file $onepubTokenFile', onepubTokenFile, _runCliCommand);
+    });
+  });
+
+  test('internal onepub import --file afile.yaml', () async {
+    await withTempFile((onepubTokenFile) async {
+      await withTokenFile('import --file $onepubTokenFile', onepubTokenFile,
+          _runInternalCommand);
     });
   });
 }
 
-Future<void> withFile(String command, String pathToImportFile) async {
+Future<void> withTokenFile(String command, String pathToImportFile,
+    Future<List<String>> Function(String command) run) async {
   await withTestSettings((testSettings) async {
     final onepubToken = testSettings.onepubToken;
     final settings = OnePubSettings.use;
@@ -33,7 +44,8 @@ Future<void> withFile(String command, String pathToImportFile) async {
   # SettingsYaml settings file
   onepubToken: "$onepubToken"
   ''');
-    final clean = runCmd(command);
+
+    final clean = await run(command);
 
     // check the cli output from the import command.
     final first = clean.first;
@@ -42,4 +54,15 @@ Future<void> withFile(String command, String pathToImportFile) async {
     expect(
         clean.contains('Successfully logged into $organisationName.'), isTrue);
   });
+}
+
+Future<List<String>> _runCliCommand(String command) async => runCmd(command);
+
+Future<List<String>> _runInternalCommand(String command) async {
+  final capture = Progress.capture();
+  await DCliZone().run(() async {
+    await entrypoint(command.split(' '), CommandSet.onepub, 'onepub');
+  }, progress: capture);
+
+  return capture.lines;
 }
