@@ -64,13 +64,12 @@ void main() {
     await withTempProject(packageName, (dartProject) async {
       await withTestSettings((testSettings) async {
         final size = stat(dartProject.pathToPubSpec).size;
-        Scope()
-          ..value(unitTestWorkingDirectoryKey, dartProject.pathToProjectRoot)
-          ..run(() {
-            waitForEx(
-                entrypoint(['pub', 'private'], CommandSet.onepub, 'onepub'));
-          });
-        expect(stat(dartProject.pathToPubSpec).size, greaterThan(size));
+        final scope = Scope()
+          ..value(unitTestWorkingDirectoryKey, dartProject.pathToProjectRoot);
+        await scope.run(() async {
+          await entrypoint(['pub', 'private'], CommandSet.onepub, 'onepub');
+          expect(stat(dartProject.pathToPubSpec).size, greaterThan(size));
+        });
       });
     });
   });

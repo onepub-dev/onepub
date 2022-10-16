@@ -123,17 +123,17 @@ packages:
   dcli:
     dependency: "direct main"
     description:
-      path: "../dcli-2.12/dcli"
-      relative: true
-    source: path
-    version: "1.20.3"
+      name: dcli
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "1.21.0"
   dcli_core:
     dependency: "direct main"
     description:
-      path: "../dcli-2.12/dcli_core"
-      relative: true
-    source: path
-    version: "1.20.3"
+      name: dcli_core
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "1.21.0"
   equatable:
     dependency: "direct main"
     description:
@@ -364,7 +364,7 @@ packages:
       name: scope
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.2.1"
+    version: "3.0.0"
   settings_yaml:
     dependency: "direct main"
     description:
