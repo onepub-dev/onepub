@@ -1,3 +1,9 @@
+# 2.0.3
+- update dcli
+
+# 2.0.2
+- update dcli
+
 # 2.0.1
 - Added logging of data recieved in both hex and ascii.
 - added locale to onepub doctor.
