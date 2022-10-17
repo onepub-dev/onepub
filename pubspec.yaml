@@ -14,8 +14,8 @@ dependencies:
   cli_util: 0.3.5
   collection: 1.15.0
   crypto: 3.0.1
-  dcli: 1.21.0
-  dcli_core: 1.21.0
+  dcli: 1.21.1
+  dcli_core: 1.21.1
   equatable: 2.0.3
   frontend_server_client: 2.1.2
   glob: 2.0.1
