@@ -6,4 +6,4 @@ description: A simple command-line application.
 environment: 
   sdk: '>=2.12.0 <3.0.0'
 dev_dependencies: 
-  lint_hard: ^2.0.0
+  lint_hard: ^1.0.0

@@ -1,3 +1,10 @@
+# 2.0.4
+- upgraded to scope 3.0.0 as need a bug fix for async calls to Scope.run (it wouldn't wait). This required an upgrade to dcli 1.21.0 as it dependes on scope 3.0.0
+- Added additional tests for the import command - still not fully tested.
+- Change the import token regext to reflect tha tokens are no longer 36 chars long. Expected length i snow 56 chars.
+- fix for login error message display
+- Added code to log http headers when sending command and debug mode is enabled.
+
 # 2.0.3
 - update dcli
 

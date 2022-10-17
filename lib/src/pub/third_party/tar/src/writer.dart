@@ -287,9 +287,7 @@ class _SynchronousTarSink extends Sink<SynchronousTarEntry> {
     _throwIfClosed();
 
     _writeHeader(header, data.length);
-    _output
-      ..add(data)
-      ..add(_paddingBytes(data.length));
+    _output..add(data)..add(_paddingBytes(data.length));
   }
 
   @override

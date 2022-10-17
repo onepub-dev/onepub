@@ -19,7 +19,7 @@ dev_dependencies:
   http_multi_server: ^3.0.1
   http_parser: ^4.0.0
   json_annotation: ^4.1.0
-  lint_hard: ^2.0.0  
+  lint_hard: ^1.0.0  
   meta: ^1.7.0
   oauth2: ^2.0.0
   path: ^1.8.1
