@@ -150,20 +150,20 @@ void tokenStatus() {
 void _printPlatform() {
   print(blue('Platform'));
 
+  _colprint(['Dart version:', DartSdk().version]);
+  _colprint(['Dart path:', DartSdk().pathToDartExe]);
+  print('');
+
   _colprint(['OS:', Platform.operatingSystem]);
   _colprint(
     ['OS version:', Platform.operatingSystemVersion],
   );
 
+  print('');
   _colprint(
     ['Locale:', Platform.localeName],
   );
-
   _colprint(['Path separator:', Platform.pathSeparator]);
-  print('');
-
-  _colprint(['Dart version:', DartSdk().version]);
-  _colprint(['Dart path:', DartSdk().pathToDartExe]);
 }
 
 void _colprint(List<String?> cols) {
