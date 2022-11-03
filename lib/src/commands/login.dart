@@ -39,11 +39,7 @@ class OnePubLoginCommand extends Command<int> {
 
   @override
   Future<int> run() async {
-    /// we need to provide different instructions if its a remote
-    /// or local docker session.
-    /// remote session will always be over ssh
-    /// but local ones won't
-
+    // checkDartVersion();
     try {
       await API().checkVersion();
 
@@ -68,42 +64,6 @@ class OnePubLoginCommand extends Command<int> {
     return 0;
   }
 
-//   void checkForSSH() {
-//     if (inSSH()) {
-//       throw ExitException(exitCode: -1, message: """
-// ${red('onepub login will not work from an ssh shell.')}
-
-// Instead:
-// Exit your ssh session and run:
-// ${green('onepub export')}
-
-// Restart your ssh session and run:
-// ${green('onepub import --ask')}
-
-// See the documentation for full details and alternate techniques:
-// ${orange('https://docs.onepub.dev/guides/ssh')}
-// """);
-//     }
-//   }
-
-//   void checkForDocker() {
-//     if (DockerShell.inDocker) {
-//       throw ExitException(exitCode: -1, message: """
-// ${red('onepub login will not work within a Docker shell.')}
-
-// Instead:
-// Exit your docker session and run:
-// ${green('onepub export')}
-
-// Restart your docker session and run:
-// ${green('onepub import --ask')}
-
-// See the documentation for full details and alternate techniques:
-// ${orange('https://docs.onepub.dev/guides/docker')}
-// """);
-//     }
-//   }
-
   void showError(EndpointResponse endPointResponse) {
     final error = endPointResponse.data['message']! as String;
 
@@ -114,6 +74,14 @@ class OnePubLoginCommand extends Command<int> {
       Env().exists('SSH_CLIENT') ||
       Env().exists('SSH_CONNECTION') ||
       Env().exists('SSH_TTY');
+
+  // void checkDartVersion() {
+  //   var ver = VersionConstraint.parse(Platform.version) as Version;
+
+  //   if (ver.compareTo(VersionConstraint.parse('2.15.0') as Version) < 0) {
+  //     throw ExitException(1, '')
+  //   }
+  // }
   // removed as I think this is set if a user
   //runs ssa-agent to start the ssh-agent on their local machine.
   // Env().exists('SSH_AGENT_PID');
