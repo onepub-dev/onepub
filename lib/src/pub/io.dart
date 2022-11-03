@@ -740,7 +740,7 @@ PubProcessResult runProcessSync(
   ProcessResult result;
   try {
     result = _doProcess(Process.runSync, executable, args,
-        workingDir: workingDir,
+        workingDir: workingDir == '' ? null : workingDir,
         environment: environment,
         runInShell: runInShell);
   } on IOException catch (e) {
