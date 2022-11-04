@@ -63,7 +63,9 @@ class _PubHttpClient extends http.BaseClient {
     }
 
     _requestStopwatches[request] = Stopwatch()..start();
-    request.headers[HttpHeaders.userAgentHeader] = 'Dart pub ${sdk.version}';
+    /// fix the 'dart sdk version to 2.15.0 so we are always accepted
+    /// by the onepub server.
+    request.headers[HttpHeaders.userAgentHeader] = 'opub 2.15.0';
     _logRequest(request);
 
     final streamedResponse = await _inner.send(request);
