@@ -35,7 +35,12 @@ Future<EndpointResponse> sendCommand(
   final uri = Uri.parse(resolvedEndpoint);
 
   try {
-    final client = HttpClient()..connectionTimeout = const Duration(seconds: 5);
+    final client = HttpClient()
+      ..connectionTimeout = const Duration(seconds: 5)
+      // we use 2.15.0 as the agent version to indicate to the server
+      // that we are running at least dart 2.15.0 (even if we are not)
+      // so it will accept our requests.
+      ..userAgent = 'onepub 2.15.0';
 
     /// allow self signed/staged certs in dev
     if (settings.allowBadCertificates) {
@@ -257,7 +262,9 @@ class EndpointResponse {
 String toHex(List<int> bytes) {
   final hex = StringBuffer();
   for (final val in bytes) {
-    hex..write(val.toRadixString(16).padLeft(2, '0'))..write(' ');
+    hex
+      ..write(val.toRadixString(16).padLeft(2, '0'))
+      ..write(' ');
   }
   return hex.toString();
 }
