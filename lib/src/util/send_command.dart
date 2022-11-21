@@ -26,7 +26,7 @@ Future<EndpointResponse> sendCommand(
     Map<String, String> headers = const <String, String>{},
     String? body,
     Method method = Method.get}) async {
-  final settings = OnePubSettings.use;
+  final settings = OnePubSettings.use();
   final resolvedEndpoint = settings.resolveApiEndPoint(command);
 
   verbose(() => 'Sending command: $resolvedEndpoint');
@@ -61,7 +61,7 @@ Future<HttpClientResponse> _startRequest(HttpClient client, Method method,
   final _headers = <String, String>{}..addAll(headers);
 
   if (authorised) {
-    if (!OnePubTokenStore().isLoggedIn) {
+    if (!OnePubTokenStore().isLoggedIn(OnePubSettings.use().onepubApiUrl)) {
       throw ExitException(exitCode: 1, message: '''
 You must be logged in to run this command.
 run: onepub login
@@ -168,36 +168,32 @@ Future<EndpointResponse> _processData(
 }
 
 enum CommandType {
+  /// api used by the dart pub commands.
   pub,
 
-  /// api used by the dart pub commands.
-  cli
-
   /// api used by onepub.
+  cli
 }
 
 class EndpointResponse {
   EndpointResponse(this.status, StringBuffer body, this.commandType)
-      : _body = body.toString();
+      : _body = body.toString() {
+    _parse();
+  }
 
   CommandType commandType;
   int status;
   final String _body;
 
   late final bool? _success;
-  var _parsed = false;
   late final Map<String, Object?> _data;
 
   /// the result json data as a map.
-  Map<String, Object?> get data {
-    _parse();
-    return _data;
-  }
+  Map<String, Object?> get data => _data;
 
-  bool get success {
-    _parse();
-    return _success!;
-  }
+  bool get success => _success!;
+
+  String get errorMessage => _data['message'] as String? ?? '';
 
   /// We expect a response of the form:
   /// {"success":{"message":"${OnePubSettings.onepubHostName} status normal."}}
@@ -205,14 +201,10 @@ class EndpointResponse {
   /// {"error":{"bad things."}}
 
   void _parse() {
-    if (!_parsed) {
-      if (commandType == CommandType.cli) {
-        _parseCli();
-      } else {
-        _parsePub();
-      }
-
-      _parsed = true;
+    if (commandType == CommandType.cli) {
+      _parseCli();
+    } else {
+      _parsePub();
     }
   }
 
@@ -226,17 +218,20 @@ class EndpointResponse {
       _data = decodedResponse['error'] as Map<String, Object?>;
       _success = false;
     } else {
-      throw UnexpectedHttpResponseException(message: _body);
+      throw UnexpectedHttpResponseException(_body);
     }
   }
 
   // Used to parse responses from 'pub' specific end points
   void _parsePub() {
+    final decodedResponse = _bodyAsJsonMap(_body);
+
     if (status == 200) {
       _success = true;
-      _data = _bodyAsJsonMap(_body);
+      _data = decodedResponse;
     } else {
       _success = false;
+      _data = decodedResponse['error'] as Map<String, Object?>;
     }
   }
 

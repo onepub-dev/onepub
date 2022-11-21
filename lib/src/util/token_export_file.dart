@@ -22,7 +22,7 @@ class TokenExportFile {
     } on YamlException catch (e) {
       logerr(red('Failed to load credentials from $pathToExportFile'));
       logerr(red(e.toString()));
-      throw CredentialsException(message: e.toString());
+      throw CredentialsException(e.toString());
     }
   }
 

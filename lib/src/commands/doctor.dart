@@ -28,15 +28,13 @@ class DoctorCommand extends Command<int> {
 
   @override
   Future<int> run() async {
-    await withSettings(() async {
-      _printPlatform();
-      _printURLs();
-      _printEnvironment();
-      _printShell();
+    _printPlatform();
+    _printURLs();
+    _printEnvironment();
+    _printShell();
 
-      tokenStatus();
-      await _status();
-    });
+    tokenStatus();
+    await _status();
     return 0;
   }
 
@@ -44,8 +42,8 @@ class DoctorCommand extends Command<int> {
     print('');
 
     print(blue('\nURLs'));
-    _colprint(['Web site:', OnePubSettings.use.onepubWebUrl]);
-    _colprint(['API endpoint:', OnePubSettings.use.onepubApiUrl]);
+    _colprint(['Web site:', OnePubSettings.use().onepubWebUrl]);
+    _colprint(['API endpoint:', OnePubSettings.use().onepubApiUrlAsString]);
   }
 
   void _printEnvironment() {
@@ -94,10 +92,11 @@ class DoctorCommand extends Command<int> {
   Future<void> _status() async {
     print('');
     print(blue('Status'));
-    if (OnePubTokenStore().isLoggedIn) {
+    final settings = OnePubSettings.use();
+    if (OnePubTokenStore().isLoggedIn(settings.onepubApiUrl)) {
       _colprint(['Logged In:', 'true']);
-      _colprint(['Active Member:', OnePubSettings.use.operatorEmail]);
-      _colprint(['Organisation:', OnePubSettings.use.organisationName]);
+      _colprint(['Active Member:', settings.operatorEmail]);
+      _colprint(['Organisation:', settings.organisationName]);
     } else {
       print(orange('''
 You are not logged into OnePub.
@@ -137,7 +136,7 @@ void tokenStatus() {
   print(blue('\nRepository tokens'));
 
   final store = OnePubTokenStore();
-  if (!store.isLoggedIn) {
+  if (!store.isLoggedIn(OnePubSettings.use().onepubApiUrl)) {
     print(red('No tokens found.'));
     return;
   }

@@ -107,7 +107,7 @@ class TokenStore {
     }
     final tokenPath = path.dirname(tokensFile);
     if (!exists(tokenPath)) {
-      createDir(tokenPath);
+      createDir(tokenPath, recursive: true);
     }
     writeTextFile(
         tokensFile,
@@ -170,17 +170,19 @@ class TokenStore {
     return found;
   }
 
-  /// Returns [Credential] for authenticating given [hostedUrl] or `null` if no
+  /// Returns [Credential] for authenticating given [apiUrl] or `null` if no
   /// matching credential is found.
-  Credential? findCredential(Uri hostedUrl) {
+  /// For onepub the [apiUrl] is of the form:
+  /// https://onepub.dev/api/xxxxxxx
+  Credential? findCredential(Uri apiUrl) {
     Credential? matchedCredential;
     for (final credential in credentials) {
-      if (credential.url == hostedUrl && credential.isValid()) {
+      if (credential.url == apiUrl && credential.isValid()) {
         if (matchedCredential == null) {
           matchedCredential = credential;
         } else {
           logwarn(
-            'Found multiple matching authentication tokens for "$hostedUrl". '
+            'Found multiple matching authentication tokens for "$apiUrl". '
             'First matching token will be used for authentication.',
           );
           break;

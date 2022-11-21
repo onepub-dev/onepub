@@ -10,6 +10,7 @@ import 'exceptions.dart';
 import 'my_runner.dart';
 import 'onepub_settings.dart';
 import 'util/log.dart' as ulog;
+import 'version/version.g.dart';
 
 /* Copyright (C) OnePub IP Pty Ltd - All Rights Reserved
  * licensed under the GPL v2.
@@ -30,21 +31,20 @@ Future<void> entrypoint(
   String executableName,
 ) async {
   try {
-    await withSettings(() async {
-      final runner = MyRunner(args, executableName, _description, commandSet);
-      try {
-        runner.init();
-        await runner.run(args);
-      } on FormatException catch (e) {
-        printerr(e.message);
-        // this is an Exception (generally from the server, not a usage problem)
-        //showUsage();
-      } on UsageException catch (e) {
-        printerr(e.message);
-        printerr('');
-        printerr(e.usage);
-      }
-    }, create: true);
+    final runner = MyRunner(args, executableName, _description, commandSet);
+    try {
+      printPreamble();
+      runner.init();
+      await runner.run(args);
+    } on FormatException catch (e) {
+      printerr(e.message);
+      // this is an Exception (generally from the server, not a usage problem)
+      //showUsage();
+    } on UsageException catch (e) {
+      printerr(e.message);
+      printerr('');
+      printerr(e.usage);
+    }
   } on ExitException catch (e) {
     printerr(e.message);
     // final firstLine = e.message.split('\n').first;
@@ -65,3 +65,11 @@ void showUsage(MyRunner runner) {
 }
 
 String get _description => orange('OnePub CLI tools.');
+
+void printPreamble() {
+  print(orange('OnePub version: $packageVersion '));
+
+  print('');
+
+  OnePubSettings().nonStandardUrlWarning();
+}

@@ -1,6 +1,8 @@
 import 'package:dcli/dcli.dart' hide equals;
 import 'package:onepub/src/entry_point.dart';
 import 'package:onepub/src/my_runner.dart';
+import 'package:onepub/src/version/version.g.dart';
+import 'package:strings_xxx/strings.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -13,9 +15,12 @@ void main() {
             ),
         progress: Progress.capture());
 
-    final firstline = Ansi.strip(progress.lines.first);
-    expect(firstline, equals('Missing subcommand for "onepub pub".'));
+    final clean =
+        progress.lines.where(Strings.isNotEmpty).map(Ansi.strip).toList();
+    expect(clean.first, equals('OnePub version: $packageVersion '));
+    expect(clean.length, equals(4));
+    expect(clean[1], equals('Missing subcommand for "onepub pub".'));
 
-    expect(progress.lines[2].contains('Available subcommands:'), isTrue);
+    expect(clean[3].contains('Available subcommands:'), isTrue);
   });
 }

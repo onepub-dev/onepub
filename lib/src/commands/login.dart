@@ -46,19 +46,27 @@ class OnePubLoginCommand extends Command<int> {
       final bb = BreadButter();
       final auth = await bb.auth();
 
-      OnePubTokenStore().save(
-          onepubToken: auth.onepubToken,
-          organisationName: auth.organisationName,
-          obfuscatedOrganisationId: auth.obfuscatedOrganisationId,
-          operatorEmail: auth.operatorEmail);
+      final settings = OnePubSettings.use()
+        ..obfuscatedOrganisationId = auth.obfuscatedOrganisationId
+        ..organisationName = auth.organisationName
+        ..operatorEmail = auth.operatorEmail
+        ..save();
+
+      final onepubApiUrl = settings.onepubApiUrlAsString;
+
+      OnePubTokenStore().addToken(
+        onepubApiUrl: onepubApiUrl,
+        onepubToken: auth.onepubToken,
+      );
 
       showWelcome(
           firstLogin: auth.firstLogin,
           organisationName: auth.organisationName,
           operator: auth.operatorEmail);
-    } on FetchException {
+    } on FetchException catch (e, _) {
       printerr(red('Unable to connect to '
-          '${OnePubSettings.use.onepubApiUrl}. '
+          '${OnePubSettings.use().onepubApiUrlAsString}. '
+          'Error: $e'
           'Check your internet connection.'));
     }
     return 0;
@@ -96,7 +104,7 @@ void showWelcome(
     firstMessage = '''
 Welcome to OnePub.
 Read the getting started guide at:
-${orange('${OnePubSettings.use.onepubWebUrl}/getting-started')}
+${orange('${OnePubSettings.use().onepubWebUrl}/getting-started')}
 
 ''';
   }

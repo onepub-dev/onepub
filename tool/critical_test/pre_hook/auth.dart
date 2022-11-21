@@ -3,11 +3,8 @@
 import 'dart:io';
 
 import 'package:dcli/dcli.dart';
-import 'package:onepub/src/api/api.dart';
 import 'package:onepub/src/onepub_settings.dart';
 import 'package:onepub/src/util/one_pub_token_store.dart';
-
-import '../../../test/test_settings.dart';
 
 /// Called by Critical Test when running unit tests
 ///
@@ -34,69 +31,68 @@ import '../../../test/test_settings.dart';
 ///
 /// All code that runs (including setup) needs to use a temp settings.yaml
 /// as it will be the only one to have the correct details.
-///
 Future<void> main(List<String> args) async {
-  final pathToBin = DartProject.self.pathToBinDir;
+  // final pathToBin = DartProject.self.pathToBinDir;
 
-  final pathToOnePubExe = join(pathToBin, 'onepub.dart');
+  // final pathToOnePubExe = join(pathToBin, 'onepub.dart');
 
-  await withTestSettings((testSettings) async {
-    final operatorEmail = testSettings.member;
+  await preConditionIsLoggedIn();
+}
+
+// await withTestSettings((testSettings) async {
+
+//   // we need to force a reload of OnePubSettings
+//   // as the import will have updated it.
+//   await OnePubSettings.withPathTo<void>(
+//       OnePubSettings.defaultPathToSettingsDir, () async {
+//     final tokenStore = OnePubTokenStore();
+//     final onepubSettings = OnePubSettings.use();
+//     if (!tokenStore.isLoggedIn(onepubSettings.onepubApiUrl)) {
+//       printerr(red('Login Failed. Tests run stopped'));
+//       exit(1);
+//     }
+
+//     await fetchTestUser(testSettings, pathToOnePubExe);
+
+//     final url = onepubSettings.onepubApiUrl;
+//     final credentials = tokenStore.tokenStore.findCredential(url);
+
+//     if (credentials == null) {
+//       printerr(red('Unable to find the OnePub token for $url'));
+//       exit(1);
+//     }
+
+//     // store the authed token into the testing setting file
+//     // for use by unit tests.
+//     final onePubToken = credentials.token;
+
+//     testSettings
+//       ..onepubToken = onePubToken!
+//       ..organisationId = onepubSettings.obfuscatedOrganisationId
+//       ..organisationName = onepubSettings.organisationName
+//       ..onepubUrl = onepubSettings.onepubUrl!
+//       ..save();
+//   });
+// });
+void loginIfRequired(String pathToOnePubExe) {
+  final tokenStore = OnePubTokenStore();
+  if (!tokenStore.isLoggedIn(OnePubSettings.use().onepubApiUrl)) {
     print('''
 
-${magenta('Please login with the $operatorEmail account')}
-''');
+  ${magenta('Please login with System Administrator account')}
+  ''');
 
     /// prompt the user to login into onepub.
     'dart $pathToOnePubExe login'.run;
-    // }
-    // we need to force a reload of OnePubSettings
-    // as the login will have updated it.
-    await withSettings(() async {
-      final tokenStore = OnePubTokenStore();
-      if (!tokenStore.isLoggedIn) {
-        printerr(red('Login Failed. Tests run stopped'));
-        exit(1);
-      }
-      final onepubSettings = OnePubSettings.use;
+  }
+}
 
-      if (onepubSettings.operatorEmail != operatorEmail) {
-        printerr(red('You logged in with the wrong email address. '
-            'Use $operatorEmail and try again.'));
-        exit(1);
-      }
-
-      final url = onepubSettings.onepubHostedUrl();
-      final credentials = tokenStore.tokenStore.findCredential(url);
-
-      if (credentials == null) {
-        printerr(red('Unable to find the OnePub token for $url'));
-        exit(1);
-      }
-
-      // store the authed token into the testing setting file
-      // for use by unit tests.
-      final onePubToken = credentials.token;
-
-      testSettings
-        ..onepubToken = onePubToken!
-        ..organisationId = onepubSettings.obfuscatedOrganisationId
-        ..organisationName = onepubSettings.organisationName
-        ..onepubUrl = onepubSettings.onepubUrl!
-        ..save();
-
-      final result =
-          await API().createMember('bsutton@onepub.dev', 'Test', 'User');
-      if (!result.success) {
-        // we don't care if the member already exits
-        if (result.errorMessage != 'Member exists') {
-          printerr(red('Failed to create member: ${result.errorMessage}'));
-          exit(1);
-        }
-        print('Its OK test member already exists');
-      } else {
-        print('Created test member.');
-      }
-    });
-  }, forAuthentication: true);
+/// Check that the user is logged in before we proceed.
+Future<void> preConditionIsLoggedIn() async {
+  final tokenStore = OnePubTokenStore();
+  if (!tokenStore.isLoggedIn(OnePubSettings.use().onepubApiUrl)) {
+    printerr(red(
+        'Please use onepub import to import a System Admin from the test db'));
+    exit(1);
+  }
 }

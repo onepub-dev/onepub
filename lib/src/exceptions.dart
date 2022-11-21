@@ -11,11 +11,11 @@ class ExitException extends OnePubCliException {
 }
 
 class CredentialsException extends OnePubCliException {
-  CredentialsException({required String message}) : super(message);
+  CredentialsException(String message) : super(message);
 }
 
 class UnexpectedHttpResponseException extends OnePubCliException {
-  UnexpectedHttpResponseException({required String message}) : super(message);
+  UnexpectedHttpResponseException(String message) : super(message);
 }
 
 class OnePubCliException implements Exception {
@@ -24,4 +24,12 @@ class OnePubCliException implements Exception {
   String message;
   @override
   String toString() => message;
+}
+
+class APIException extends OnePubCliException {
+  APIException(String message) : super(message);
+}
+
+class NotInitialisedException extends OnePubCliException {
+  NotInitialisedException(String message) : super(message);
 }

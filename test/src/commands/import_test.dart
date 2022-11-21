@@ -3,66 +3,117 @@
  * Written by Brett Sutton <bsutton@onepub.dev>, Jan 2022
  */
 
+import 'dart:async';
+
 import 'package:dcli/dcli.dart' hide equals;
+import 'package:dcli_core/dcli_core.dart' as core;
+import 'package:onepub/src/api/member.dart';
 import 'package:onepub/src/entry_point.dart';
 import 'package:onepub/src/my_runner.dart';
 import 'package:onepub/src/onepub_settings.dart';
 import 'package:onepub/src/version/version.g.dart';
+import 'package:strings_xxx/strings.dart';
 import 'package:test/test.dart';
 
-import '../../test_settings.dart';
+import '../../impersonate_user.dart';
+import '../../test_users.dart';
 import 'test_utils.dart';
 
 void main() {
+  setUpAll(() async {
+    await TestUsers(init: true).init();
+  });
   test('onepub import --file', () async {
-    await withTokenFile('import --file', 'onepub.token.yaml', _runCliCommand);
+    final member = TestUsers().administrator;
+    await impersonateMember(
+        member: member,
+        action: () async {
+          await withTokenImportFile(
+              member, 'import --file', 'onepub.token.yaml', _runCliCommand);
+        });
   });
 
   test('onepub import --file afile.yaml', () async {
-    await withTempFile((onepubTokenFile) async {
-      await withTokenFile(
-          'import --file $onepubTokenFile', onepubTokenFile, _runCliCommand);
-    });
+    final member = TestUsers().administrator;
+    await impersonateMember(
+        member: member,
+        action: () async {
+          await core.withTempFile((onepubTokenFile) async {
+            await withTokenImportFile(member, 'import --file $onepubTokenFile',
+                onepubTokenFile, _runCliCommand);
+          });
+        });
   });
 
   test('internal onepub import --file afile.yaml', () async {
-    await withTempFile((onepubTokenFile) async {
-      await withTokenFile('import --file $onepubTokenFile', onepubTokenFile,
-          _runInternalCommand);
-    });
+    final member = TestUsers().administrator;
+    await impersonateMember(
+        member: member,
+        action: () async {
+          await core.withTempFile((onepubTokenFile) async {
+            await withTokenImportFile(member, 'import --file $onepubTokenFile',
+                onepubTokenFile, _runInternalCommand);
+          });
+        });
   });
 }
 
-Future<void> withTokenFile(String command, String pathToImportFile,
+/// Creates a yaml containing a onepubToken suitable for use
+/// with the onepub import command
+Future<void> withTokenImportFile(
+    Member member,
+    String command,
+    String pathToImportFile,
     Future<List<String>> Function(String command) run) async {
-  await withTestSettings((testSettings) async {
-    final onepubToken = testSettings.onepubToken;
-    final settings = OnePubSettings.use;
-    final organisationName = settings.organisationName;
+//  await withTestSettings((testSettings) async {
+  final onepubToken = member.onepubToken;
+  final settings = OnePubSettings.use();
+  final organisationName = settings.organisationName;
 
-    pathToImportFile.write('''
+  pathToImportFile.write('''
   # SettingsYaml settings file
   onepubToken: "$onepubToken"
   ''');
 
-    final clean = await run(command);
+  final lines = await run(command);
+  final cleaned = lines.where(Strings.isNotEmpty).map(Ansi.strip).toList();
 
-    // check the cli output from the import command.
-    final first = clean.first;
-    expect(first, 'OnePub version: $packageVersion ');
+  expect(cleaned.length, 3);
 
-    expect(
-        clean.contains('Successfully logged into $organisationName.'), isTrue);
-  });
+  // check the cli output from the import command.
+  final first = cleaned.first;
+  expect(first, 'OnePub version: $packageVersion ');
+
+  expect(
+      cleaned.contains('Successfully logged into $organisationName.'), isTrue);
+  //});
 }
 
 Future<List<String>> _runCliCommand(String command) async => runCmd(command);
 
 Future<List<String>> _runInternalCommand(String command) async {
   final capture = Progress.capture();
+
   await DCliZone().run(() async {
     await entrypoint(command.split(' '), CommandSet.onepub, 'onepub');
   }, progress: capture);
 
   return capture.lines;
 }
+
+// int call = 0;
+// int count = 0;
+// Future<void> _tester(String debug) {
+//   final a = Completer<bool>();
+//   print('call: $call count: $count debug: $debug');
+//   call++;
+//   count++;
+
+//   Future.delayed(const Duration(seconds: 3), () {
+//     count--;
+//     print('completed: $count debug: $debug');
+//     a.complete(true);
+//   });
+
+//   return a.future;
+// }

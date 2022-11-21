@@ -130,5 +130,13 @@
             "console": "terminal"
         },
 
+        {
+            "name": "test ct auth",
+            "type": "dart",
+            "request": "launch",
+            "program": "/home/bsutton/git/onepub/onepub/tool/critical_test/pre_hook/auth.dart",
+            "console": "terminal"
+        },
+
     ]
 }

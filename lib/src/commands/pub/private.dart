@@ -31,7 +31,7 @@ class PrivateCommand extends Command<int> {
 ${blue('Marks the current package as a private package.')}
 
 Private packages are published to your OnePub private repository.
-See ${urlJoin(OnePubSettings.use.onepubWebUrl, 'publish')}''';
+See ${urlJoin(OnePubSettings.use().onepubWebUrl, 'publish')}''';
 
   @override
   String get name => 'private';
@@ -44,7 +44,8 @@ See ${urlJoin(OnePubSettings.use.onepubWebUrl, 'publish')}''';
 
   ///
   Future<void> private() async {
-    if (!OnePubTokenStore().isLoggedIn) {
+
+    if (!OnePubTokenStore().isLoggedIn(OnePubSettings.use().onepubApiUrl)) {
       throw ExitException(exitCode: 1, message: '''
 You must be logged in to run this command.
 run: onepub login
@@ -61,10 +62,10 @@ run: onepub login
     // if (!exists(OnePubSettings.use.pathToSettingsDir)) {
     //   createDir(OnePubPaths.use.pathToSettingsDir, recursive: true);
     // }
-    final settings = OnePubSettings.use;
+    final settings = OnePubSettings.use();
     final obfuscatedOrganisationId = settings.obfuscatedOrganisationId;
     final currentOrganisationName = settings.organisationName;
-    final url = settings.onepubHostedUrl().toString();
+    final url = settings.onepubApiUrlAsString;
 
     final pubspec = await PubSpec.loadFile(project.pathToPubSpec);
     if (pubspec.publishTo != null) {

@@ -39,14 +39,15 @@ class ActivateCommand extends PubCommand {
 
   @override
   Future<void> runProtected() async {
-    if (!OnePubTokenStore().isLoggedIn) {
+    
+    if (!OnePubTokenStore().isLoggedIn(OnePubSettings.use().onepubApiUrl)) {
       throw ExitException(exitCode: 1, message: '''
 You must be logged in to run this command.
 run: onepub login
   ''');
     }
 
-    final hostedUrl = OnePubSettings.use.onepubHostedUrl().toString();
+    final onepubApiUrl = OnePubSettings.use().onepubApiUrlAsString;
 
     final package = readArg('No package to activate given.');
 
@@ -66,7 +67,7 @@ run: onepub login
       constraint,
       null, // all executables
       overwriteBinStubs: true,
-      url: hostedUrl,
+      url: onepubApiUrl,
     );
 
     // print('${blue('Successfully activated into $organisationName.')}');

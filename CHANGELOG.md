@@ -1,3 +1,6 @@
+# 3.0.0
+BREAKING: the REST API used by the export command has change the name of its end point.
+An upgrade of the CLI tooling to 3.x is required.
 # 2.0.4
 - upgraded to scope 3.0.0 as need a bug fix for async calls to Scope.run (it wouldn't wait). This required an upgrade to dcli 1.21.0 as it dependes on scope 3.0.0
 - Added additional tests for the import command - still not fully tested.

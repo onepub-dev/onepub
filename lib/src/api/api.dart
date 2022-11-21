@@ -3,11 +3,13 @@ import 'dart:io';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../exceptions.dart';
+import '../util/role_enum.dart';
 import '../util/send_command.dart';
 import '../version/version.g.dart';
 import 'auth_response.dart';
 import 'logout.dart';
 import 'member_create.dart';
+import 'member_response.dart';
 import 'onepub_token.dart';
 import 'organisation.dart';
 import 'status.dart';
@@ -61,9 +63,9 @@ dart pub global activate onepub
 
   /// Fetches the [OnePubToken] for the member whos email
   /// address is [memberEmail].
-  /// The member must be logged in to the cli.
-  Future<OnePubToken> fetchMemberToken(String memberEmail) async {
-    final endpoint = 'member/token/$memberEmail';
+  /// Only an Administrator can export another person token.
+  Future<OnePubToken> exportMemberToken(String memberEmail) async {
+    final endpoint = 'member/exportToken/$memberEmail';
     final response =
         await sendCommand(command: endpoint, commandType: CommandType.cli);
 
@@ -79,7 +81,7 @@ dart pub global activate onepub
     // So we paass the auth header directly.
     final headers = <String, String>{}..addAll({'authorization': onepubToken});
 
-    const endpoint = '/organisation/token';
+    const endpoint = '/organisation/details';
 
     final response = await sendCommand(
         command: endpoint,
@@ -90,8 +92,20 @@ dart pub global activate onepub
     return Organisation(response);
   }
 
+  /// Fetches the member details associated with the [onepubTokenOfTargetMember]
+  Future<MemberResponse> fetchMember(
+    String onepubTokenOfTargetMember,
+  ) async {
+    final endpoint = '/member/details/$onepubTokenOfTargetMember';
+
+    final response =
+        await sendCommand(command: endpoint, commandType: CommandType.cli);
+
+    return MemberResponse(response, onepubTokenOfTargetMember);
+  }
+
   Future<Organisation> fetchOrganisationById(String obfuscatedId) async {
-    final endpoint = 'organisation/$obfuscatedId';
+    final endpoint = 'organisation/details/$obfuscatedId';
     final response =
         await sendCommand(command: endpoint, commandType: CommandType.cli);
 
@@ -107,10 +121,16 @@ dart pub global activate onepub
     await sendCommand(command: endpoint, commandType: CommandType.cli);
   }
 
+  /// Creates a member which belongs to the same organisation
+  /// as the current logged in user.
+  /// The user must be a SystemAdministrator to make this call.
   Future<MemberCreate> createMember(
-      String userEmail, String firstname, String lastname) async {
+      {required String userEmail,
+      required String firstname,
+      required String lastname,
+      required RoleEnum role}) async {
     final endpoint =
-        'member/create?email=$userEmail&firstname=$firstname&lastname=$lastname';
+        'member/create?email=$userEmail&firstname=$firstname&lastname=$lastname&role=${role.name}';
     final response =
         await sendCommand(command: endpoint, commandType: CommandType.cli);
 
@@ -119,10 +139,13 @@ dart pub global activate onepub
 
   /// Fetches the list of published version for [packageName]
   Future<Versions> fetchVersions(
-      String obsfucatedOrganisationId, String packageName) async {
-    final endpoint = '$obsfucatedOrganisationId/api/packages/$packageName';
+      String obfuscatedOrganisationId, String packageName) async {
+    final endpoint = '$obfuscatedOrganisationId/api/packages/$packageName';
     final response =
         await sendCommand(command: endpoint, commandType: CommandType.pub);
+    if (!response.success) {
+      throw APIException(response.errorMessage);
+    }
 
     return Versions(response);
   }

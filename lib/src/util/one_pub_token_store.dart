@@ -4,47 +4,35 @@
  */
 
 import 'package:dcli/dcli.dart';
-import '../onepub_settings.dart';
+import 'package:scope/scope.dart';
 
+import '../onepub_settings.dart';
 import '../token_store/credential.dart';
 import '../token_store/hosted.dart';
 import '../token_store/io.dart';
 import '../token_store/token_store.dart';
 
 class OnePubTokenStore {
-  static const onepubSecretEnvKey = 'ONEPUB_TOKEN';
-
-  void save(
-      {required String onepubToken,
-      required String obfuscatedOrganisationId,
-      required String organisationName,
-      required String operatorEmail}) {
-    withEnvironment(() {
-      final settings = OnePubSettings.use
-        ..obfuscatedOrganisationId = obfuscatedOrganisationId
-        ..organisationName = organisationName
-        ..operatorEmail = operatorEmail
-        ..save();
-      clearOldTokens();
-      tokenStore.addCredential(Credential.token(
-          settings.onepubHostedUrl(obfuscatedOrganisationId), onepubToken));
-    }, environment: {onepubSecretEnvKey: onepubToken});
+  // Adds a OnePub Token into the pub.dev token store.
+  //
+  void addToken({
+    required String onepubApiUrl,
+    required String onepubToken,
+  }) {
+    final normalisedUrl = validateAndNormalizeHostedUrl(onepubApiUrl);
+    clearOldTokens(normalisedUrl);
+    tokenStore.addCredential(Credential.token(normalisedUrl, onepubToken));
   }
 
-// True if we have a onepub token.
-  bool get isLoggedIn {
-    final settings = OnePubSettings.use;
-    return tokenStore.findCredential(
-            settings.onepubHostedUrl(settings.obfuscatedOrganisationId)) !=
-        null;
-  }
+// True if we have a onepub token for the given [onepubApiUrl]
+  bool isLoggedIn(Uri onepubApiUrl) =>
+      tokenStore.findCredential(onepubApiUrl) != null;
 
   /// throws [StateError] if called when not logged in.
   /// returns the onepubToken.
   String load() {
-    final settings = OnePubSettings.use;
-    final credentials = tokenStore.findCredential(
-        settings.onepubHostedUrl(settings.obfuscatedOrganisationId));
+    final settings = OnePubSettings.use();
+    final credentials = tokenStore.findCredential(settings.onepubApiUrl);
 
     if (credentials == null || credentials.token == null) {
       throw StateError('You may not call fetch when not logged in');
@@ -55,15 +43,29 @@ class OnePubTokenStore {
 
   Iterable<Credential> get credentials => tokenStore.credentials;
 
-  /// Removes the onepub token from the pub token store.
-  void clearOldTokens() {
-    final settings = OnePubSettings.use;
-    tokenStore.removeMatchingCredential(
-        validateAndNormalizeHostedUrl(settings.onepubApiUrl));
-    // tokenStore
-    //  .removeCredential(_hostedUrl(OnePubSettings.use
-    // .obfuscatedOrganisationId));
+  /// Removes any onepub token from the pub token store
+  /// for the given Url
+  void clearOldTokens(Uri onepubApiUrl) {
+    tokenStore.removeMatchingCredential(onepubApiUrl);
   }
 
-  TokenStore get tokenStore => TokenStore(dartConfigDir);
+  TokenStore get tokenStore => TokenStore(pathToTokenStore);
+
+  // Used to inject an alternate location for the token store
+  //
+  static final scopeKey = ScopeKey<String>('PathToTokenStore');
+
+  /// If no path has been injected we fall back to the default
+  /// [dartConfigDir]
+  static String get pathToTokenStore =>
+      Scope.use(scopeKey, withDefault: () => dartConfigDir ?? '.');
+
+  static Future<void> withPathTo(
+      String pathToAlternateLocation, Future<void> Function() action) async {
+    if (!exists(pathToAlternateLocation)) {
+      createDir(pathToAlternateLocation, recursive: true);
+    }
+    final scope = Scope()..value(scopeKey, pathToAlternateLocation);
+    await scope.run(action);
+  }
 }

@@ -73,7 +73,7 @@ class MyRunner extends CommandRunner<int> implements PubTopLevel {
     }
 
     if (commandSet == CommandSet.onepub) {
-      install(dev: results['dev'] as bool);
+      OnePubSettings.install(dev: results['dev'] as bool);
     }
   }
 

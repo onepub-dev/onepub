@@ -7,7 +7,11 @@ import 'package:onepub/src/my_runner.dart';
 import 'package:test/test.dart';
 
 void main() {
-  test('logout ...', () async {
-    await entrypoint(['publish'], CommandSet.opub, 'opub');
+  test('publish via opub ...', () async {
+    await entrypoint(
+      ['publish', '--force'],
+      CommandSet.opub,
+      'opub',
+    );
   });
 }

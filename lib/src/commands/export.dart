@@ -41,58 +41,56 @@ Pass in a filename or leave blank to use the default filename.''')
 
   ///
   Future<void> export() async {
-    await withSettings(() async {
-      // if (!exists(OnePubSettings.use.pathToSettingsDir)) {
-      //   createDir(OnePubSettings.use.pathToSettingsDir, recursive: true);
-      // }
-      final file = argResults!['file'] as bool;
-      final user = argResults!['user'] as String?;
+    // if (!exists(OnePubSettings.use.pathToSettingsDir)) {
+    //   createDir(OnePubSettings.use.pathToSettingsDir, recursive: true);
+    // }
+    final file = argResults!['file'] as bool;
+    final user = argResults!['user'] as String?;
 
-      if (!OnePubTokenStore().isLoggedIn) {
-        throw ExitException(exitCode: 1, message: '''
+    if (!OnePubTokenStore().isLoggedIn(OnePubSettings.use().onepubApiUrl)) {
+      throw ExitException(exitCode: 1, message: '''
 You must be logged in to run this command.
 run: onepub login
   ''');
+    }
+
+    final String onepubToken;
+
+    if (user != null) {
+      if (!isEmail(user)) {
+        throw ExitException(
+            exitCode: 1,
+            message: 'The supplied user must be a valid email address. '
+                'Found $user');
       }
+      await API().checkVersion();
+      final response = waitForEx(API().exportMemberToken(user));
 
-      final String onepubToken;
-
-      if (user != null) {
-        if (!isEmail(user)) {
-          throw ExitException(
-              exitCode: 1,
-              message: 'The supplied user must be a valid email address. '
-                  'Found $user');
-        }
-        await API().checkVersion();
-        final response = waitForEx(API().fetchMemberToken(user));
-
-        if (response.success) {
-          onepubToken = response.token!;
-        } else {
-          throw ExitException(exitCode: 1, message: response.errorMessage!);
-        }
+      if (response.success) {
+        onepubToken = response.token!;
       } else {
-        onepubToken = OnePubTokenStore().load();
+        throw ExitException(exitCode: 1, message: response.errorMessage!);
       }
-      print(orange('Exporting OnePub token for '
-          '${OnePubSettings.use.organisationName}.'));
+    } else {
+      onepubToken = OnePubTokenStore().load();
+    }
+    print(orange('Exporting OnePub token for '
+        '${OnePubSettings.use().organisationName}.'));
 
-      if (file) {
-        var pathToFile = TokenExportFile.exportFilename;
-        if (argResults!.rest.length == 1) {
-          pathToFile = argResults!.rest[0];
-        } else if (argResults!.rest.isNotEmpty) {
-          throw ExitException(
-              exitCode: 1,
-              message: 'You may only pass one argument to --file.');
-        }
+    if (file) {
+      var pathToFile = TokenExportFile.exportFilename;
+      if (argResults!.rest.length == 1) {
+        pathToFile = argResults!.rest[0];
+      } else if (argResults!.rest.isNotEmpty) {
+        throw ExitException(
+            exitCode: 1, message: 'You may only pass one argument to --file.');
+      }
 
-        final exportFile = TokenExportFile(pathToFile)
-          ..onepubToken = onepubToken
-          ..save();
+      final exportFile = TokenExportFile(pathToFile)
+        ..onepubToken = onepubToken
+        ..save();
 
-        print('''
+      print('''
 
 Saved OnePub token to: ${truepath(exportFile.pathToExportFile)}.
 
@@ -101,14 +99,13 @@ Copy the ${exportFile.pathToExportFile} to your CI/CD environment and run:
     onepub import --file <path to OnePub token file>
 
 ''');
-      } else {
-        print('');
-        print('Add the following environment variable to your CI/CD secrets.');
-        print('');
-        print('ONEPUB_TOKEN=$onepubToken');
-        print('');
-        return;
-      }
-    });
+    } else {
+      print('');
+      print('Add the following environment variable to your CI/CD secrets.');
+      print('');
+      print('ONEPUB_TOKEN=$onepubToken');
+      print('');
+      return;
+    }
   }
 }

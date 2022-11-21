@@ -34,7 +34,7 @@ class AddPrivateDependencyCommand extends AddCommand {
 
   @override
   String? get hostUrl {
-    final url = OnePubSettings.use.onepubHostedUrl().toString();
+    final url = OnePubSettings.use().onepubApiUrlAsString;
     print(url);
     return url;
   }
@@ -47,7 +47,7 @@ class AddPrivateDependencyCommand extends AddCommand {
 
   @override
   Future<void> runProtected() async {
-    if (!OnePubTokenStore().isLoggedIn) {
+    if (!OnePubTokenStore().isLoggedIn(OnePubSettings.use().onepubApiUrl)) {
       throw ExitException(exitCode: 1, message: '''
 You must be logged in to run this command.
 run: onepub login

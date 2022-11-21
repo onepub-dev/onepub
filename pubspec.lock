@@ -147,14 +147,14 @@ packages:
       name: dcli
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.21.1"
+    version: "1.21.12"
   dcli_core:
     dependency: "direct main"
     description:
       name: dcli_core
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.21.1"
+    version: "1.21.12"
   equatable:
     dependency: "direct main"
     description:
@@ -266,7 +266,7 @@ packages:
       name: lint_hard
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.0.4"
+    version: "2.1.1"
   logging:
     dependency: "direct main"
     description:
@@ -357,7 +357,7 @@ packages:
       name: process_run
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.12.3+2"
+    version: "0.12.1+1"
   pub_semver:
     dependency: "direct main"
     description:
@@ -406,7 +406,7 @@ packages:
       name: settings_yaml
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.4.2"
+    version: "3.5.1"
   shelf:
     dependency: "direct main"
     description:
@@ -484,13 +484,20 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.1.1"
+  strings_xxx:
+    dependency: "direct main"
+    description:
+      name: strings_xxx
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "1.0.0"
   synchronized:
     dependency: transitive
     description:
       name: synchronized
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.0.0+3"
+    version: "3.0.0"
   system_info2:
     dependency: "direct main"
     description:
@@ -581,7 +588,7 @@ packages:
       name: vector_math
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.1.4"
+    version: "2.1.0"
   vin_decoder:
     dependency: "direct main"
     description:
@@ -639,4 +646,4 @@ packages:
     source: hosted
     version: "2.0.2"
 sdks:
-  dart: ">=2.14.0 <3.0.0"
+  dart: ">=2.12.0 <3.0.0"

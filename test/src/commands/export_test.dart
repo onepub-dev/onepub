@@ -3,73 +3,88 @@
  * Written by Brett Sutton <bsutton@onepub.dev>, Jan 2022
  */
 
+import 'package:dcli/dcli.dart' hide equals;
 import 'package:onepub/src/onepub_settings.dart';
 import 'package:onepub/src/version/version.g.dart';
-import 'package:path/path.dart' hide equals;
-import 'package:settings_yaml/settings_yaml.dart';
+import 'package:strings_xxx/strings.dart';
 import 'package:test/test.dart';
 
-import '../../test_settings.dart';
+import '../../impersonate_user.dart';
+import '../../test_users.dart';
 import 'test_utils.dart';
 
 void main() {
-  test('onepub export env...', () async {
-    await withTestSettings((testSettings) async {
-      final clean = runCmd('export');
-
-      final settings = OnePubSettings.use;
-      final organisationName = settings.organisationName;
-
-      final first = clean.first;
-      expect(first, 'OnePub version: $packageVersion ');
-
-      expect(clean.contains('Exporting OnePub token for $organisationName.'),
-          isTrue);
-
-      expect(
-          clean.contains(
-              'Add the following environment variable to your CI/CD secrets.'),
-          isTrue);
-
-      final last = clean[(clean.length - 2)];
-      expect(last.startsWith('ONEPUB_TOKEN='), isTrue);
-
-      // check the secret has a guid
-      final parts = last.split('=');
-      expect(parts.length, equals(2));
-      expect(parts[1].length, equals(36));
-    });
+  setUpAll(() async {
+    await TestUsers(init: true).init();
   });
+  test('onepub export env...', () async {
+    // await withTestSettings((testSettings) async {
+
+    await impersonateMember(
+        member: TestUsers().administrator,
+        action: () async {
+          final clean = runCmd('export');
+
+          final settings = OnePubSettings.use();
+          final organisationName = settings.organisationName;
+
+          final first = clean.first;
+          expect(first, 'OnePub version: $packageVersion ');
+
+          expect(
+              clean.contains('Exporting OnePub token for $organisationName.'),
+              isTrue);
+
+          expect(
+              clean.contains(
+                  'Add the following environment variable to your CI/CD secrets.'),
+              isTrue);
+
+          final last = clean[(clean.length - 2)];
+          validateToken(last);
+        });
+  });
+  // });
 
   test('onepub export CI/CD...', () async {
-    await withTestSettings((testSettings) async {
-      final settings =
-          SettingsYaml.load(pathToSettings: join('test', 'test_settings.yaml'));
+    // await withTestSettings((testSettings) async {
+    await impersonateMember(
+        member: TestUsers().administrator,
+        action: () async {
+          final cicdUser = TestUsers().basicMember.email;
+          final lines = runCmd('export --user $cicdUser');
 
-      final cicdUser = settings.asString('cicd_member');
-      final clean = runCmd('export --user $cicdUser');
+          final onepubSettings = OnePubSettings.use();
+          final organisationName = onepubSettings.organisationName;
 
-      final onepubSettings = OnePubSettings.use;
-      final organisationName = onepubSettings.organisationName;
+          /// remove empty lines and ansi chars.
+          final clean =
+              lines.where(Strings.isNotEmpty).map(Ansi.strip).toList();
 
-      final first = clean.first;
-      expect(first, 'OnePub version: $packageVersion ');
+          final first = clean.first;
+          expect(first, 'OnePub version: $packageVersion ');
 
-      expect(clean.contains('Exporting OnePub token for $organisationName.'),
-          isTrue);
+          expect(
+              clean.contains('Exporting OnePub token for $organisationName.'),
+              isTrue);
 
-      expect(
-          clean.contains(
-              'Add the following environment variable to your CI/CD secrets.'),
-          isTrue);
+          expect(
+              clean.contains(
+                  'Add the following environment variable to your CI/CD secrets.'),
+              isTrue);
 
-      final last = clean[(clean.length - 2)];
-      expect(last.startsWith('ONEPUB_TOKEN='), isTrue);
+          final last = clean[(clean.length - 1)];
 
-      // check the secret has a guid
-      final parts = last.split('=');
-      expect(parts.length, equals(2));
-      expect(parts[1].length, equals(36));
-    });
+          validateToken(last);
+        });
   });
+}
+
+void validateToken(String line) {
+  const tokenPrefix = 'ONEPUB_TOKEN=';
+  expect(line.startsWith(tokenPrefix), isTrue);
+
+  // check the secret is a guid
+  final token = line.substring(tokenPrefix.length);
+  expect(token.length, equals(56));
 }
