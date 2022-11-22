@@ -9,6 +9,7 @@ import 'dart:io';
 import 'package:args/command_runner.dart';
 import 'package:dcli/dcli.dart';
 import 'package:pub_semver/pub_semver.dart';
+import 'package:strings_xxx/strings.dart';
 
 import '../api/api.dart';
 import '../onepub_settings.dart';
@@ -66,9 +67,14 @@ class DoctorCommand extends Command<int> {
     for (final path in PATH) {
       final line = privatePath(path);
       var error = '';
-      if (!exists(path)) {
-        error = red(' ERROR: path does not exist.');
+      if (Strings.isBlank(path)) {
+        error = red(' ERROR: path is blank.');
+      } else {
+        if (!exists(path)) {
+          error = red(' ERROR: path does not exist.');
+        }
       }
+
       _colprint(['', line, error]);
     }
   }
