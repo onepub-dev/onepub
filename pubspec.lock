@@ -71,13 +71,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.9.1"
-  cli_notify:
-    dependency: transitive
-    description:
-      name: cli_notify
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "0.0.4"
   cli_util:
     dependency: "direct main"
     description:
@@ -92,13 +85,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.15.0"
-  console:
-    dependency: transitive
-    description:
-      name: console
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "4.1.0"
   convert:
     dependency: "direct main"
     description:
@@ -134,13 +120,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.0.0"
-  date_format:
-    dependency: transitive
-    description:
-      name: date_format
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "2.0.7"
   dcli:
     dependency: "direct main"
     description:
@@ -190,13 +169,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "2.1.2"
-  fvm:
-    dependency: "direct main"
-    description:
-      name: fvm
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "2.3.1"
   glob:
     dependency: "direct main"
     description:
@@ -351,13 +323,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "2.2.3"
-  process_run:
-    dependency: transitive
-    description:
-      name: process_run
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "0.12.1+1"
   pub_semver:
     dependency: "direct main"
     description:
@@ -491,13 +456,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.0.0"
-  synchronized:
-    dependency: transitive
-    description:
-      name: synchronized
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "3.0.0"
   system_info2:
     dependency: "direct main"
     description:
@@ -533,13 +491,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.4.2"
-  tint:
-    dependency: transitive
-    description:
-      name: tint
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "2.0.0"
   typed_data:
     dependency: "direct main"
     description:
@@ -582,13 +533,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "3.0.0"
-  vector_math:
-    dependency: transitive
-    description:
-      name: vector_math
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "2.1.0"
   vin_decoder:
     dependency: "direct main"
     description:

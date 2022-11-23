@@ -32,7 +32,6 @@ dependencies:
   file: 6.1.2
   file_utils: 1.0.1
   frontend_server_client: 2.1.2
-  fvm: ^2.3.1
   glob: 2.0.1
   globbing: 1.0.0
   http: 0.13.3
