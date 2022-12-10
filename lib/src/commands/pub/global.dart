@@ -21,6 +21,4 @@ class GlobalCommand extends Command<int> {
   String get name => 'global';
   @override
   String get description => blue('Work with private global packages.');
-
-  
 }

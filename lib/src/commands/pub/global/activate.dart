@@ -39,7 +39,6 @@ class ActivateCommand extends PubCommand {
 
   @override
   Future<void> runProtected() async {
-    
     if (!OnePubTokenStore().isLoggedIn(OnePubSettings.use().onepubApiUrl)) {
       throw ExitException(exitCode: 1, message: '''
 You must be logged in to run this command.

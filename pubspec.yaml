@@ -1,8 +1,7 @@
 name: onepub
-version: 2.0.4
+version: 3.0.0
 homepage: https://onepub.dev
 documentation: https://docs.onepub.dev
-publish_to: https://squarephone.biz/api/xappsdavuh/
 description: Command line tools for the OnePub private Dart/Flutter repository.
 repository: https://github.com/onepub-dev/onepub
 environment: 
