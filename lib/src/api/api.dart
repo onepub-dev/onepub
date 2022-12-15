@@ -1,8 +1,11 @@
 import 'dart:io';
 
+import 'package:pub_semver/pub_semver.dart';
+
 import '../exceptions.dart';
 import '../util/role_enum.dart';
 import '../util/send_command.dart';
+import '../version/version.g.dart';
 import 'auth_response.dart';
 import 'logout.dart';
 import 'member_create.dart';
@@ -16,14 +19,14 @@ class API {
   Future<void> checkVersion() async {
     final result = await status();
 
-//     if (result.version.major != Version.parse(packageVersion).major) {
-//       throw ExitException(exitCode: -1, message: '''
-// The server's major version "${result.version.major}" does not match your onepub version.
+    if (result.version.major != Version.parse(packageVersion).major) {
+      throw ExitException(exitCode: -1, message: '''
+The server's major version "${result.version.major}" does not match your onepub version.
 
-// Please upgrade onepub by running:
-// dart pub global activate onepub
-//           ''');
-//     }
+Please upgrade onepub by running:
+dart pub global activate onepub
+          ''');
+    }
   }
 
   Future<Status> status() async {
