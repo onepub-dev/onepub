@@ -54,26 +54,26 @@ class Credential {
     final unknownFields = Map<String, dynamic>.fromEntries(
         json.entries.where((kv) => !knownKeys.contains(kv.key)));
 
-    /// Returns [String] value from [json] at [key] index or `null` if [json]
-    /// doesn't contains [key].
-    ///
-    /// Throws [FormatException] if value type is not [String].
-    String? _string(String key) {
-      if (json.containsKey(key)) {
-        if (json[key] is! String) {
-          throw FormatException('Provided $key value should be string');
-        }
-        return json[key] as String;
-      }
-      return null;
-    }
-
     return Credential._internal(
       url: hostedUrl,
       unknownFields: unknownFields,
-      token: _string('token'),
-      env: _string('env'),
+      token: _string(json, 'token'),
+      env: _string(json, 'env'),
     );
+  }
+
+  /// Returns [String] value from [json] at [key] index or `null` if [json]
+  /// doesn't contains [key].
+  ///
+  /// Throws [FormatException] if value type is not [String].
+  static String? _string(Map<String, dynamic> json, String key) {
+    if (json.containsKey(key)) {
+      if (json[key] is! String) {
+        throw FormatException('Provided $key value should be string');
+      }
+      return json[key] as String;
+    }
+    return null;
   }
 
   /// Server url which this token authenticates.

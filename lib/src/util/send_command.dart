@@ -58,7 +58,7 @@ Future<EndpointResponse> sendCommand(
 
 Future<HttpClientResponse> _startRequest(HttpClient client, Method method,
     Uri uri, Map<String, String> headers, String? body, bool authorised) async {
-  final _headers = <String, String>{}..addAll(headers);
+  final headers0 = <String, String>{}..addAll(headers);
 
   if (authorised) {
     if (!OnePubTokenStore().isLoggedIn(OnePubSettings.use().onepubApiUrl)) {
@@ -69,18 +69,18 @@ run: onepub login
     }
     final onepubToken = OnePubTokenStore().load();
 
-    _headers.addAll({'authorization': onepubToken});
+    headers0.addAll({'authorization': onepubToken});
   }
 
   final HttpClientRequest request;
   switch (method) {
     case Method.get:
       request = await client.getUrl(uri);
-      _addHeaders(_headers, request);
+      _addHeaders(headers0, request);
       break;
     case Method.post:
       request = await client.postUrl(uri);
-      _addHeaders(_headers, request);
+      _addHeaders(headers0, request);
       if (body != null) {
         request.write(body);
       }
@@ -95,9 +95,9 @@ run: onepub login
 }
 
 /// add custom headers to the request object.
-void _addHeaders(Map<String, String> _headers, HttpClientRequest request) {
-  if (_headers.isNotEmpty) {
-    for (final header in _headers.entries) {
+void _addHeaders(Map<String, String> headers, HttpClientRequest request) {
+  if (headers.isNotEmpty) {
+    for (final header in headers.entries) {
       request.headers.add(header.key, header.value, preserveHeaderCase: true);
     }
   }

@@ -119,30 +119,30 @@ class TokenStore {
 
   /// Adds [token] into store and writes into disk.
   void addCredential(Credential token) {
-    final _credentials = _loadCredentials()
+    final credentials = _loadCredentials()
       // Remove duplicate tokens
       ..removeWhere((it) => it.url == token.url)
       ..add(token);
-    _saveCredentials(_credentials);
+    _saveCredentials(credentials);
   }
 
   /// Removes tokens with matching [hostedUrl] from store. Returns whether or
   /// not there's a stored token with matching url.
   bool removeCredential(Uri hostedUrl) {
-    final _credentials = _loadCredentials();
+    final credentials = _loadCredentials();
 
     var i = 0;
     var found = false;
-    while (i < _credentials.length) {
-      if (_credentials[i].url == hostedUrl) {
-        _credentials.removeAt(i);
+    while (i < credentials.length) {
+      if (credentials[i].url == hostedUrl) {
+        credentials.removeAt(i);
         found = true;
       } else {
         i++;
       }
     }
 
-    _saveCredentials(_credentials);
+    _saveCredentials(credentials);
 
     return found;
   }
@@ -151,21 +151,21 @@ class TokenStore {
   /// Returns whether or not there was at least one stored token with matching
   /// url.
   bool removeMatchingCredential(Uri hostedUrlSuffix) {
-    final _credentials = _loadCredentials();
+    final credentials = _loadCredentials();
 
     var i = 0;
     var found = false;
-    while (i < _credentials.length) {
+    while (i < credentials.length) {
       final prefix = hostedUrlSuffix.toString();
-      if (_credentials[i].url.toString().startsWith(prefix)) {
-        _credentials.removeAt(i);
+      if (credentials[i].url.toString().startsWith(prefix)) {
+        credentials.removeAt(i);
         found = true;
       } else {
         i++;
       }
     }
 
-    _saveCredentials(_credentials);
+    _saveCredentials(credentials);
 
     return found;
   }

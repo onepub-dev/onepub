@@ -10,3 +10,7 @@ analyzer:
 
   exclude:
     - lib/src/pub
+
+linter:
+  rules:
+    avoid_print : false     
