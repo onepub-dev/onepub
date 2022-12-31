@@ -1,3 +1,8 @@
+# 3.0.2
+- upgraded to file 6.1.4 so that we are dart 2.19 compatible.
+- updated to lint_hard 3.x
+- restored the major version no. check, now we have upgraded the server to 3.x
+
 # 3.0.1
 Remove the major version check until further notice.
 
