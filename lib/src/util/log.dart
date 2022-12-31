@@ -5,37 +5,37 @@
 import 'package:dcli/dcli.dart';
 
 void log(String message) {
-  final _message = Ansi.strip(message);
-  _logout(green(_message));
+  final message0 = Ansi.strip(message);
+  _logout(green(message0));
 }
 
 void loginfo(String message) {
-  final _message = Ansi.strip(message);
-  _logout(blue(_message));
+  final message0 = Ansi.strip(message);
+  _logout(blue(message0));
 }
 
 void logwarn(String message) {
-  final _message = Ansi.strip(message);
-  _logerr(orange(_message));
+  final message0 = Ansi.strip(message);
+  _logerr(orange(message0));
 }
 
 void logerr(String message) {
-  final _message = Ansi.strip(message);
-  _logerr(red(_message));
+  final message0 = Ansi.strip(message);
+  _logerr(red(message0));
 }
 
 void _logout(String message) {
   final args = ParsedArgs();
 
-  var _message = message;
+  var message0 = message;
   if (args.colour == false) {
-    _message = Ansi.strip(message);
+    message0 = Ansi.strip(message);
   }
 
   if (args.useLogfile) {
-    args.logfile.append(_message);
+    args.logfile.append(message0);
   } else {
-    print(_message);
+    print(message0);
   }
 }
 
@@ -50,15 +50,15 @@ class ParsedArgs {
 void _logerr(String message) {
   final args = ParsedArgs();
 
-  var _message = message;
+  var message0 = message;
   if (args.colour == false) {
-    _message = Ansi.strip(message);
+    message0 = Ansi.strip(message);
   }
 
   if (args.useLogfile) {
-    args.logfile.append(_message);
+    args.logfile.append(message0);
   } else {
-    printerr(_message);
+    printerr(message0);
   }
 }
 
