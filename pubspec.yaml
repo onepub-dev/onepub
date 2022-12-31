@@ -28,7 +28,7 @@ dependencies:
   dcli_core: 1.21.12
   equatable: 2.0.3
   ffi: 1.2.1
-  file: 6.1.2
+  file: 6.1.4
   file_utils: 1.0.1
   frontend_server_client: 2.1.2
   glob: 2.0.1
