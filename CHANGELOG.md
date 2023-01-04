@@ -1,3 +1,6 @@
+# 3.0.3
+- Upgraded to pub_semver 2.1.2 to resolve a dart 2.19 incompatibility issue.
+
 # 3.0.2
 - upgraded to file 6.1.4 so that we are dart 2.19 compatible.
 - updated to lint_hard 3.x

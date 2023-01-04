@@ -235,10 +235,10 @@ packages:
   lint_hard:
     dependency: "direct dev"
     description:
-      path: "../../lint_hard"
-      relative: true
-    source: path
-    version: "3.0.0-beta.1"
+      name: lint_hard
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "1.0.4"
   logging:
     dependency: "direct main"
     description:
@@ -247,7 +247,7 @@ packages:
     source: hosted
     version: "1.0.2"
   matcher:
-    dependency: "direct main"
+    dependency: "direct dev"
     description:
       name: matcher
       url: "https://pub.dartlang.org"
@@ -259,7 +259,7 @@ packages:
       name: meta
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.7.0"
+    version: "1.8.0"
   mime:
     dependency: "direct main"
     description:
@@ -329,7 +329,7 @@ packages:
       name: pub_semver
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.1.0"
+    version: "2.1.2"
   pubspec:
     dependency: "direct main"
     description:
@@ -478,14 +478,14 @@ packages:
     source: hosted
     version: "1.17.12"
   test_api:
-    dependency: "direct main"
+    dependency: "direct dev"
     description:
       name: test_api
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.4.3"
   test_core:
-    dependency: "direct main"
+    dependency: "direct dev"
     description:
       name: test_core
       url: "https://pub.dartlang.org"
