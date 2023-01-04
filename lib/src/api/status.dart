@@ -9,7 +9,7 @@ class Status {
     } else {
       try {
         this.version = Version.parse(version);
-      // ignore: no_leading_underscores_for_local_identifiers
+        // ignore: no_leading_underscores_for_local_identifiers
       } on FormatException catch (e, _) {
         throw ExitException(
             exitCode: -1,

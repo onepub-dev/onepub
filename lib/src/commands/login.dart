@@ -67,7 +67,7 @@ class OnePubLoginCommand extends Command<int> {
     } on FetchException catch (e, _) {
       printerr(red('Unable to connect to '
           '${OnePubSettings.use().onepubApiUrlAsString}. '
-          'Error: $e'
+          'Error: $e '
           'Check your internet connection.'));
     }
     return 0;

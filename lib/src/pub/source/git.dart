@@ -665,7 +665,7 @@ class GitDescription extends Description {
     required this.relative,
     required String? ref,
     required String? path,
-  })  : ref = ref ?? 'HEAD',
+  })   : ref = ref ?? 'HEAD',
         path = path ?? '.';
 
   factory GitDescription({
