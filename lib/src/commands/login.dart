@@ -63,6 +63,7 @@ class OnePubLoginCommand extends Command<int> {
           firstLogin: auth.firstLogin,
           organisationName: auth.organisationName,
           operator: auth.operatorEmail);
+      // ignore: no_leading_underscores_for_local_identifiers
     } on FetchException catch (e, _) {
       printerr(red('Unable to connect to '
           '${OnePubSettings.use().onepubApiUrlAsString}. '
