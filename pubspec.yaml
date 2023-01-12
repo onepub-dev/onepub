@@ -8,6 +8,7 @@ environment:
   sdk: '>=2.12.0 <3.0.0'
 dependencies: 
   _fe_analyzer_shared: 26.0.0
+  analyzer: 2.3.0
   archive: 3.3.0
   args: 2.3.1
   async: 2.8.2
@@ -79,7 +80,6 @@ dependencies:
   yaml: 3.1.0
   yaml_edit: 2.0.2
 dev_dependencies: 
-  analyzer: 2.3.0
   lint_hard: 1.0.4
   matcher: 0.12.11
   shelf_packages_handler: 3.0.0
