@@ -1,3 +1,7 @@
+# 3.1.0-beta.1
+- moved some dependencies into the dev_dependencies section to help
+with Dart 3.x compatability.
+
 # 3.0.3
 - Upgraded to pub_semver 2.1.2 to resolve a dart 2.19 incompatibility issue.
 

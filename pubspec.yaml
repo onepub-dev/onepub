@@ -1,5 +1,5 @@
 name: onepub
-version: 3.0.3
+version: 3.1.0-beta.1
 homepage: https://onepub.dev
 documentation: https://docs.onepub.dev
 description: Command line tools for the OnePub private Dart/Flutter repository.
@@ -8,7 +8,6 @@ environment:
   sdk: '>=2.12.0 <3.0.0'
 dependencies: 
   _fe_analyzer_shared: 26.0.0
-  # analyzer: 2.3.0
   archive: 3.3.0
   args: 2.3.1
   async: 2.8.2
@@ -24,8 +23,8 @@ dependencies:
   crypto: 3.0.1
   csv: 5.0.1
   dart_console: 1.0.0
-  dcli: 1.21.12
-  dcli_core: 1.21.12
+  dcli: 1.22.1
+  dcli_core: 1.22.1
   equatable: 2.0.3
   ffi: 1.2.1
   file: 6.1.4
@@ -52,16 +51,10 @@ dependencies:
   pool: 1.5.0
   posix: 2.2.3
   pub_semver: 2.1.2
-  pubspec: 2.3.0
-  pubspec2: 2.4.1
-  quiver: 3.1.0
+  pubspec2: 2.4.2
   random_string: 2.3.1
   scope: 3.0.0
   settings_yaml: 3.5.1
-  shelf: 1.2.0
-  shelf_packages_handler: 3.0.0
-  shelf_static: 1.1.0
-  shelf_web_socket: 1.0.1
   source_map_stack_trace: 2.1.0
   source_maps: 0.10.10
   source_span: 1.8.1
@@ -73,7 +66,6 @@ dependencies:
   system_info2: 2.0.4
   term_glyph: 1.2.1
   typed_data: 1.3.0
-  uri: 1.0.0
   url_builder: 1.0.0
   usage: 4.0.2
   uuid: 3.0.6
@@ -89,6 +81,10 @@ dev_dependencies:
   analyzer: 2.3.0
   lint_hard: 1.0.4
   matcher: 0.12.11
+  shelf: 1.2.0
+  shelf_packages_handler: 3.0.0
+  shelf_static: 1.1.0
+  shelf_web_socket: 1.0.1
   test: 1.17.12
   test_api: 0.4.3
   test_core: 0.4.2
