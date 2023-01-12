@@ -110,7 +110,7 @@ Future<T> withClient<T>(SystemCache cache, Future<T> Function(Client) fn) {
       // Be sure to save the credentials even when an error happens.
       _saveCredentials(cache, client.credentials);
     });
-  }).catchError((error) {
+  }).catchError((Object error) {
     if (error is ExpirationException) {
       log.error("Pub's authorization to upload packages has expired and "
           "can't be automatically refreshed.");
@@ -226,7 +226,7 @@ Future<Client> _authorize() async {
   // Spin up a one-shot HTTP server to receive the authorization code from the
   // Google OAuth2 server via redirect. This server will close itself as soon as
   // the code is received.
-  var completer = Completer();
+  var completer = Completer<Client>();
   var server = await bindServer('localhost', 0);
   shelf_io.serveRequests(server, (request) {
     if (request.url.path.isNotEmpty) {

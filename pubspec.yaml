@@ -55,6 +55,7 @@ dependencies:
   random_string: 2.3.1
   scope: 3.0.0
   settings_yaml: 3.5.1
+  shelf: 1.2.0
   source_map_stack_trace: 2.1.0
   source_maps: 0.10.10
   source_span: 1.8.1
@@ -81,7 +82,6 @@ dev_dependencies:
   analyzer: 2.3.0
   lint_hard: 1.0.4
   matcher: 0.12.11
-  shelf: 1.2.0
   shelf_packages_handler: 3.0.0
   shelf_static: 1.1.0
   shelf_web_socket: 1.0.1
