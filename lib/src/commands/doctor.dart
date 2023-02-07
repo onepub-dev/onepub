@@ -142,9 +142,24 @@ void tokenStatus() {
   print(blue('\nRepository tokens'));
 
   final store = OnePubTokenStore();
+
+  var hasOnePubToken = false;
+  for (final credential in store.credentials) {
+    if (credential.url.host == 'onepub.dev' ||
+        credential.url.host == 'beta.onepub.dev') {
+      hasOnePubToken = true;
+    }
+  }
+
   if (!store.isLoggedIn(OnePubSettings.use().onepubApiUrl)) {
-    print(red('No tokens found.'));
-    return;
+    print(red('Not logged into OnePub.'));
+    if (hasOnePubToken) {
+      print('''
+Whilst you are not logged into OnePub you can still 
+perform some operations as you have an active OnePub token(s) 
+as listed below.
+      ''');
+    }
   }
 
   for (final credential in store.credentials) {
