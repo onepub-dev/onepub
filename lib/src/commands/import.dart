@@ -141,6 +141,5 @@ Found: ${argResults!.rest.join(',')}''');
       validator: Ask.all([
         Ask.regExp('[a-zA-Z0-9-=]*',
             error: 'The secret contains invalid characters.'),
-        Ask.lengthRange(56, 56),
       ]));
 }
