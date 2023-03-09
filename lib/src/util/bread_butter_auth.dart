@@ -3,8 +3,6 @@
  * Written by Brett Sutton <bsutton@onepub.dev>, Jan 2022
  */
 
-/// Some parts of this file come from the unpub_auth project and are subject
-/// to MIT license.
 import 'dart:async';
 import 'dart:io';
 

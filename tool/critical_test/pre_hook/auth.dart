@@ -74,18 +74,18 @@ Future<void> main(List<String> args) async {
 //       ..save();
 //   });
 // });
-void loginIfRequired(String pathToOnePubExe) {
-  final tokenStore = OnePubTokenStore();
-  if (!tokenStore.isLoggedIn(OnePubSettings.use().onepubApiUrl)) {
-    print('''
+// void loginIfRequired(String pathToOnePubExe) {
+//   final tokenStore = OnePubTokenStore();
+//   if (!tokenStore.isLoggedIn(OnePubSettings.use().onepubApiUrl)) {
+//     print('''
 
-  ${magenta('Please login with System Administrator account')}
-  ''');
+//   ${magenta('Please login with System Administrator account')}
+//   ''');
 
-    /// prompt the user to login into onepub.
-    'dart $pathToOnePubExe login'.run;
-  }
-}
+//     /// prompt the user to login into onepub.
+//     'dart $pathToOnePubExe login'.run;
+//   }
+// }
 
 /// Check that the user is logged in before we proceed.
 Future<void> preConditionIsLoggedIn() async {

@@ -80,7 +80,7 @@ dependencies:
   yaml: 3.1.0
   yaml_edit: 2.0.2
 dev_dependencies: 
-  lint_hard: 1.0.4
+  lint_hard: 3.0.1
   matcher: 0.12.11
   shelf_packages_handler: 3.0.0
   shelf_static: 1.1.0

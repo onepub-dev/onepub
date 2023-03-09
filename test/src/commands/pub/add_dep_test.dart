@@ -40,7 +40,7 @@ void main() {
 
             // add new version to change log to stop pub publish complaining.
             join(pathToProjectRoot, 'CHANGELOG.md')
-                .append('# ${pubspec.version.toString()}');
+                .append('# ${pubspec.version}');
 
             '$pathToOnePub pub private'.start(
                 workingDirectory: pathToProjectRoot,
