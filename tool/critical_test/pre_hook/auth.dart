@@ -3,6 +3,7 @@
 import 'dart:io';
 
 import 'package:dcli/dcli.dart';
+import 'package:onepub/src/api/member.dart';
 import 'package:onepub/src/onepub_settings.dart';
 import 'package:onepub/src/util/one_pub_token_store.dart';
 
@@ -91,8 +92,13 @@ Future<void> main(List<String> args) async {
 Future<void> preConditionIsLoggedIn() async {
   final tokenStore = OnePubTokenStore();
   if (!tokenStore.isLoggedIn(OnePubSettings.use().onepubApiUrl)) {
-    printerr(red(
-        'Please use onepub import to import a System Admin from the test db'));
+    printerr(red('Please use onepub import to import a '
+        'System Administrator from the test db'));
+    exit(1);
+  }
+
+  if (!(await Member.isSystemAdministrator())) {
+    printerr(red('The Imported user is not a System Administrator'));
     exit(1);
   }
 }
