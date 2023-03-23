@@ -70,6 +70,23 @@ class OnePubSettings {
 
   /// Path to the onepub settings file
   late final String pathToSettings;
+  late final SettingsYaml _settings;
+
+
+  static final scopeKey = ScopeKey<OnePubSettings>('OnePubSettings');
+
+  static const onepubServerUrlKey = 'onepubUrl';
+
+  static const String defaultOnePubUrl = 'https://onepub.dev';
+
+  static const String _defaultApiBasePath = 'api';
+
+  ///static const String defaultWebBasePath = 'ui';
+  static const String _defaultWebBasePath = '';
+
+  // Key of environment var used to alter the
+  // path to looking for the settings.
+  static const onepubPathEnvKey = 'ONEPUB_PATH';
 
   /// Creates the onepub.yaml file at [defaultPathToSettingsDir] but does not
   /// initialise nor load it.
@@ -116,21 +133,6 @@ class OnePubSettings {
     return scope.run<T>(() async => action());
   }
 
-  static final scopeKey = ScopeKey<OnePubSettings>('OnePubSettings');
-
-  static const onepubServerUrlKey = 'onepubUrl';
-  late final SettingsYaml _settings;
-
-  static const String defaultOnePubUrl = 'https://onepub.dev';
-
-  static const String _defaultApiBasePath = 'api';
-
-  ///static const String defaultWebBasePath = 'ui';
-  static const String _defaultWebBasePath = '';
-
-  // Key of environment var used to alter the
-  // path to looking for the settings.
-  static const onepubPathEnvKey = 'ONEPUB_PATH';
 
   /// Path to the .onepub settings directory
   static String get defaultPathToSettingsDir {
@@ -171,26 +173,28 @@ class OnePubSettings {
     final url = '$baseApiUrl/$obfuscatedOrganisationId/';
     return url;
   }
-
+  // onepubWebUrl
   String get onepubWebUrl => urlJoin(
       _settings.asString(onepubServerUrlKey, defaultValue: defaultOnePubUrl),
       _defaultWebBasePath);
 
+  // onepub url
   set onepubUrl(String? url) => _settings[onepubServerUrlKey] = url;
-
   String? get onepubUrl => _settings[onepubServerUrlKey] as String?;
 
+  // obfuscated id
   set obfuscatedOrganisationId(String obfuscatedOrganisationId) =>
       _settings['organisationId'] = obfuscatedOrganisationId;
   String get obfuscatedOrganisationId => _settings.asString('organisationId',
       defaultValue: 'OrganisationId_not_set');
 
+  // organisationName
   String get organisationName => _settings.asString('organisationName');
-
   set organisationName(String organisationName) {
     _settings['organisationName'] = organisationName;
   }
 
+  // operatorEmail
   set operatorEmail(String operatorEmail) =>
       _settings['operatorEmail'] = operatorEmail;
   String get operatorEmail => _settings.asString('operatorEmail');
