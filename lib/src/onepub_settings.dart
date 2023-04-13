@@ -72,7 +72,6 @@ class OnePubSettings {
   late final String pathToSettings;
   late final SettingsYaml _settings;
 
-
   static final scopeKey = ScopeKey<OnePubSettings>('OnePubSettings');
 
   static const onepubServerUrlKey = 'onepubUrl';
@@ -133,7 +132,6 @@ class OnePubSettings {
     return scope.run<T>(() async => action());
   }
 
-
   /// Path to the .onepub settings directory
   static String get defaultPathToSettingsDir {
     final pathToSettings = env[onepubPathEnvKey] ?? join(HOME, '.onepub');
@@ -173,6 +171,7 @@ class OnePubSettings {
     final url = '$baseApiUrl/$obfuscatedOrganisationId/';
     return url;
   }
+
   // onepubWebUrl
   String get onepubWebUrl => urlJoin(
       _settings.asString(onepubServerUrlKey, defaultValue: defaultOnePubUrl),
