@@ -69,10 +69,10 @@ class OnePubTokenStore {
     await scope.run(action);
   }
 
-  // returns the token for the given [operatorEmail]
+  // returns the token for the given [onepubApiUrl]
   // if it is stored.
   String? getToken(String onepubApiUrl) {
-    final url = Uri.http(onepubApiUrl);
+    final url = Uri.parse(onepubApiUrl);
     final credential = tokenStore.findCredential(url);
     if (credential != null) {
       return credential.token;
