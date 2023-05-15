@@ -119,7 +119,7 @@ run: onepub login'''));
         print('');
         print('Server Version: ${status.version}');
 
-        if (Version.parse(packageVersion).major != status.version.major) {
+        if (Version.parse(packageVersion).major < status.version.major) {
           print(red('${'*' * 40} ERROR ${'*' * 40}'));
           print(red(
               'The OnePub Server version does not match your onepub version.'));

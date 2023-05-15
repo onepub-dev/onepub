@@ -17,11 +17,11 @@ import 'versions.dart';
 
 class API {
   Future<void> checkVersion() async {
-    final result = await status();
+    final server = await status();
 
-    if (result.version.major != Version.parse(packageVersion).major) {
+    if (server.version.major > Version.parse(packageVersion).major) {
       throw ExitException(exitCode: -1, message: '''
-The server's major version "${result.version.major}" does not match your onepub version.
+The server's major version "${server.version.major}" does not match your onepub version.
 
 Please upgrade onepub by running:
 dart pub global activate onepub
