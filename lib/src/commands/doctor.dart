@@ -9,7 +9,7 @@ import 'dart:io';
 import 'package:args/command_runner.dart';
 import 'package:dcli/dcli.dart';
 import 'package:pub_semver/pub_semver.dart';
-import 'package:strings_xxx/strings.dart';
+import 'package:strings/strings.dart';
 
 import '../api/api.dart';
 import '../onepub_settings.dart';

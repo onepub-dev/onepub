@@ -1,5 +1,5 @@
 name: onepub
-version: 3.1.0
+version: 4.0.0-beta.1
 homepage: https://onepub.dev
 documentation: https://docs.onepub.dev
 description: Command line tools for the OnePub private Dart/Flutter repository.
@@ -64,7 +64,7 @@ dependencies:
   stacktrace_impl: 2.3.0
   stream_channel: ^2.1.1
   string_scanner: ^1.2.0
-  strings_xxx: 1.0.0
+  strings: ^2.0.2
   system_info2: ^3.0.2
   term_glyph: 1.2.1
   typed_data: ^1.3.2
@@ -79,8 +79,8 @@ dependencies:
   yaml: ^3.1.2
   yaml_edit: ^2.1.1
 dev_dependencies: 
-  lint_hard: 1.0.4
-  matcher: 0.12.11
+  lint_hard: ^3.0.1
+  matcher: 0.12.14
   shelf_packages_handler: ^3.0.2
   shelf_static: ^1.1.2
   shelf_web_socket: ^1.0.4

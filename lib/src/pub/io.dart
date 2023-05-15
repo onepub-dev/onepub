@@ -844,8 +844,7 @@ T _doProcess<T>(
     String? workingDirectory,
     Map<String, String>? environment,
     bool runInShell,
-  })
-      fn,
+  }) fn,
   String executable,
   List<String> args, {
   String? workingDir,

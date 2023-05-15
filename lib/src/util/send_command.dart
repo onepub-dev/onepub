@@ -257,7 +257,9 @@ class EndpointResponse {
 String toHex(List<int> bytes) {
   final hex = StringBuffer();
   for (final val in bytes) {
-    hex..write(val.toRadixString(16).padLeft(2, '0'))..write(' ');
+    hex
+      ..write(val.toRadixString(16).padLeft(2, '0'))
+      ..write(' ');
   }
   return hex.toString();
 }

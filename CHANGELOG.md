@@ -1,3 +1,6 @@
+# 4.0.0-beta.1
+- support for dart 3.x
+
 # 3.1.0-beta.1
 - moved some dependencies into the dev_dependencies section to help
 with Dart 3.x compatability.

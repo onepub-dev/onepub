@@ -12,7 +12,7 @@ import 'package:onepub/src/entry_point.dart';
 import 'package:onepub/src/my_runner.dart';
 import 'package:onepub/src/onepub_settings.dart';
 import 'package:onepub/src/version/version.g.dart';
-import 'package:strings_xxx/strings.dart';
+import 'package:strings/strings.dart';
 import 'package:test/test.dart';
 
 import '../../impersonate_user.dart';
