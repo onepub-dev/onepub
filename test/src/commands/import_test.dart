@@ -5,7 +5,7 @@
 
 import 'dart:async';
 
-import 'package:dcli/dcli.dart' hide equals;
+import 'package:dcli/dcli.dart';
 import 'package:dcli_core/dcli_core.dart' as core;
 import 'package:onepub/src/api/member.dart';
 import 'package:onepub/src/entry_point.dart';
@@ -92,13 +92,13 @@ Future<void> withTokenImportFile(
 Future<List<String>> _runCliCommand(String command) async => runCmd(command);
 
 Future<List<String>> _runInternalCommand(String command) async {
-  final capture = Progress.capture();
+  final progress = Progress.capture();
 
-  await DCliZone().run(() async {
+  await capture(() async {
     await entrypoint(command.split(' '), CommandSet.onepub, 'onepub');
-  }, progress: capture);
+  }, progress: progress);
 
-  return capture.lines;
+  return progress.lines;
 }
 
 // int call = 0;

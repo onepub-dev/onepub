@@ -3,10 +3,11 @@
  * Written by Brett Sutton <bsutton@onepub.dev>, Jan 2022
  */
 
-import 'package:dcli/dcli.dart' hide equals;
+import 'package:dcli/dcli.dart';
 import 'package:onepub/src/api/api.dart';
 import 'package:onepub/src/entry_point.dart';
 import 'package:onepub/src/my_runner.dart';
+import 'package:path/path.dart' hide equals;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:scope/scope.dart';
 import 'package:test/test.dart';
@@ -36,7 +37,7 @@ void main() {
                 .fetchVersions(member.obfuscatedOrganisationId, packageName);
             pubspec
               ..version = Version.parse(versions.latest.version).nextMinor
-              ..saveToFile(pathToPackage2Pubspec);
+              ..save(pathToPackage2Pubspec);
 
             // add new version to change log to stop pub publish complaining.
             join(pathToProjectRoot, 'CHANGELOG.md')

@@ -3,8 +3,9 @@
  * Written by Brett Sutton <bsutton@onepub.dev>, Jan 2022
  */
 
-import 'package:dcli/dcli.dart' hide equals;
+import 'package:dcli/dcli.dart';
 import 'package:dcli_core/dcli_core.dart' as core;
+import 'package:path/path.dart';
 
 /// Runs a onepub command on the cli and returns the output
 /// stripped of any ansi chars.

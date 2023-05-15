@@ -1,7 +1,7 @@
 import 'dart:math';
 
 import 'package:dcli/dcli.dart';
-import 'package:validators2/validators.dart';
+import 'package:validators2/validators2.dart';
 
 class UrlValidator extends AskValidator {
   @override

@@ -1,4 +1,4 @@
-import 'package:dcli/dcli.dart' hide equals;
+import 'package:dcli/dcli.dart';
 import 'package:onepub/src/entry_point.dart';
 import 'package:onepub/src/my_runner.dart';
 import 'package:onepub/src/version/version.g.dart';
@@ -7,7 +7,7 @@ import 'package:test/test.dart';
 
 void main() {
   test('pub - missing sub command', () async {
-    final progress = await DCliZone().run(
+    final progress = await capture(
         () async => entrypoint(
               ['pub'],
               CommandSet.onepub,

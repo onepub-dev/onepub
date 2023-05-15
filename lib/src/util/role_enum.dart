@@ -30,5 +30,5 @@ extension RoleEnumHelper on RoleEnum {
 }
 
 class InvalidRoleNameException extends OnePubCliException {
-  InvalidRoleNameException(String message) : super(message);
+  InvalidRoleNameException(super.message);
 }

@@ -11,11 +11,11 @@ class ExitException extends OnePubCliException {
 }
 
 class CredentialsException extends OnePubCliException {
-  CredentialsException(String message) : super(message);
+  CredentialsException(super.message);
 }
 
 class UnexpectedHttpResponseException extends OnePubCliException {
-  UnexpectedHttpResponseException(String message) : super(message);
+  UnexpectedHttpResponseException(super.message);
 }
 
 class OnePubCliException implements Exception {
@@ -27,9 +27,9 @@ class OnePubCliException implements Exception {
 }
 
 class APIException extends OnePubCliException {
-  APIException(String message) : super(message);
+  APIException(super.message);
 }
 
 class NotInitialisedException extends OnePubCliException {
-  NotInitialisedException(String message) : super(message);
+  NotInitialisedException(super.message);
 }

@@ -4,7 +4,7 @@
  */
 import 'package:args/command_runner.dart';
 import 'package:dcli/dcli.dart';
-import 'package:validators2/validators.dart';
+import 'package:validators2/validators2.dart';
 
 import '../api/api.dart';
 import '../exceptions.dart';

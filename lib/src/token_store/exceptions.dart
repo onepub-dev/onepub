@@ -21,14 +21,14 @@ class ApplicationException implements Exception {
 ///
 /// This corresponds to the `config` exit code;
 class ConfigException extends ApplicationException {
-  ConfigException(String message) : super(message);
+  ConfigException(super.message);
 }
 
 /// A class for errors in a command's input data.
 ///
 /// This corresponds to the `data` exit code.
 class DataException extends ApplicationException {
-  DataException(String message) : super(message);
+  DataException(super.message);
 }
 
 /// An exception class for exceptions that are intended to be seen by the user
@@ -69,14 +69,13 @@ class PackageNotFoundException extends WrappedException {
 /// A subclass of [ApplicationException] that occurs when running a subprocess
 /// has failed.
 class RunProcessException extends ApplicationException {
-  RunProcessException(String message) : super(message);
+  RunProcessException(super.message);
 }
 
 /// A class for exceptions that wrap other exceptions.
 class WrappedException extends ApplicationException {
-  WrappedException(String message, this.innerError, [StackTrace? innerTrace])
-      : innerChain = innerTrace == null ? null : Chain.forTrace(innerTrace),
-        super(message);
+  WrappedException(super.message, this.innerError, [StackTrace? innerTrace])
+      : innerChain = innerTrace == null ? null : Chain.forTrace(innerTrace);
 
   /// The underlying exception that this is wrapping, if any.
   final Object? innerError;

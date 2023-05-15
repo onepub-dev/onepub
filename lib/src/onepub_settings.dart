@@ -5,6 +5,7 @@
 import 'dart:io';
 
 import 'package:dcli/dcli.dart';
+import 'package:path/path.dart';
 import 'package:scope/scope.dart';
 import 'package:settings_yaml/settings_yaml.dart';
 import 'package:url_builder/url_builder.dart';

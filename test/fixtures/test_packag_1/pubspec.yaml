@@ -2,7 +2,7 @@ name: test_packag_1
 version: 1.0.0
 description: A simple command-line application.
 environment: 
-  sdk: '>=2.12.0 <3.0.0'
+  sdk: '>=2.19.0 <4.0.0'
 dev_dependencies: 
   analyzer: ^2.3.0
   args: ^2.3.0
@@ -19,7 +19,7 @@ dev_dependencies:
   http_multi_server: ^3.0.1
   http_parser: ^4.0.0
   json_annotation: ^4.1.0
-  lint_hard: ^1.0.0  
+  lint_hard: ^3.0.0
   meta: ^1.7.0
   oauth2: ^2.0.0
   path: ^1.8.1
