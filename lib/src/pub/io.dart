@@ -15,17 +15,41 @@ import 'package:http_multi_server/http_multi_server.dart';
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as path;
 import 'package:pool/pool.dart';
+// ignore: prefer_relative_imports
 import 'package:stack_trace/stack_trace.dart';
-import 'package:pedantic/pedantic.dart';
 
 import 'error_group.dart';
 import 'exceptions.dart';
 import 'exit_codes.dart' as exit_codes;
 import 'log.dart' as log;
-import 'third_party/tar/tar.dart';
+import 'third_party/tar/lib/tar.dart';
 import 'utils.dart';
 
 export 'package:http/http.dart' show ByteStream;
+
+/// Environment variable names that are recognized by pub.
+class EnvironmentKeys {
+  /// Overrides terminal detection for stdout.
+  ///
+  /// Supported values:
+  /// * missing or `''` (empty string): dart:io terminal detection is used.
+  /// * `"0"`: output as if no terminal is attached
+  ///   - no animations
+  ///   - no ANSI colors
+  ///   - use unicode characters
+  ///   - silent inside [log.errorsOnlyUnlessTerminal]).
+  /// * `"1"`: output as if a terminal is attached
+  ///   - animations
+  ///   - ANSI colors (can be overriden again with NO_COLOR)
+  ///   - no unicode on Windows
+  ///   - normal verbosity in output inside
+  ///   [log.errorsOnlyUnlessTerminal]).
+  ///
+  /// This variable is mainly for testing, and no forward compatibility
+  /// guarantees are given.
+  static const forceTerminalOutput = '_PUB_FORCE_TERMINAL_OUTPUT';
+  // TODO(sigurdm): Add other environment keys here.
+}
 
 /// The pool used for restricting access to asynchronous operations that consume
 /// file descriptors.
@@ -56,6 +80,20 @@ bool linkExists(String link) => Link(link).existsSync();
 /// This returns `true` for a symlink only if that symlink is unbroken and
 /// points to a file.
 bool fileExists(String file) => File(file).existsSync();
+
+/// Stats [path], assuming it or the entry it is a link to is a file.
+///
+/// Returns `null` if it is not a file (eg. a directory or not existing).
+FileStat? tryStatFile(String path) {
+  var stat = File(path).statSync();
+  if (stat.type == FileSystemEntityType.link) {
+    stat = File(File(path).resolveSymbolicLinksSync()).statSync();
+  }
+  if (stat.type == FileSystemEntityType.file) {
+    return stat;
+  }
+  return null;
+}
 
 /// Returns the canonical path for [pathString].
 ///
@@ -173,7 +211,7 @@ List<int> readBinaryFile(String file) {
 }
 
 /// Reads the contents of the binary file [file] as a [Stream].
-Stream<List<int>> readBinaryFileAsSream(String file) {
+Stream<List<int>> readBinaryFileAsStream(String file) {
   log.io('Reading binary file $file.');
   var contents = File(file).openRead();
   return contents;
@@ -299,11 +337,13 @@ String resolveSymlinksOfDir(String dir) {
 ///
 /// The returned paths are guaranteed to begin with [dir]. Broken symlinks won't
 /// be returned.
-List<String> listDir(String dir,
-    {bool recursive = false,
-    bool includeHidden = false,
-    bool includeDirs = true,
-    Iterable<String> allowed = const <String>[]}) {
+List<String> listDir(
+  String dir, {
+  bool recursive = false,
+  bool includeHidden = false,
+  bool includeDirs = true,
+  Iterable<String> allowed = const <String>[],
+}) {
   var allowlistFilter = createFileFilter(allowed);
 
   // This is used in some performance-sensitive paths and can list many, many
@@ -365,8 +405,11 @@ bool dirExists(String dir) => Directory(dir).existsSync();
 ///
 /// For some operations it makes sense to handle ERROR_DIR_NOT_EMPTY
 /// differently. They can pass [ignoreEmptyDir] = `true`.
-void _attempt(String description, void Function() operation,
-    {bool ignoreEmptyDir = false}) {
+void _attempt(
+  String description,
+  void Function() operation, {
+  bool ignoreEmptyDir = false,
+}) {
   if (!Platform.isWindows) {
     operation();
     return;
@@ -391,7 +434,8 @@ void _attempt(String description, void Function() operation,
     return null;
   }
 
-  for (var i = 0; i < 3; i++) {
+  const maxRetries = 50;
+  for (var i = 0; i < maxRetries; i++) {
     try {
       operation();
       break;
@@ -399,7 +443,7 @@ void _attempt(String description, void Function() operation,
       var reason = getErrorReason(error);
       if (reason == null) rethrow;
 
-      if (i < 2) {
+      if (i < maxRetries - 1) {
         log.io('Pub failed to $description because $reason. '
             'Retrying in 50ms.');
         sleep(Duration(milliseconds: 50));
@@ -452,10 +496,14 @@ void cleanDir(String dir) {
 
 /// Renames (i.e. moves) the directory [from] to [to].
 void renameDir(String from, String to) {
-  _attempt('rename directory', () {
-    log.io('Renaming directory $from to $to.');
-    Directory(from).renameSync(to);
-  }, ignoreEmptyDir: true);
+  _attempt(
+    'rename directory',
+    () {
+      log.io('Renaming directory $from to $to.');
+      Directory(from).renameSync(to);
+    },
+    ignoreEmptyDir: true,
+  );
 }
 
 /// Renames directory [from] to [to].
@@ -494,9 +542,9 @@ bool _isDirectoryNotEmptyException(FileSystemException e) {
       // #define	ENOTEMPTY	39	/* Directory not empty */
       // https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/include/uapi/asm-generic/errno.h#n20
       (Platform.isLinux && errorCode == 39) ||
-          // On Windows this may fail with ERROR_DIR_NOT_EMPTY
+          // On Windows this may fail with ERROR_DIR_NOT_EMPTY or ERROR_ALREADY_EXISTS
           // https://docs.microsoft.com/en-us/windows/win32/debug/system-error-codes--0-499-
-          (Platform.isWindows && errorCode == 145) ||
+          (Platform.isWindows && (errorCode == 145 || errorCode == 183)) ||
           // On MacOS rename will fail with ENOTEMPTY if directory exists.
           // #define ENOTEMPTY       66              /* Directory not empty */
           // https://github.com/apple-oss-distributions/xnu/blob/bb611c8fecc755a0d8e56e2fa51513527c5b7a0e/bsd/sys/errno.h#L190
@@ -540,8 +588,13 @@ void createSymlink(String target, String symlink, {bool relative = false}) {
 ///
 /// If [relative] is true, creates a symlink with a relative path from the
 /// symlink to the target. Otherwise, uses the [target] path unmodified.
-void createPackageSymlink(String name, String target, String symlink,
-    {bool isSelfLink = false, bool relative = false}) {
+void createPackageSymlink(
+  String name,
+  String target,
+  String symlink, {
+  bool isSelfLink = false,
+  bool relative = false,
+}) {
   // See if the package has a "lib" directory. If not, there's nothing to
   // symlink to.
   target = path.join(target, 'lib');
@@ -638,6 +691,26 @@ Future<String> stdinPrompt(String prompt, {bool? echoMode}) async {
   }
 }
 
+/// Returns `true` if [stdout] should be treated as a terminal.
+///
+/// The detected behaviour can be overridden with the environment variable
+/// [EnvironmentKeys.forceTerminalOutput].
+bool get terminalOutputForStdout {
+  final environmentValue =
+      Platform.environment[EnvironmentKeys.forceTerminalOutput];
+  if (environmentValue == null || environmentValue == '') {
+    return stdout.hasTerminal;
+  } else if (environmentValue == '0') {
+    return false;
+  } else if (environmentValue == '1') {
+    return true;
+  } else {
+    throw DataException(
+      'Environment variable ${EnvironmentKeys.forceTerminalOutput} has unsupported value: $environmentValue.',
+    );
+  }
+}
+
 /// Flushes the stdout and stderr streams, then exits the program with the given
 /// status code.
 ///
@@ -678,17 +751,22 @@ Future<PubProcessResult> runProcess(
   return _descriptorPool.withResource(() async {
     ProcessResult result;
     try {
-      result = await _doProcess(Process.run, executable, args,
-          workingDir: workingDir,
-          environment: environment,
-          runInShell: runInShell);
+      result = await _doProcess(
+        Process.run,
+        executable,
+        args,
+        workingDir: workingDir as String?,
+        environment: environment,
+        runInShell: runInShell,
+      );
     } on IOException catch (e) {
       throw RunProcessException(
-          'Pub failed to run subprocess `$executable`: $e');
+        'Pub failed to run subprocess `$executable`: $e',
+      );
     }
 
-    var pubResult =
-        PubProcessResult(result.stdout, result.stderr, result.exitCode);
+    var pubResult = PubProcessResult(
+        result.stdout as String, result.stderr as String, result.exitCode);
     log.processResult(executable, pubResult);
     return pubResult;
   });
@@ -703,7 +781,7 @@ Future<PubProcessResult> runProcess(
 /// [environment] is provided, that will be used to augment (not replace) the
 /// the inherited variables.
 @visibleForTesting
-Future<_PubProcess> startProcess(
+Future<PubProcess> startProcess(
   String executable,
   List<String> args, {
   String? workingDir,
@@ -713,16 +791,21 @@ Future<_PubProcess> startProcess(
   return _descriptorPool.request().then((resource) async {
     Process ioProcess;
     try {
-      ioProcess = await _doProcess(Process.start, executable, args,
-          workingDir: workingDir,
-          environment: environment,
-          runInShell: runInShell);
+      ioProcess = await _doProcess(
+        Process.start,
+        executable,
+        args,
+        workingDir: workingDir,
+        environment: environment,
+        runInShell: runInShell,
+      );
     } on IOException catch (e) {
       throw RunProcessException(
-          'Pub failed to run subprocess `$executable`: $e');
+        'Pub failed to run subprocess `$executable`: $e',
+      );
     }
 
-    var process = _PubProcess(ioProcess);
+    var process = PubProcess(ioProcess);
     unawaited(process.exitCode.whenComplete(resource.release));
     return process;
   });
@@ -739,21 +822,25 @@ PubProcessResult runProcessSync(
   ArgumentError.checkNotNull(executable, 'executable');
   ProcessResult result;
   try {
-    result = _doProcess(Process.runSync, executable, args,
-        workingDir: workingDir == '' ? null : workingDir,
-        environment: environment,
-        runInShell: runInShell);
+    result = _doProcess(
+      Process.runSync,
+      executable,
+      args,
+      workingDir: workingDir,
+      environment: environment,
+      runInShell: runInShell,
+    );
   } on IOException catch (e) {
     throw RunProcessException('Pub failed to run subprocess `$executable`: $e');
   }
-  var pubResult =
-      PubProcessResult(result.stdout, result.stderr, result.exitCode);
+  var pubResult = PubProcessResult(
+      result.stdout as String, result.stderr as String, result.exitCode);
   log.processResult(executable, pubResult);
   return pubResult;
 }
 
 /// A wrapper around [Process] that exposes `dart:async`-style APIs.
-class _PubProcess {
+class PubProcess {
   /// The underlying `dart:io` [Process].
   final Process _process;
 
@@ -812,8 +899,8 @@ class _PubProcess {
   /// error handler unless nothing has handled it.
   Future<int> get exitCode => _exitCode;
 
-  /// Creates a new [_PubProcess] wrapping [process].
-  _PubProcess(Process process) : _process = process {
+  /// Creates a new [PubProcess] wrapping [process].
+  PubProcess(Process process) : _process = process {
     var errorGroup = ErrorGroup();
 
     var pair = _consumerToSink(process.stdin);
@@ -862,10 +949,13 @@ T _doProcess<T>(
 
   log.process(executable, args, workingDir ?? '.');
 
-  return fn(executable, args,
-      workingDirectory: workingDir,
-      environment: environment,
-      runInShell: runInShell);
+  return fn(
+    executable,
+    args,
+    workingDirectory: workingDir,
+    environment: environment,
+    runInShell: runInShell,
+  );
 }
 
 /// Updates [path]'s modification time.
@@ -906,6 +996,7 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
 
   destination = path.absolute(destination);
   final reader = TarReader(stream.transform(gzip.decoder));
+  final paths = <String>{};
   while (await reader.moveNext()) {
     final entry = reader.current;
 
@@ -914,6 +1005,11 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
       // Tar file names always use forward slashes
       ...path.posix.split(entry.name),
     ]);
+    if (!paths.add(filePath)) {
+      // The tar file contained the same entry twice. Assume it is broken.
+      await reader.cancel();
+      throw FormatException('Tar file contained duplicate path ${entry.name}');
+    }
 
     if (!path.isWithin(destination, filePath)) {
       // The tar contains entries that would be written outside of the
@@ -958,7 +1054,8 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
       case TypeFlag.symlink:
         // Link to another file in this tar, relative from this entry.
         final resolvedTarget = path.joinAll(
-            [parentDirectory, ...path.posix.split(entry.header.linkName!)]);
+          [parentDirectory, ...path.posix.split(entry.header.linkName!)],
+        );
         if (!checkValidTarget(resolvedTarget)) {
           // Don't allow links to files outside of this tar.
           break;
@@ -966,7 +1063,9 @@ Future extractTarGz(Stream<List<int>> stream, String destination) async {
 
         ensureDir(parentDirectory);
         createSymlink(
-            path.relative(resolvedTarget, from: parentDirectory), filePath);
+          path.relative(resolvedTarget, from: parentDirectory),
+          filePath,
+        );
         break;
       case TypeFlag.link:
         // We generate hardlinks as symlinks too, but their linkName is relative
@@ -1009,41 +1108,45 @@ ByteStream createTarGz(
   ArgumentError.checkNotNull(baseDir, 'baseDir');
   baseDir = path.normalize(path.absolute(baseDir));
 
-  final tarContents = Stream.fromIterable(contents.map((entry) {
-    entry = path.normalize(path.absolute(entry));
-    if (!path.isWithin(baseDir, entry)) {
-      throw ArgumentError('Entry $entry is not inside $baseDir.');
-    }
+  final tarContents = Stream.fromIterable(
+    contents.map((entry) {
+      entry = path.normalize(path.absolute(entry));
+      if (!path.isWithin(baseDir, entry)) {
+        throw ArgumentError('Entry $entry is not inside $baseDir.');
+      }
 
-    final relative = path.relative(entry, from: baseDir);
-    // On Windows, we can't open some files without normalizing them
-    final file = File(path.normalize(entry));
-    final stat = file.statSync();
+      final relative = path.relative(entry, from: baseDir);
+      // On Windows, we can't open some files without normalizing them
+      final file = File(path.normalize(entry));
+      final stat = file.statSync();
 
-    if (stat.type == FileSystemEntityType.link) {
-      log.message('$entry is a link locally, but will be uploaded as a '
-          'duplicate file.');
-    }
+      if (stat.type == FileSystemEntityType.link) {
+        log.message('$entry is a link locally, but will be uploaded as a '
+            'duplicate file.');
+      }
 
-    return TarEntry(
-      TarHeader(
-        // Ensure paths in tar files use forward slashes
-        name: path.url.joinAll(path.split(relative)),
-        // We want to keep executable bits, but otherwise use the default
-        // file mode
-        mode: _defaultMode | (stat.mode & _executableMask),
-        size: stat.size,
-        modified: stat.changed,
-        userName: 'pub',
-        groupName: 'pub',
-      ),
-      file.openRead(),
-    );
-  }));
+      return TarEntry(
+        TarHeader(
+          // Ensure paths in tar files use forward slashes
+          name: path.url.joinAll(path.split(relative)),
+          // We want to keep executable bits, but otherwise use the default
+          // file mode
+          mode: _defaultMode | (stat.mode & _executableMask),
+          size: stat.size,
+          modified: stat.changed,
+          userName: 'pub',
+          groupName: 'pub',
+        ),
+        file.openRead(),
+      );
+    }),
+  );
 
-  return ByteStream(tarContents
-      .transform(tarWriterWith(format: OutputFormat.gnuLongName))
-      .transform(gzip.encoder));
+  return ByteStream(
+    tarContents
+        .transform(tarWriterWith(format: OutputFormat.gnuLongName))
+        .transform(gzip.encoder),
+  );
 }
 
 /// Contains the results of invoking a [Process] and waiting for it to complete.
@@ -1072,7 +1175,7 @@ class PubProcessResult {
 final String? dartConfigDir = () {
   if (runningFromTest &&
       Platform.environment.containsKey('_PUB_TEST_CONFIG_DIR')) {
-    return Platform.environment['_PUB_TEST_CONFIG_DIR'];
+    return path.join(Platform.environment['_PUB_TEST_CONFIG_DIR']!, 'dart');
   }
   try {
     return applicationConfigHome('dart');
@@ -1087,6 +1190,6 @@ final String? dartConfigDir = () {
 ///
 /// Otherwise, wrap with single quotation, and use '\'' to insert single quote.
 String escapeShellArgument(String x) =>
-    RegExp(r'^[a-zA-Z0-9-_=@.]+$').stringMatch(x) == null
-        ? "'${x.replaceAll(r'\', '\\').replaceAll("'", r"'\''")}'"
+    RegExp(r'^[a-zA-Z0-9-_=@.^]+$').stringMatch(x) == null
+        ? "'${x.replaceAll(r'\', r'\\').replaceAll("'", r"'\''")}'"
         : x;

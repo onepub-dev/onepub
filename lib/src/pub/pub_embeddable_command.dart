@@ -7,9 +7,24 @@ import 'package:usage/usage.dart';
 
 import 'command.dart' show PubCommand, PubTopLevel;
 import 'command.dart';
+import 'command/add.dart';
+import 'command/cache.dart';
+import 'command/deps.dart';
+import 'command/downgrade.dart';
+import 'command/get.dart';
+import 'command/global.dart';
 import 'command/lish.dart';
+import 'command/login.dart';
+import 'command/logout.dart';
+import 'command/outdated.dart';
+import 'command/remove.dart';
+import 'command/run.dart';
+import 'command/token.dart';
+import 'command/upgrade.dart';
+import 'command/uploader.dart';
 import 'log.dart' as log;
 import 'log.dart';
+import 'utils.dart';
 
 /// The information needed for the embedded pub command to send analytics.
 @sealed
@@ -32,13 +47,17 @@ class PubAnalytics {
 class PubEmbeddableCommand extends PubCommand implements PubTopLevel {
   @override
   String get name => 'pub';
+
+  @override
+  get suggestionAliases => const ['packages', 'pkg'];
+
   @override
   String get description => 'Work with packages.';
   @override
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-global';
 
   @override
-  String get directory => argResults['directory'];
+  String get directory => asString(argResults['directory']);
 
   @override
   final PubAnalytics? analytics;
@@ -46,10 +65,16 @@ class PubEmbeddableCommand extends PubCommand implements PubTopLevel {
   final bool Function() isVerbose;
 
   PubEmbeddableCommand(this.analytics, this.isVerbose) : super() {
-    argParser.addFlag('trace',
-        help: 'Print debugging information when an error occurs.');
-    argParser.addFlag('verbose',
-        abbr: 'v', negatable: false, help: 'Print detailed logging.');
+    // This flag was never honored in the embedding but since it was accepted we
+    // leave it as a hidden flag to avoid breaking clients that pass it.
+    argParser.addFlag('trace', hide: true);
+    argParser.addFlag(
+      'verbose',
+      abbr: 'v',
+      negatable: false,
+      help: 'Print detailed logging.',
+    );
+    PubTopLevel.addColorFlag(argParser);
     argParser.addOption(
       'directory',
       abbr: 'C',
@@ -64,7 +89,21 @@ class PubEmbeddableCommand extends PubCommand implements PubTopLevel {
     // dartdev.
     //
     // New commands should (most likely) be included in both lists.
+    addSubcommand(AddCommand());
+    addSubcommand(CacheCommand());
+    addSubcommand(DepsCommand());
+    addSubcommand(DowngradeCommand());
+    addSubcommand(GlobalCommand(alwaysUseSubprocess: true));
+    addSubcommand(GetCommand());
     addSubcommand(LishCommand());
+    addSubcommand(OutdatedCommand());
+    addSubcommand(RemoveCommand());
+    addSubcommand(RunCommand(deprecated: true, alwaysUseSubprocess: true));
+    addSubcommand(UpgradeCommand());
+    addSubcommand(UploaderCommand());
+    addSubcommand(LoginCommand());
+    addSubcommand(LogoutCommand());
+    addSubcommand(TokenCommand());
   }
 
   @override
@@ -82,6 +121,6 @@ class PubEmbeddableCommand extends PubCommand implements PubTopLevel {
   bool get trace => _isVerbose;
 
   bool get _isVerbose {
-    return argResults['verbose'] || isVerbose();
+    return asBool(argResults['verbose']) || isVerbose();
   }
 }

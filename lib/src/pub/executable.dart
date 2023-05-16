@@ -18,7 +18,6 @@ import 'isolate.dart' as isolate;
 import 'log.dart' as log;
 import 'log.dart';
 import 'pub_embeddable_command.dart';
-import 'solver/type.dart';
 import 'system_cache.dart';
 import 'utils.dart';
 
@@ -27,10 +26,6 @@ List<String> vmArgsFromArgResults(ArgResults argResults) {
   final experiments = argResults['enable-experiment'] as List;
   return [
     if (experiments.isNotEmpty) "--enable-experiment=${experiments.join(',')}",
-    if (argResults.wasParsed('sound-null-safety'))
-      argResults['sound-null-safety']
-          ? '--sound-null-safety'
-          : '--no-sound-null-safety',
   ];
 }
 
@@ -48,11 +43,14 @@ List<String> vmArgsFromArgResults(ArgResults argResults) {
 ///
 /// Returns the exit code of the spawned app.
 Future<int> runExecutable(
-    Entrypoint entrypoint, Executable executable, List<String> args,
-    {bool enableAsserts = false,
-    required Future<void> Function(Executable) recompile,
-    List<String> vmArgs = const [],
-    required bool alwaysUseSubprocess}) async {
+  Entrypoint entrypoint,
+  Executable executable,
+  List<String> args, {
+  bool enableAsserts = false,
+  required Future<void> Function(Executable) recompile,
+  List<String> vmArgs = const [],
+  required bool alwaysUseSubprocess,
+}) async {
   final package = executable.package;
 
   // Make sure the package is an immediate dependency of the entrypoint or the
@@ -67,8 +65,6 @@ Future<int> runExecutable(
           'dependency?');
     }
   }
-
-  entrypoint.migrateCache();
 
   var snapshotPath = entrypoint.pathOfExecutable(executable);
 
@@ -94,7 +90,7 @@ Future<int> runExecutable(
   if (useSnapshot) {
     // Since we don't access the package graph, this doesn't happen
     // automatically.
-    entrypoint.assertUpToDate();
+    await entrypoint.ensureUpToDate();
 
     if (!fileExists(snapshotPath) ||
         entrypoint.packageGraph.isPackageMutable(package)) {
@@ -106,7 +102,7 @@ Future<int> runExecutable(
   // helpful for the subprocess to be able to spawn Dart with
   // Platform.executableArguments and have that work regardless of the working
   // directory.
-  final packageConfigAbsolute = p.absolute(entrypoint.packageConfigFile);
+  final packageConfigAbsolute = p.absolute(entrypoint.packageConfigPath);
 
   try {
     return await _runDartProgram(
@@ -151,10 +147,13 @@ Future<int> runExecutable(
 /// otherwise starts new vm in a subprocess. If [alwaysUseSubprocess] is `true`
 /// a new process will always be started.
 Future<int> _runDartProgram(
-    String path, List<String> args, String packageConfig,
-    {bool enableAsserts = false,
-    List<String> vmArgs = const <String>[],
-    required bool alwaysUseSubprocess}) async {
+  String path,
+  List<String> args,
+  String packageConfig, {
+  bool enableAsserts = false,
+  List<String> vmArgs = const <String>[],
+  required bool alwaysUseSubprocess,
+}) async {
   path = p.absolute(path);
   packageConfig = p.absolute(packageConfig);
 
@@ -162,8 +161,13 @@ Future<int> _runDartProgram(
   // That provides better signal handling, and possibly faster startup.
   if ((!alwaysUseSubprocess) && vmArgs.isEmpty) {
     var argList = args.toList();
-    return await isolate.runUri(p.toUri(path), argList, '',
-        enableAsserts: enableAsserts, packageConfig: p.toUri(packageConfig));
+    return await isolate.runUri(
+      p.toUri(path),
+      argList,
+      '',
+      enableAsserts: enableAsserts,
+      packageConfig: p.toUri(packageConfig),
+    );
   } else {
     // By ignoring sigint, only the child process will get it when
     // they are sent to the current process group. That is what happens when
@@ -267,12 +271,21 @@ class DartExecutableWithPackageConfig {
 ///
 /// Throws an [CommandResolutionFailedException] if the command is not found or
 /// if the entrypoint is not up to date (requires `pub get`) and a `pub get`.
+///
+/// The [additionalSources], if provided, instructs the compiler to include
+/// additional source files into compilation even if they are not referenced
+/// from the main library that [descriptor] resolves to.
+///
+/// The [nativeAssets], if provided, instructs the compiler to include
+/// the native-assets mapping for @Native external functions.
 Future<DartExecutableWithPackageConfig> getExecutableForCommand(
   String descriptor, {
   bool allowSnapshot = true,
   String? root,
   String? pubCacheDir,
   PubAnalytics? analytics,
+  List<String> additionalSources = const [],
+  String? nativeAssets,
 }) async {
   root ??= p.current;
   var asPath = descriptor;
@@ -295,25 +308,18 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
   }
   if (!fileExists(p.join(root, 'pubspec.yaml'))) {
     throw CommandResolutionFailedException._(
-        'Could not find file `$descriptor`',
-        CommandResolutionIssue.fileNotFound);
+      'Could not find file `$descriptor`',
+      CommandResolutionIssue.fileNotFound,
+    );
   }
   final entrypoint = Entrypoint(root, SystemCache(rootDir: pubCacheDir));
   try {
-    // TODO(sigurdm): it would be nicer with a 'isUpToDate' function.
-    entrypoint.assertUpToDate();
-  } on DataException {
-    try {
-      await warningsOnlyUnlessTerminal(
-        () => entrypoint.acquireDependencies(
-          SolveType.get,
-          analytics: analytics,
-        ),
-      );
-    } on ApplicationException catch (e) {
-      throw CommandResolutionFailedException._(
-          e.toString(), CommandResolutionIssue.pubGetFailed);
-    }
+    await entrypoint.ensureUpToDate(checkForSdkUpdate: true);
+  } on ApplicationException catch (e) {
+    throw CommandResolutionFailedException._(
+      e.toString(),
+      CommandResolutionIssue.pubGetFailed,
+    );
   }
 
   late final String command;
@@ -335,14 +341,13 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
     command = package;
   }
 
-  if (!entrypoint.packageGraph.packages.containsKey(package)) {
+  if (!entrypoint.packageConfig.packages.any((p) => p.name == package)) {
     throw CommandResolutionFailedException._(
       'Could not find package `$package` or file `$descriptor`',
       CommandResolutionIssue.packageNotFound,
     );
   }
   final executable = Executable(package, p.join('bin', '$command.dart'));
-  final packageConfig = p.join('.dart_tool', 'package_config.json');
 
   final path = entrypoint.resolveExecutable(executable);
   if (!fileExists(path)) {
@@ -351,18 +356,24 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
       CommandResolutionIssue.noBinaryFound,
     );
   }
+  final packageConfigPath =
+      p.relative(entrypoint.packageConfigPath, from: root);
   if (!allowSnapshot) {
     return DartExecutableWithPackageConfig(
       executable: p.relative(path, from: root),
-      packageConfig: packageConfig,
+      packageConfig: packageConfigPath,
     );
   } else {
     final snapshotPath = entrypoint.pathOfExecutable(executable);
     if (!fileExists(snapshotPath) ||
         entrypoint.packageGraph.isPackageMutable(package)) {
       try {
-        await warningsOnlyUnlessTerminal(
-          () => entrypoint.precompileExecutable(executable),
+        await errorsOnlyUnlessTerminal(
+          () => entrypoint.precompileExecutable(
+            executable,
+            additionalSources: additionalSources,
+            nativeAssets: nativeAssets,
+          ),
         );
       } on ApplicationException catch (e) {
         throw CommandResolutionFailedException._(
@@ -373,7 +384,7 @@ Future<DartExecutableWithPackageConfig> getExecutableForCommand(
     }
     return DartExecutableWithPackageConfig(
       executable: p.relative(snapshotPath, from: root),
-      packageConfig: packageConfig,
+      packageConfig: packageConfigPath,
     );
   }
 }

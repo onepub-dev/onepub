@@ -19,6 +19,8 @@ class SolveFailure implements ApplicationException {
   /// it will have one term, which will be the root package.
   final Incompatibility incompatibility;
 
+  final String? suggestions;
+
   @override
   String get message => toString();
 
@@ -35,14 +37,19 @@ class SolveFailure implements ApplicationException {
     return null;
   }
 
-  SolveFailure(this.incompatibility)
-      : assert(incompatibility.terms.isEmpty ||
-            incompatibility.terms.single.package.isRoot);
+  SolveFailure(this.incompatibility, {this.suggestions})
+      : assert(
+          incompatibility.terms.isEmpty ||
+              incompatibility.terms.single.package.isRoot,
+        );
 
   /// Describes how [incompatibility] was derived, and thus why version solving
   /// failed.
   @override
-  String toString() => _Writer(incompatibility).write();
+  String toString() => [
+        _Writer(incompatibility).write(),
+        if (suggestions != null) suggestions
+      ].join('\n');
 }
 
 /// A class that writes a human-readable description of the cause of a
@@ -79,14 +86,18 @@ class _Writer {
 
   /// Populates [_derivations] for [incompatibility] and its transitive causes.
   void _countDerivations(Incompatibility incompatibility) {
-    _derivations.update(incompatibility, (value) => value + 1, ifAbsent: () {
-      var cause = incompatibility.cause;
-      if (cause is ConflictCause) {
-        _countDerivations(cause.conflict);
-        _countDerivations(cause.other);
-      }
-      return 1;
-    });
+    _derivations.update(
+      incompatibility,
+      (value) => value + 1,
+      ifAbsent: () {
+        var cause = incompatibility.cause;
+        if (cause is ConflictCause) {
+          _countDerivations(cause.conflict);
+          _countDerivations(cause.other);
+        }
+        return 1;
+      },
+    );
   }
 
   String write() {
@@ -164,8 +175,11 @@ class _Writer {
   /// applicable). If [numbered] is true, this will associate a line number with
   /// [incompatibility] and [message] so that the message can be easily referred
   /// to later.
-  void _write(Incompatibility incompatibility, String message,
-      {bool numbered = false}) {
+  void _write(
+    Incompatibility incompatibility,
+    String message, {
+    bool numbered = false,
+  }) {
     if (numbered) {
       var number = _lineNumbers.length + 1;
       _lineNumbers[incompatibility] = number;
@@ -183,9 +197,11 @@ class _Writer {
   ///
   /// The [detailsForIncompatibility] controls the amount of detail that should
   /// be written for each package when converting [incompatibility] to a string.
-  void _visit(Incompatibility incompatibility,
-      Map<String, PackageDetail> detailsForIncompatibility,
-      {bool conclusion = false}) {
+  void _visit(
+    Incompatibility incompatibility,
+    Map<String, PackageDetail> detailsForIncompatibility, {
+    bool conclusion = false,
+  }) {
     // Add explicit numbers for incompatibilities that are written far away
     // from their successors or that are used for multiple derivations.
     var numbered = conclusion || _derivations[incompatibility]! > 1;
@@ -202,12 +218,10 @@ class _Writer {
       var otherLine = _lineNumbers[conflictClause.other];
       if (conflictLine != null && otherLine != null) {
         _write(
-            incompatibility,
-            'Because ' +
-                conflictClause.conflict.andToString(conflictClause.other,
-                    detailsForCause, conflictLine, otherLine) +
-                ', $incompatibilityString.',
-            numbered: numbered);
+          incompatibility,
+          'Because ${conflictClause.conflict.andToString(conflictClause.other, detailsForCause, conflictLine, otherLine)}, $incompatibilityString.',
+          numbered: numbered,
+        );
       } else if (conflictLine != null || otherLine != null) {
         Incompatibility withLine;
         Incompatibility withoutLine;
@@ -224,10 +238,11 @@ class _Writer {
 
         _visit(withoutLine, detailsForCause);
         _write(
-            incompatibility,
-            '$conjunction because ${withLine.toString(detailsForCause)} '
-            '($line), $incompatibilityString.',
-            numbered: numbered);
+          incompatibility,
+          '$conjunction because ${withLine.toString(detailsForCause)} '
+          '($line), $incompatibilityString.',
+          numbered: numbered,
+        );
       } else {
         var singleLineConflict = _isSingleLine(cause);
         var singleLineOther = _isSingleLine(otherCause);
@@ -238,20 +253,24 @@ class _Writer {
               singleLineOther ? conflictClause.other : conflictClause.conflict;
           _visit(first, detailsForCause);
           _visit(second, detailsForCause);
-          _write(incompatibility, 'Thus, $incompatibilityString.',
-              numbered: numbered);
+          _write(
+            incompatibility,
+            'Thus, $incompatibilityString.',
+            numbered: numbered,
+          );
         } else {
           _visit(conflictClause.conflict, {}, conclusion: true);
           _lines.add(Pair('', null));
 
           _visit(conflictClause.other, detailsForCause);
           _write(
-              incompatibility,
-              '$conjunction because '
-              '${conflictClause.conflict.toString(detailsForCause)} '
-              '(${_lineNumbers[conflictClause.conflict]}), '
-              '$incompatibilityString.',
-              numbered: numbered);
+            incompatibility,
+            '$conjunction because '
+            '${conflictClause.conflict.toString(detailsForCause)} '
+            '(${_lineNumbers[conflictClause.conflict]}), '
+            '$incompatibilityString.',
+            numbered: numbered,
+          );
         }
       }
     } else if (cause is ConflictCause || otherCause is ConflictCause) {
@@ -265,11 +284,10 @@ class _Writer {
       var derivedLine = _lineNumbers[derived];
       if (derivedLine != null) {
         _write(
-            incompatibility,
-            'Because ' +
-                ext.andToString(derived, detailsForCause, null, derivedLine) +
-                ', $incompatibilityString.',
-            numbered: numbered);
+          incompatibility,
+          'Because ${ext.andToString(derived, detailsForCause, null, derivedLine)}, $incompatibilityString.',
+          numbered: numbered,
+        );
       } else if (_isCollapsible(derived)) {
         var derivedCause = derived.cause as ConflictCause;
         var collapsedDerived = derivedCause.conflict.cause is ConflictCause
@@ -280,31 +298,36 @@ class _Writer {
             : derivedCause.conflict;
 
         detailsForCause = mergeMaps(
-            detailsForCause, _detailsForCause(derivedCause),
-            value: (detail1, detail2) => detail1.max(detail2));
+          detailsForCause,
+          _detailsForCause(derivedCause),
+          value: (detail1, detail2) => detail1.max(detail2),
+        );
 
         _visit(collapsedDerived, detailsForCause);
         _write(
-            incompatibility,
-            '$conjunction because '
-            '${collapsedExt.andToString(ext, detailsForCause)}, '
-            '$incompatibilityString.',
-            numbered: numbered);
+          incompatibility,
+          '$conjunction because '
+          '${collapsedExt.andToString(ext, detailsForCause)}, '
+          '$incompatibilityString.',
+          numbered: numbered,
+        );
       } else {
         _visit(derived, detailsForCause);
         _write(
-            incompatibility,
-            '$conjunction because ${ext.toString(detailsForCause)}, '
-            '$incompatibilityString.',
-            numbered: numbered);
+          incompatibility,
+          '$conjunction because ${ext.toString(detailsForCause)}, '
+          '$incompatibilityString.',
+          numbered: numbered,
+        );
       }
     } else {
       _write(
-          incompatibility,
-          'Because '
-          '${conflictClause.conflict.andToString(conflictClause.other, detailsForCause)}, '
-          '$incompatibilityString.',
-          numbered: numbered);
+        incompatibility,
+        'Because '
+        '${conflictClause.conflict.andToString(conflictClause.other, detailsForCause)}, '
+        '$incompatibilityString.',
+        numbered: numbered,
+      );
     }
   }
 

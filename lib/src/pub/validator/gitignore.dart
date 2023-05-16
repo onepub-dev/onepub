@@ -23,12 +23,15 @@ class GitignoreValidator extends Validator {
     if (entrypoint.root.inGitRepo) {
       late final List<String> checkedIntoGit;
       try {
-        checkedIntoGit = git.runSync([
-          'ls-files',
-          '--cached',
-          '--exclude-standard',
-          '--recurse-submodules'
-        ], workingDir: entrypoint.root.dir);
+        checkedIntoGit = git.runSync(
+          [
+            'ls-files',
+            '--cached',
+            '--exclude-standard',
+            '--recurse-submodules'
+          ],
+          workingDir: entrypoint.rootDir,
+        );
       } on git.GitException catch (e) {
         log.fine('Could not run `git ls-files` files in repo (${e.message}).');
         // This validation is only a warning.
@@ -36,9 +39,10 @@ class GitignoreValidator extends Validator {
         // --recurse-submodules we just continue silently.
         return;
       }
-      final root = git.repoRoot(entrypoint.root.dir) ?? entrypoint.root.dir;
+      final root = git.repoRoot(entrypoint.rootDir) ?? entrypoint.rootDir;
       var beneath = p.posix.joinAll(
-          p.split(p.normalize(p.relative(entrypoint.root.dir, from: root))));
+        p.split(p.normalize(p.relative(entrypoint.rootDir, from: root))),
+      );
       if (beneath == './') {
         beneath = '';
       }
@@ -55,8 +59,10 @@ class GitignoreValidator extends Validator {
           var contents = Directory(resolve(dir)).listSync();
           return contents
               .where((e) => !(linkExists(e.path) && dirExists(e.path)))
-              .map((entity) => p.posix
-                  .joinAll(p.split(p.relative(entity.path, from: root))));
+              .map(
+                (entity) => p.posix
+                    .joinAll(p.split(p.relative(entity.path, from: root))),
+              );
         },
         ignoreForDir: (dir) {
           final gitIgnore = resolve('$dir/.gitignore');
@@ -67,7 +73,7 @@ class GitignoreValidator extends Validator {
         },
         isDir: (dir) => dirExists(resolve(dir)),
       ).map((file) {
-        final relative = p.relative(resolve(file), from: entrypoint.root.dir);
+        final relative = p.relative(resolve(file), from: entrypoint.rootDir);
         return Platform.isWindows
             ? p.posix.joinAll(p.split(relative))
             : relative;

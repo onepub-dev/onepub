@@ -2,8 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-// ignore: cascade_invocations
-
 import 'dart:async';
 import 'dart:io';
 
@@ -13,20 +11,17 @@ import 'package:path/path.dart' as p;
 
 import 'command.dart' show PubTopLevel, lineLength;
 import 'command/add.dart';
-import 'command/build.dart';
 import 'command/cache.dart';
 import 'command/deps.dart';
 import 'command/downgrade.dart';
 import 'command/get.dart';
 import 'command/global.dart';
 import 'command/lish.dart';
-import 'command/list_package_dirs.dart';
 import 'command/login.dart';
 import 'command/logout.dart';
 import 'command/outdated.dart';
 import 'command/remove.dart';
 import 'command/run.dart';
-import 'command/serve.dart';
 import 'command/token.dart';
 import 'command/upgrade.dart';
 import 'command/uploader.dart';
@@ -37,20 +32,25 @@ import 'io.dart';
 import 'log.dart' as log;
 import 'log.dart';
 import 'sdk.dart';
+import 'utils.dart';
 
 /// The name of the program that is invoking pub
 /// 'flutter' if we are running inside `flutter pub` 'dart' otherwise.
-String topLevelProgram = 'onepub';
+String topLevelProgram = _isrunningInsideFlutter ? 'flutter' : 'dart';
+
+bool _isrunningInsideFlutter =
+    (Platform.environment['PUB_ENVIRONMENT'] ?? '').contains('flutter_cli');
 
 class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
   @override
-  String? get directory => argResults['directory'] as String;
+  String get directory => argResults['directory'] as String;
 
   @override
-  bool get captureStackChains =>
-      argResults['trace'] as bool ||
-      argResults['verbose'] as bool ||
-      argResults['verbosity'] as String == 'all';
+  bool get captureStackChains {
+    return asBool(argResults['trace']) ||
+        asBool(argResults['verbose']) ||
+        argResults['verbosity'] == 'all';
+  }
 
   @override
   Verbosity get verbosity {
@@ -69,14 +69,14 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
         return log.Verbosity.all;
       default:
         // No specific verbosity given, so check for the shortcut.
-        if (argResults['verbose'] as bool) return log.Verbosity.all;
+        if (asBool(argResults['verbose'])) return log.Verbosity.all;
         if (runningFromTest) return log.Verbosity.testing;
         return log.Verbosity.normal;
     }
   }
 
   @override
-  bool get trace => argResults['trace'] as bool;
+  bool get trace => asBool(argResults['trace']);
 
   ArgResults? _argResults;
 
@@ -86,7 +86,8 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
     final a = _argResults;
     if (a == null) {
       throw StateError(
-          'argResults cannot be used before Command.run is called.');
+        'argResults cannot be used before Command.run is called.',
+      );
     }
     return a;
   }
@@ -95,33 +96,37 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
   String get usageFooter =>
       'See https://dart.dev/tools/pub/cmd for detailed documentation.';
 
-  // ignore: sort_constructors_first
   PubCommandRunner()
-      : super('pub', 'Pub is a package manager for Dart.',
-            usageLineLength: lineLength) {
+      : super(
+          'pub',
+          'Pub is a package manager for Dart.',
+          usageLineLength: lineLength,
+        ) {
     argParser.addFlag('version', negatable: false, help: 'Print pub version.');
-
-    argParser.addFlag('trace',
-        negatable: false,
-        help: 'Print debugging information when an error occurs.');
-    argParser
-        .addOption('verbosity', help: 'Control output verbosity.', allowed: [
-      'error',
-      'warning',
-      'normal',
-      'io',
-      'solver',
-      'all'
-    ], allowedHelp: {
-      'error': 'Show only errors.',
-      'warning': 'Show only errors and warnings.',
-      'normal': 'Show errors, warnings, and user messages.',
-      'io': 'Also show IO operations.',
-      'solver': 'Show steps during version resolution.',
-      'all': 'Show all output including internal tracing messages.'
-    });
-    argParser.addFlag('verbose',
-        abbr: 'v', negatable: false, help: 'Shortcut for "--verbosity=all".');
+    argParser.addFlag(
+      'trace',
+      help: 'Print debugging information when an error occurs.',
+    );
+    argParser.addOption(
+      'verbosity',
+      help: 'Control output verbosity.',
+      allowed: ['error', 'warning', 'normal', 'io', 'solver', 'all'],
+      allowedHelp: {
+        'error': 'Show only errors.',
+        'warning': 'Show only errors and warnings.',
+        'normal': 'Show errors, warnings, and user messages.',
+        'io': 'Also show IO operations.',
+        'solver': 'Show steps during version resolution.',
+        'all': 'Show all output including internal tracing messages.'
+      },
+    );
+    argParser.addFlag(
+      'verbose',
+      abbr: 'v',
+      negatable: false,
+      help: 'Shortcut for "--verbosity=all".',
+    );
+    PubTopLevel.addColorFlag(argParser);
     argParser.addOption(
       'directory',
       abbr: 'C',
@@ -133,18 +138,15 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
     // When adding new commands be sure to also add them to
     // `pub_embeddable_command.dart`.
     addCommand(AddCommand());
-    addCommand(BuildCommand());
     addCommand(CacheCommand());
     addCommand(DepsCommand());
     addCommand(DowngradeCommand());
     addCommand(GlobalCommand());
     addCommand(GetCommand());
-    addCommand(ListPackageDirsCommand());
     addCommand(LishCommand());
     addCommand(OutdatedCommand());
     addCommand(RemoveCommand());
     addCommand(RunCommand());
-    addCommand(ServeCommand());
     addCommand(UpgradeCommand());
     addCommand(UploaderCommand());
     addCommand(LoginCommand());
@@ -156,7 +158,8 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
   @override
   Future<int> run(Iterable<String> args) async {
     try {
-      _argResults = parse(args);
+      final argResults = parse(args);
+      _argResults = argResults;
       return await runCommand(argResults) ?? exit_codes.SUCCESS;
     } on UsageException catch (error) {
       log.exception(error);
@@ -168,7 +171,7 @@ class PubCommandRunner extends CommandRunner<int> implements PubTopLevel {
   Future<int?> runCommand(ArgResults topLevelResults) async {
     _checkDepsSynced();
 
-    if (topLevelResults['version'] != null) {
+    if (asBool(topLevelResults['version'])) {
       log.message('Pub ${sdk.version}');
       return 0;
     }

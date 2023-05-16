@@ -4,19 +4,17 @@
 
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:math';
 
-import 'package:collection/collection.dart'
-    show IterableExtension, IterableNullableExtension;
+import 'package:collection/collection.dart' show IterableExtension;
 import 'package:path/path.dart' as path;
 
 import '../command.dart';
 import '../command_runner.dart';
 import '../entrypoint.dart';
 import '../io.dart';
+import '../lock_file.dart';
 import '../log.dart' as log;
-import '../object_hash.dart';
 import '../package.dart';
 import '../package_name.dart';
 import '../pubspec.dart';
@@ -41,19 +39,13 @@ class OutdatedCommand extends PubCommand {
 
   /// Avoid showing spinning progress messages when not in a terminal, and
   /// when we are outputting machine-readable json.
-  bool get _shouldShowSpinner => stdout.hasTerminal && !argResults['json'];
+  bool get _shouldShowSpinner =>
+      terminalOutputForStdout && !asBool(argResults['json']);
 
   @override
   bool get takesArguments => false;
 
   OutdatedCommand() {
-    argParser.addFlag(
-      'color',
-      help: 'Whether to color the output.\n'
-          'Defaults to color when connected to a '
-          'terminal, and no-color otherwise.',
-    );
-
     argParser.addFlag(
       'dependency-overrides',
       defaultsTo: true,
@@ -66,8 +58,11 @@ class OutdatedCommand extends PubCommand {
       help: 'Take dev dependencies into account.',
     );
 
-    argParser.addFlag('json',
-        help: 'Output the results using a json format.', negatable: false);
+    argParser.addFlag(
+      'json',
+      help: 'Output the results using a json format.',
+      negatable: false,
+    );
 
     argParser.addOption(
       'mode',
@@ -77,12 +72,12 @@ class OutdatedCommand extends PubCommand {
       valueHelp: 'PROPERTY',
       allowed: ['outdated', 'null-safety'],
       defaultsTo: 'outdated',
+      hide: true,
     );
 
     argParser.addFlag(
       'prereleases',
-      help: 'Include prereleases in latest version.\n'
-          '(defaults to on in --mode=null-safety).',
+      help: 'Include prereleases in latest version.',
     );
 
     // Preserve for backwards compatibility.
@@ -106,24 +101,28 @@ class OutdatedCommand extends PubCommand {
     );
     argParser.addFlag(
       'transitive',
-      help: 'Show transitive dependencies.\n'
-          '(defaults to off in --mode=null-safety).',
+      help: 'Show transitive dependencies.',
     );
-    argParser.addOption('directory',
-        abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
+    argParser.addOption(
+      'directory',
+      abbr: 'C',
+      help: 'Run this in the directory <dir>.',
+      valueHelp: 'dir',
+    );
   }
 
   @override
   Future<void> runProtected() async {
-    final mode = <String, Mode>{
-      'outdated': _OutdatedMode(),
-      'null-safety': _NullSafetyMode(cache, entrypoint,
-          shouldShowSpinner: _shouldShowSpinner),
-    }[argResults['mode']]!;
+    if (argResults['mode'] == 'null-safety') {
+      dataError('''The `--mode=null-safety` option is no longer supported.
+Consider using the Dart 2.19 sdk to migrate to null safety.''');
+    }
+    final mode = _OutdatedMode();
 
-    final includeDevDependencies = argResults['dev-dependencies'];
-    final includeDependencyOverrides = argResults['dependency-overrides'];
-    if (argResults['json'] && argResults.wasParsed('transitive')) {
+    final includeDevDependencies = asBool(argResults['dev-dependencies']);
+    final includeDependencyOverrides =
+        asBool(argResults['dependency-overrides']);
+    if (asBool(argResults['json']) && argResults.wasParsed('transitive')) {
       usageException('Cannot specify both `--json` and `--transitive`\n'
           'The json report always includes transitive dependencies.');
     }
@@ -143,17 +142,27 @@ class OutdatedCommand extends PubCommand {
     late bool hasUpgradableResolution;
     late bool hasResolvableResolution;
 
-    await log.spinner('Resolving', () async {
-      final upgradablePackagesResult =
-          await _tryResolve(upgradablePubspec, cache);
-      hasUpgradableResolution = upgradablePackagesResult != null;
-      upgradablePackages = upgradablePackagesResult ?? [];
+    await log.spinner(
+      'Resolving',
+      () async {
+        final upgradablePackagesResult = await _tryResolve(
+          upgradablePubspec,
+          cache,
+          lockFile: entrypoint.lockFile,
+        );
+        hasUpgradableResolution = upgradablePackagesResult != null;
+        upgradablePackages = upgradablePackagesResult ?? [];
 
-      final resolvablePackagesResult =
-          await _tryResolve(resolvablePubspec, cache);
-      hasResolvableResolution = resolvablePackagesResult != null;
-      resolvablePackages = resolvablePackagesResult ?? [];
-    }, condition: _shouldShowSpinner);
+        final resolvablePackagesResult = await _tryResolve(
+          resolvablePubspec,
+          cache,
+          lockFile: entrypoint.lockFile,
+        );
+        hasResolvableResolution = resolvablePackagesResult != null;
+        resolvablePackages = resolvablePackagesResult ?? [];
+      },
+      condition: _shouldShowSpinner,
+    );
 
     // This list will be empty if there is no lock file.
     final currentPackages = entrypoint.lockFile.packages.values;
@@ -181,24 +190,36 @@ class OutdatedCommand extends PubCommand {
       PackageId? latest;
       // If not overridden in current resolution we can use this
       if (!entrypoint.root.pubspec.dependencyOverrides.containsKey(name)) {
-        latest ??= await cache.getLatest(current?.toRef(),
-            version: current?.version, allowPrereleases: prereleases);
+        latest ??= await cache.getLatest(
+          current?.toRef(),
+          version: current?.version,
+          allowPrereleases: prereleases,
+        );
       }
       // If present as a dependency or dev_dependency we use this
-      latest ??= await cache.getLatest(rootPubspec.dependencies[name]?.toRef(),
-          allowPrereleases: prereleases);
       latest ??= await cache.getLatest(
-          rootPubspec.devDependencies[name]?.toRef(),
-          allowPrereleases: prereleases);
+        rootPubspec.dependencies[name]?.toRef(),
+        allowPrereleases: prereleases,
+      );
+      latest ??= await cache.getLatest(
+        rootPubspec.devDependencies[name]?.toRef(),
+        allowPrereleases: prereleases,
+      );
       // If not overridden and present in either upgradable or resolvable we
       // use this reference to find the latest
       if (!upgradablePubspec.dependencyOverrides.containsKey(name)) {
-        latest ??= await cache.getLatest(upgradable?.toRef(),
-            version: upgradable?.version, allowPrereleases: prereleases);
+        latest ??= await cache.getLatest(
+          upgradable?.toRef(),
+          version: upgradable?.version,
+          allowPrereleases: prereleases,
+        );
       }
       if (!resolvablePubspec.dependencyOverrides.containsKey(name)) {
-        latest ??= await cache.getLatest(resolvable?.toRef(),
-            version: resolvable?.version, allowPrereleases: prereleases);
+        latest ??= await cache.getLatest(
+          resolvable?.toRef(),
+          version: resolvable?.version,
+          allowPrereleases: prereleases,
+        );
       }
       // Otherwise, we might simply not have a latest, when a transitive
       // dependency is overridden the source can depend on which versions we
@@ -207,12 +228,19 @@ class OutdatedCommand extends PubCommand {
       // to fallback to using the overridden source for latest.
       if (latest == null) {
         final id = current ?? upgradable ?? resolvable;
-        latest ??= await cache.getLatest(id?.toRef(),
-            version: id?.version, allowPrereleases: prereleases);
+        latest ??= await cache.getLatest(
+          id?.toRef(),
+          version: id?.version,
+          allowPrereleases: prereleases,
+        );
         latestIsOverridden = true;
       }
 
-      final packageStatus = await current?.source.status(current, cache);
+      final packageStatus = await current?.source.status(
+        current.toRef(),
+        current.version,
+        cache,
+      );
       final discontinued =
           packageStatus == null ? false : packageStatus.isDiscontinued;
       final discontinuedReplacedBy = packageStatus?.discontinuedReplacedBy;
@@ -262,8 +290,9 @@ class OutdatedCommand extends PubCommand {
 
     rows.sort();
 
-    final showAll = argResults['show-all'] || argResults['up-to-date'];
-    if (argResults['json']) {
+    final showAll =
+        asBool(argResults['show-all']) || asBool(argResults['up-to-date']);
+    if (asBool(argResults['json'])) {
       await _outputJson(
         rows,
         mode,
@@ -271,38 +300,31 @@ class OutdatedCommand extends PubCommand {
         includeDevDependencies: includeDevDependencies,
       );
     } else {
-      if (argResults.wasParsed('color')) {
-        forceColors = argResults['color'];
-      }
-      final useColors =
-          argResults.wasParsed('color') ? argResults['color'] : canUseAnsiCodes;
-
-      await _outputHuman(rows, mode,
-          useColors: useColors,
-          showAll: showAll,
-          includeDevDependencies: includeDevDependencies,
-          lockFileExists: fileExists(entrypoint.lockFilePath),
-          hasDirectDependencies: rootPubspec.dependencies.values.any(
-            // Test if it contains non-SDK dependencies
-            (c) => c.source is! SdkSource,
-          ),
-          hasDevDependencies: rootPubspec.devDependencies.values.any(
-            // Test if it contains non-SDK dependencies
-            (c) => c.source is! SdkSource,
-          ),
-          showTransitiveDependencies: showTransitiveDependencies,
-          hasUpgradableResolution: hasUpgradableResolution,
-          hasResolvableResolution: hasResolvableResolution,
-          directory: path.normalize(directory));
+      await _outputHuman(
+        rows,
+        mode,
+        useColors: canUseAnsiCodes,
+        showAll: showAll,
+        includeDevDependencies: includeDevDependencies,
+        lockFileExists: fileExists(entrypoint.lockFilePath),
+        hasDirectDependencies: rootPubspec.dependencies.values.any(
+          // Test if it contains non-SDK dependencies
+          (c) => c.source is! SdkSource,
+        ),
+        hasDevDependencies: rootPubspec.devDependencies.values.any(
+          // Test if it contains non-SDK dependencies
+          (c) => c.source is! SdkSource,
+        ),
+        showTransitiveDependencies: showTransitiveDependencies,
+        hasUpgradableResolution: hasUpgradableResolution,
+        hasResolvableResolution: hasResolvableResolution,
+        directory: path.normalize(directory),
+      );
     }
   }
 
   bool get showTransitiveDependencies {
-    if (argResults.wasParsed('transitive')) {
-      return argResults['transitive'];
-    }
-    // We default to hidding transitive dependencies in --mode=null-safety
-    return argResults['mode'] != 'null-safety';
+    return asBool(argResults['transitive']);
   }
 
   late final bool prereleases = () {
@@ -311,12 +333,12 @@ class OutdatedCommand extends PubCommand {
     // 'pre-releases'.
     // Otherwise fall back to the default implied by the mode.
     if (argResults.wasParsed('prereleases')) {
-      return argResults['prereleases'];
+      return asBool(argResults['prereleases']);
     }
     if (argResults.wasParsed('pre-releases')) {
-      return argResults['pre-releases'];
+      return asBool(argResults['pre-releases']);
     }
-    return argResults['mode'] == 'null-safety';
+    return false;
   }();
 
   /// Retrieves the pubspec of package [name] in [version] from [source].
@@ -348,7 +370,7 @@ class OutdatedCommand extends PubCommand {
   ) async {
     final nameToId = Map<String, PackageId>.fromIterable(
       resolution,
-      key: (id) => id.name,
+      key: (id) => asString(id.name),
     );
 
     final nonDevDependencies = <String>{root.name};
@@ -374,11 +396,16 @@ class OutdatedCommand extends PubCommand {
 
 /// Try to solve [pubspec] return [PackageId]s in the resolution or `null` if no
 /// resolution was found.
-Future<List<PackageId>?> _tryResolve(Pubspec pubspec, SystemCache cache) async {
+Future<List<PackageId>?> _tryResolve(
+  Pubspec pubspec,
+  SystemCache cache, {
+  LockFile? lockFile,
+}) async {
   final solveResult = await tryResolveVersions(
     SolveType.upgrade,
     cache,
     Package.inMemory(pubspec),
+    lockFile: lockFile,
   );
 
   return solveResult?.packages;
@@ -386,7 +413,7 @@ Future<List<PackageId>?> _tryResolve(Pubspec pubspec, SystemCache cache) async {
 
 Future<void> _outputJson(
   List<_PackageDetails> rows,
-  Mode mode, {
+  _Mode mode, {
   required bool showAll,
   required bool includeDevDependencies,
 }) async {
@@ -402,19 +429,30 @@ Future<void> _outputJson(
           element.kind == _DependencyKind.devTransitive,
     );
   }
+
+  String kindString(_DependencyKind kind) {
+    return {
+          _DependencyKind.direct: 'direct',
+          _DependencyKind.dev: 'dev',
+        }[kind] ??
+        'transitive';
+  }
+
   log.message(
     JsonEncoder.withIndent('  ').convert(
       {
         'packages': [
-          ...(rows..sort((a, b) => a.name.compareTo(b.name)))
-              .map((packageDetails) => {
-                    'package': packageDetails.name,
-                    'isDiscontinued': packageDetails.isDiscontinued,
-                    'current': markedRows[packageDetails]![0].toJson(),
-                    'upgradable': markedRows[packageDetails]![1].toJson(),
-                    'resolvable': markedRows[packageDetails]![2].toJson(),
-                    'latest': markedRows[packageDetails]![3].toJson(),
-                  })
+          ...(rows..sort((a, b) => a.name.compareTo(b.name))).map(
+            (packageDetails) => {
+              'package': packageDetails.name,
+              'kind': kindString(packageDetails.kind),
+              'isDiscontinued': packageDetails.isDiscontinued,
+              'current': markedRows[packageDetails]![0].toJson(),
+              'upgradable': markedRows[packageDetails]![1].toJson(),
+              'resolvable': markedRows[packageDetails]![2].toJson(),
+              'latest': markedRows[packageDetails]![3].toJson(),
+            },
+          )
         ]
       },
     ),
@@ -423,7 +461,7 @@ Future<void> _outputJson(
 
 Future<void> _outputHuman(
   List<_PackageDetails> rows,
-  Mode mode, {
+  _Mode mode, {
   required bool showAll,
   required bool useColors,
   required bool includeDevDependencies,
@@ -436,7 +474,7 @@ Future<void> _outputHuman(
   required String directory,
 }) async {
   final directoryDesc = directory == '.' ? '' : ' in $directory';
-  log.message(mode.explanation(directoryDesc) + '\n');
+  log.message('${mode.explanation(directoryDesc)}\n');
   final markedRows =
       Map.fromIterables(rows, await mode.markVersionDetails(rows));
 
@@ -503,8 +541,9 @@ Future<void> _outputHuman(
       for (var j = 0; j < formattedRows[i].length; j++) {
         final currentMaxWidth = columnWidths[j] ?? 0;
         columnWidths[j] = max(
-            formattedRows[i][j].computeLength(useColors: useColors),
-            currentMaxWidth);
+          formattedRows[i][j].computeLength(useColors: useColors),
+          currentMaxWidth,
+        );
       }
     }
   }
@@ -513,34 +552,44 @@ Future<void> _outputHuman(
     final b = StringBuffer();
     for (var j = 0; j < row.length; j++) {
       b.write(row[j].formatted(useColors: useColors));
-      b.write(' ' *
-          ((columnWidths[j]! + 2) -
-              row[j].computeLength(useColors: useColors)));
+      b.write(
+        ' ' *
+            ((columnWidths[j]! + 2) -
+                row[j].computeLength(useColors: useColors)),
+      );
     }
     log.message(b.toString());
   }
 
-  var upgradable = rows
-      .where((row) =>
-          row.current != null &&
-          row.upgradable != null &&
-          row.current != row.upgradable &&
+  var upgradable = rows.where(
+    (row) {
+      final current = row.current;
+      final upgradable = row.upgradable;
+      return current != null &&
+          upgradable != null &&
+          current < upgradable &&
           // Include transitive only, if we show them
           (showTransitiveDependencies ||
               hasKind(_DependencyKind.direct)(row) ||
-              hasKind(_DependencyKind.dev)(row)))
-      .length;
+              hasKind(_DependencyKind.dev)(row));
+    },
+  ).length;
 
-  var notAtResolvable = rows
-      .where((row) =>
-          (row.current != null || !lockFileExists) &&
-          row.resolvable != null &&
-          row.upgradable != row.resolvable &&
+  var notAtResolvable = rows.where(
+    (row) {
+      final current = row.current;
+      final upgradable = row.upgradable;
+      final resolvable = row.resolvable;
+      return (current != null || !lockFileExists) &&
+          resolvable != null &&
+          upgradable != null &&
+          upgradable < resolvable &&
           // Include transitive only, if we show them
           (showTransitiveDependencies ||
               hasKind(_DependencyKind.direct)(row) ||
-              hasKind(_DependencyKind.dev)(row)))
-      .length;
+              hasKind(_DependencyKind.dev)(row));
+    },
+  ).length;
 
   if (!hasUpgradableResolution || !hasResolvableResolution) {
     log.message(mode.noResolutionText);
@@ -570,7 +619,7 @@ Future<void> _outputHuman(
     }
   } else {
     log.message('\nNo pubspec.lock found. There are no Current versions.\n'
-        'Run `pub get` to create a pubspec.lock with versions matching your '
+        'Run `$topLevelProgram pub get` to create a pubspec.lock with versions matching your '
         'pubspec.yaml.');
   }
   if (notAtResolvable != 0) {
@@ -592,17 +641,19 @@ Future<void> _outputHuman(
           ? ', replaced by ${package.discontinuedReplacedBy}.'
           : '.';
       log.message(
-          '    Package ${package.name} has been discontinued$replacedByText');
+        '    Package ${package.name} has been discontinued$replacedByText',
+      );
     }
   }
 }
 
-abstract class Mode {
+abstract class _Mode {
   /// Analyzes the [_PackageDetails] according to a --mode and outputs a
   /// corresponding list of the versions
   /// [current, upgradable, resolvable, latest].
   Future<List<List<_MarkedVersionDetails>>> markVersionDetails(
-      List<_PackageDetails> packageDetails);
+    List<_PackageDetails> packageDetails,
+  );
 
   String explanation(String directoryDescription);
   String get foundNoBadText;
@@ -614,7 +665,7 @@ abstract class Mode {
   Future<Pubspec> resolvablePubspec(Pubspec pubspec);
 }
 
-class _OutdatedMode implements Mode {
+class _OutdatedMode implements _Mode {
   @override
   String explanation(String directoryDescription) => '''
 Showing outdated packages$directoryDescription.
@@ -640,7 +691,8 @@ Showing outdated packages$directoryDescription.
 
   @override
   Future<List<List<_MarkedVersionDetails>>> markVersionDetails(
-      List<_PackageDetails> packages) async {
+    List<_PackageDetails> packages,
+  ) async {
     final rows = <List<_MarkedVersionDetails>>[];
     for (final packageDetails in packages) {
       final cols = <_MarkedVersionDetails>[];
@@ -687,116 +739,7 @@ Showing outdated packages$directoryDescription.
 
   @override
   Future<Pubspec> resolvablePubspec(Pubspec? pubspec) async {
-    return stripVersionUpperBounds(pubspec!);
-  }
-}
-
-class _NullSafetyMode implements Mode {
-  final SystemCache cache;
-  final Entrypoint entrypoint;
-  final bool shouldShowSpinner;
-
-  final _compliantEmoji = emoji('✓', '+');
-  final _notCompliantEmoji = emoji('✗', 'x');
-
-  _NullSafetyMode(this.cache, this.entrypoint,
-      {required this.shouldShowSpinner});
-
-  @override
-  String explanation(String directoryDescription) => '''
-Showing dependencies$directoryDescription that are currently not opted in to null-safety.
-[${log.red(_notCompliantEmoji)}] indicates versions without null safety support.
-[${log.green(_compliantEmoji)}] indicates versions opting in to null safety.
-''';
-
-  @override
-  String get foundNoBadText =>
-      'All your dependencies declare support for null-safety.';
-
-  @override
-  String get allGood => 'all support null safety.';
-
-  @override
-  String get noResolutionText =>
-      '''No resolution was found. Try running `$topLevelProgram pub upgrade --null-safety --dry-run` to explore why.''';
-
-  @override
-  String get upgradeConstrained =>
-      'edit pubspec.yaml, or run `$topLevelProgram pub upgrade --null-safety`';
-
-  @override
-  String get allSafe => 'All dependencies opt in to null-safety.';
-
-  @override
-  Future<List<List<_MarkedVersionDetails>>> markVersionDetails(
-      List<_PackageDetails> packages) async {
-    final nullSafetyMap =
-        await log.spinner('Computing null safety support', () async {
-      /// Find all unique ids.
-      final ids = {
-        for (final packageDetails in packages) ...[
-          packageDetails.current?._id,
-          packageDetails.upgradable?._id,
-          packageDetails.resolvable?._id,
-          packageDetails.latest?._id,
-        ]
-      }.whereNotNull();
-
-      return Map.fromEntries(
-        await Future.wait(
-          ids.map(
-            (id) async => MapEntry(id,
-                (await cache.describe(id)).languageVersion.supportsNullSafety),
-          ),
-        ),
-      );
-    }, condition: shouldShowSpinner);
-    return [
-      for (final packageDetails in packages)
-        [
-          packageDetails.current,
-          packageDetails.upgradable,
-          packageDetails.resolvable,
-          packageDetails.latest
-        ].map(
-          (versionDetails) {
-            String Function(String)? color;
-            String? prefix;
-            String? suffix;
-            MapEntry<String, Object>? jsonExplanation;
-            var asDesired = false;
-            if (versionDetails != null) {
-              if (packageDetails.isDiscontinued &&
-                  identical(versionDetails, packageDetails.latest)) {
-                suffix = ' (discontinued)';
-              }
-              if (nullSafetyMap[versionDetails._id]!) {
-                color = log.green;
-                prefix = _compliantEmoji;
-                jsonExplanation = MapEntry('nullSafety', true);
-                asDesired = true;
-              } else {
-                color = log.red;
-                prefix = _notCompliantEmoji;
-                jsonExplanation = MapEntry('nullSafety', false);
-              }
-            }
-            return _MarkedVersionDetails(
-              versionDetails,
-              asDesired: asDesired,
-              format: color,
-              prefix: prefix,
-              suffix: suffix,
-              jsonExplanation: jsonExplanation,
-            );
-          },
-        ).toList()
-    ];
-  }
-
-  @override
-  Future<Pubspec> resolvablePubspec(Pubspec pubspec) async {
-    return constrainedToAtLeastNullSafetyPubspec(pubspec, cache);
+    return stripVersionBounds(pubspec!);
   }
 }
 
@@ -839,8 +782,13 @@ class _VersionDetails {
           _id.source == other._id.source &&
           _pubspec.version == other._pubspec.version;
 
+  bool operator <(_VersionDetails other) =>
+      _overridden == other._overridden &&
+      _id.source == other._id.source &&
+      _pubspec.version < other._pubspec.version;
+
   @override
-  int get hashCode => Hasher.hash(_pubspec.version, _id.source, _overridden);
+  int get hashCode => Object.hash(_pubspec.version, _id.source, _overridden);
 }
 
 class _PackageDetails implements Comparable<_PackageDetails> {
@@ -853,8 +801,16 @@ class _PackageDetails implements Comparable<_PackageDetails> {
   final bool isDiscontinued;
   final String? discontinuedReplacedBy;
 
-  _PackageDetails(this.name, this.current, this.upgradable, this.resolvable,
-      this.latest, this.kind, this.isDiscontinued, this.discontinuedReplacedBy);
+  _PackageDetails(
+    this.name,
+    this.current,
+    this.upgradable,
+    this.resolvable,
+    this.latest,
+    this.kind,
+    this.isDiscontinued,
+    this.discontinuedReplacedBy,
+  );
 
   @override
   int compareTo(_PackageDetails other) {
@@ -878,7 +834,10 @@ class _PackageDetails implements Comparable<_PackageDetails> {
 }
 
 _DependencyKind _kind(
-    String name, Entrypoint entrypoint, Set<String> nonDevTransitive) {
+  String name,
+  Entrypoint entrypoint,
+  Set<String> nonDevTransitive,
+) {
   if (entrypoint.root.dependencies.containsKey(name)) {
     return _DependencyKind.direct;
   } else if (entrypoint.root.devDependencies.containsKey(name)) {
@@ -906,8 +865,11 @@ enum _DependencyKind {
   devTransitive,
 }
 
-_FormattedString _format(String value, String Function(String) format,
-    {prefix = ''}) {
+_FormattedString _format(
+  String value,
+  String Function(String) format, {
+  String? prefix = '',
+}) {
   return _FormattedString(value, format: format, prefix: prefix);
 }
 
@@ -928,10 +890,10 @@ class _MarkedVersionDetails {
   _MarkedVersionDetails(
     this._versionDetails, {
     required this.asDesired,
-    format,
-    prefix = '',
-    suffix = '',
-    jsonExplanation,
+    String Function(String)? format,
+    String? prefix = '',
+    String? suffix = '',
+    MapEntry<String, Object>? jsonExplanation,
   })  : _format = format,
         _prefix = prefix,
         _suffix = suffix,
@@ -965,9 +927,12 @@ class _FormattedString {
 
   final String _suffix;
 
-  _FormattedString(this.value,
-      {String Function(String)? format, prefix, suffix})
-      : _format = format ?? _noFormat,
+  _FormattedString(
+    this.value, {
+    String Function(String)? format,
+    String? prefix,
+    String? suffix,
+  })  : _format = format ?? _noFormat,
         _prefix = prefix ?? '',
         _suffix = suffix ?? '';
 

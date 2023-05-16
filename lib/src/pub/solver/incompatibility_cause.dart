@@ -5,6 +5,7 @@
 import 'package:pub_semver/pub_semver.dart';
 
 import '../exceptions.dart';
+import '../language_version.dart';
 import '../sdk.dart';
 import 'incompatibility.dart';
 
@@ -18,10 +19,6 @@ abstract class IncompatibilityCause {
 
   /// The incompatibility represents a package's dependency.
   static const IncompatibilityCause dependency = _Cause('dependency');
-
-  /// The incompatibility represents the user's request that we use the latest
-  /// version of a given package.
-  static const IncompatibilityCause useLatest = _Cause('use latest');
 
   /// The incompatibility indicates that the package has no versions that match
   /// the given constraint.
@@ -80,6 +77,11 @@ class SdkCause extends IncompatibilityCause {
   /// The SDK with which the package was incompatible.
   final Sdk sdk;
 
+  bool get noNullSafetyCause =>
+      sdk.isDartSdk &&
+      !LanguageVersion.fromSdkConstraint(constraint).supportsNullSafety &&
+      sdk.version! >= Version(3, 0, 0).firstPreRelease;
+
   @override
   String? get notice {
     // If the SDK is not available, then we have an actionable [hint] printed
@@ -96,6 +98,11 @@ class SdkCause extends IncompatibilityCause {
 
   @override
   String? get hint {
+    if (noNullSafetyCause) {
+      return 'The lower bound of "sdk: \'$constraint\'" must be 2.12.0'
+          ' or higher to enable null safety.'
+          '\nFor details, see https://dart.dev/null-safety';
+    }
     // If the SDK is available, then installing it won't help
     if (sdk.isAvailable) {
       return null;

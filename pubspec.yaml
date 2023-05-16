@@ -5,7 +5,7 @@ documentation: https://docs.onepub.dev
 description: Command line tools for the OnePub private Dart/Flutter repository.
 repository: https://github.com/onepub-dev/onepub
 environment: 
-  sdk: '>=2.19.0 <4.0.0'
+  sdk: '>=3.0.0 <4.0.0'
 dependencies: 
   _fe_analyzer_shared: ^52.0.0
   analyzer: ^5.4.0

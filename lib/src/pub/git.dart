@@ -49,8 +49,11 @@ bool get isInstalled => command != null;
 ///
 /// Returns the stdout as a list of strings if it succeeded. Completes to an
 /// exception if it failed.
-Future<List<String>> run(List<String> args,
-    {String? workingDir, Map<String, String>? environment}) async {
+Future<List<String>> run(
+  List<String> args, {
+  String? workingDir,
+  Map<String, String>? environment,
+}) async {
   if (!isInstalled) {
     fail('Cannot find a Git executable.\n'
         'Please ensure Git is correctly installed.');
@@ -58,12 +61,19 @@ Future<List<String>> run(List<String> args,
 
   log.muteProgress();
   try {
-    final result = await runProcess(command!, args,
-        workingDir: workingDir,
-        environment: {...?environment, 'LANG': 'en_GB'});
+    final result = await runProcess(
+      command!,
+      args,
+      workingDir: workingDir,
+      environment: {...?environment, 'LANG': 'en_GB'},
+    );
     if (!result.success) {
-      throw GitException(args, result.stdout.join('\n'),
-          result.stderr.join('\n'), result.exitCode);
+      throw GitException(
+        args,
+        result.stdout.join('\n'),
+        result.stderr.join('\n'),
+        result.exitCode,
+      );
     }
     return result.stdout;
   } finally {
@@ -72,18 +82,29 @@ Future<List<String>> run(List<String> args,
 }
 
 /// Like [run], but synchronous.
-List<String> runSync(List<String> args,
-    {String? workingDir, Map<String, String>? environment}) {
+List<String> runSync(
+  List<String> args, {
+  String? workingDir,
+  Map<String, String>? environment,
+}) {
   if (!isInstalled) {
     fail('Cannot find a Git executable.\n'
         'Please ensure Git is correctly installed.');
   }
 
-  final result = runProcessSync(command!, args,
-      workingDir: workingDir, environment: environment);
+  final result = runProcessSync(
+    command!,
+    args,
+    workingDir: workingDir,
+    environment: environment,
+  );
   if (!result.success) {
-    throw GitException(args, result.stdout.join('\n'), result.stderr.join('\n'),
-        result.exitCode);
+    throw GitException(
+      args,
+      result.stdout.join('\n'),
+      result.stderr.join('\n'),
+      result.exitCode,
+    );
   }
 
   return result.stdout;
@@ -118,12 +139,22 @@ bool _tryGitCommand(String command) {
   // If "git --version" prints something familiar, git is working.
   try {
     var result = runProcessSync(command, ['--version']);
+    final output = result.stdout;
 
-    if (result.stdout.length != 1) return false;
-    final output = result.stdout.single;
-    final match = RegExp(r'^git version (\d+)\.(\d+)\.').matchAsPrefix(output);
-
+    // Some users may have configured commands such as autorun, which may
+    // produce additional output, so we need to look for "git version"
+    // in every line of the output.
+    Match? match;
+    String? versionString;
+    for (var line in output) {
+      match = RegExp(r'^git version (\d+)\.(\d+)\.').matchAsPrefix(line);
+      if (match != null) {
+        versionString = line.substring('git version '.length);
+        break;
+      }
+    }
     if (match == null) return false;
+
     // Git seems to use many parts in the version number. We just check the
     // first two.
     final major = int.parse(match[1]!);
@@ -132,7 +163,7 @@ bool _tryGitCommand(String command) {
       // We just warn here, as some features might work with older versions of
       // git.
       log.warning('''
-You have a very old version of git (version ${output.substring('git version '.length)}),
+You have a very old version of git (version $versionString),
 for $topLevelProgram it is recommended to use git version 2.14 or newer.
 ''');
     }

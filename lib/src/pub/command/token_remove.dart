@@ -6,19 +6,21 @@ import '../command.dart';
 import '../exceptions.dart';
 import '../log.dart' as log;
 import '../source/hosted.dart';
+import '../utils.dart';
 
 /// Handles the `token remove` pub command.
 class TokenRemoveCommand extends PubCommand {
   @override
   String get name => 'remove';
   @override
-  String get description => 'Remove secret token for package repository.';
+  String get description => '''
+Remove secret token for package repository at <hosted-url>.''';
   @override
-  String get invocation => 'pub token remove';
+  String get argumentsDescription => '<hosted-url> | --all';
   @override
-  String get argumentsDescription => '[hosted-url]';
+  String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-token';
 
-  bool get isAll => argResults['all'];
+  bool get isAll => asBool(argResults['all']);
 
   TokenRemoveCommand() {
     argParser.addFlag(
@@ -39,7 +41,8 @@ class TokenRemoveCommand extends PubCommand {
 
     if (argResults.rest.isEmpty) {
       usageException(
-          'The [hosted-url] for a package repository must be specified.');
+        'The [hosted-url] for a package repository must be specified.',
+      );
     } else if (argResults.rest.length > 1) {
       usageException('Takes only a single argument.');
     }
@@ -52,7 +55,8 @@ class TokenRemoveCommand extends PubCommand {
         log.message('Removed secret token for package repository: $hostedUrl');
       } else {
         throw DataException(
-            'No secret token for package repository "$hostedUrl" was found.');
+          'No secret token for package repository "$hostedUrl" was found.',
+        );
       }
     } on FormatException catch (e) {
       usageException('Invalid [hosted-url]: "${argResults.rest.first}"\n'

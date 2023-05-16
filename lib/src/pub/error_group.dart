@@ -106,7 +106,7 @@ class ErrorGroup {
   ///
   /// If all members of [this] have already completed successfully or with an
   /// error, it's a [StateError] to try to signal an error.
-  void signalError(var error, [StackTrace? stackTrace]) {
+  void signalError(Object error, [StackTrace? stackTrace]) {
     if (_isDone) {
       throw StateError("Can't signal errors on a complete ErrorGroup.");
     }
@@ -118,7 +118,7 @@ class ErrorGroup {
   ///
   /// This is just like [signalError], but instead of throwing an error if
   /// [this] is complete, it just does nothing.
-  void _signalError(var error, [StackTrace? stackTrace]) {
+  void _signalError(Object error, [StackTrace? stackTrace]) {
     if (_isDone) return;
 
     var caught = false;
@@ -136,6 +136,7 @@ class ErrorGroup {
     _done._signalError(error, stackTrace);
     if (!caught && !_done._hasListeners) {
       scheduleMicrotask(() {
+        // ignore: only_throw_errors
         throw error;
       });
     }
@@ -191,7 +192,15 @@ class _ErrorGroupFuture<T> implements Future<T> {
 
     // Make sure _completer.future doesn't automatically send errors to the
     // top-level.
-    _completer.future.catchError((_) {});
+    Future<void> swallowErrors(Future future) async {
+      try {
+        await future;
+      } catch (_) {
+        // Do nothing.
+      }
+    }
+
+    swallowErrors(_completer.future);
   }
 
   @override
@@ -226,7 +235,7 @@ class _ErrorGroupFuture<T> implements Future<T> {
 
   /// Signal that an error from [_group] should be propagated through [this],
   /// unless it's already complete.
-  void _signalError(var error, [StackTrace? stackTrace]) {
+  void _signalError(Object error, [StackTrace? stackTrace]) {
     if (!_isDone) _completer.completeError(error, stackTrace);
     _isDone = true;
   }
@@ -272,24 +281,35 @@ class _ErrorGroupStream<T> extends Stream<T> {
     _stream = inner.isBroadcast
         ? _controller.stream.asBroadcastStream(onCancel: (sub) => sub.cancel())
         : _controller.stream;
-    _subscription =
-        inner.listen(_controller.add, onError: _group._signalError, onDone: () {
-      _isDone = true;
-      _group._signalStreamComplete(this);
-      _controller.close();
-    });
+    _subscription = inner.listen(
+      _controller.add,
+      onError: _group._signalError,
+      onDone: () {
+        _isDone = true;
+        _group._signalStreamComplete(this);
+        _controller.close();
+      },
+    );
   }
 
   @override
-  StreamSubscription<T> listen(void Function(T)? onData,
-      {Function? onError, void Function()? onDone, bool? cancelOnError}) {
-    return _stream.listen(onData,
-        onError: onError, onDone: onDone, cancelOnError: true);
+  StreamSubscription<T> listen(
+    void Function(T)? onData, {
+    Function? onError,
+    void Function()? onDone,
+    bool? cancelOnError,
+  }) {
+    return _stream.listen(
+      onData,
+      onError: onError,
+      onDone: onDone,
+      cancelOnError: true,
+    );
   }
 
   /// Signal that an error from [_group] should be propagated through [this],
   /// unless it's already complete.
-  void _signalError(var e, [StackTrace? stackTrace]) {
+  void _signalError(Object e, [StackTrace? stackTrace]) {
     if (_isDone) return;
     _subscription.cancel();
     // Call these asynchronously to work around issue 7913.

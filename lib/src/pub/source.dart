@@ -66,7 +66,7 @@ abstract class Source {
   /// [containingDir] is the path to the directory of the pubspec where this
   /// description appears. It may be `null` if the description is coming from
   /// some in-memory source (such as pulling down a pubspec from
-  /// pub.dartlang.org).
+  /// pub.dev).
   ///
   /// [languageVersion] is the minimum Dart version parsed from the pubspec's
   /// `environment` field. Source implementations may use this parameter to only
@@ -93,8 +93,12 @@ abstract class Source {
   /// some in-memory source.
   ///
   /// Throws a [FormatException] if the description is not valid.
-  PackageId parseId(String name, Version version, description,
-      {String? containingDir});
+  PackageId parseId(
+    String name,
+    Version version,
+    description, {
+    String? containingDir,
+  });
 
   /// Returns the source's name.
   @override
@@ -110,7 +114,10 @@ abstract class Source {
   /// By default, this assumes that each description has a single version and
   /// uses [describe] to get that version.
   Future<List<PackageId>> doGetVersions(
-      PackageRef ref, Duration? maxAge, SystemCache cache);
+    PackageRef ref,
+    Duration? maxAge,
+    SystemCache cache,
+  );
 
   /// Loads the (possibly remote) pubspec for the package version identified by
   /// [id].
@@ -130,10 +137,13 @@ abstract class Source {
   ///
   /// If id is a relative path id, the directory will be relative from
   /// [relativeFrom]. Returns an absolute path if [relativeFrom] is not passed.
-  String doGetDirectory(PackageId id, SystemCache cache,
-      {String? relativeFrom});
+  String doGetDirectory(
+    PackageId id,
+    SystemCache cache, {
+    String? relativeFrom,
+  });
 
-  /// Returns metadata about a given package.
+  /// Returns metadata about a given package-version.
   ///
   /// For remotely hosted packages, the information can be cached for up to
   /// [maxAge]. If [maxAge] is not given, the information is not cached.
@@ -141,7 +151,8 @@ abstract class Source {
   /// In the case of offline sources, [maxAge] is not used, since information is
   /// per definition cached.
   Future<PackageStatus> status(
-    PackageId id,
+    PackageRef ref,
+    Version version,
     SystemCache cache, {
     Duration? maxAge,
   }) async {
@@ -161,9 +172,10 @@ abstract class Source {
 /// with a version constraint.
 abstract class Description {
   Source get source;
-  Object? serializeForPubspec(
-      {required String? containingDir,
-      required LanguageVersion languageVersion});
+  Object? serializeForPubspec({
+    required String? containingDir,
+    required LanguageVersion languageVersion,
+  });
 
   /// Converts `this` into a human-friendly form to show the user.
   ///

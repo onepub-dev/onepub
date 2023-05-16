@@ -63,8 +63,6 @@ final _bold = getAnsi('\u001b[1m');
 /// By default, [error] and [warning] messages are printed to sterr. [message]
 /// messages are printed to stdout, and others are ignored.
 class Level {
-  const Level._(this.name);
-
   /// An error occurred and an operation could not be completed.
   ///
   /// Usually shown to the user on stderr.
@@ -91,6 +89,8 @@ class Level {
   /// operation.
   static const fine = Level._('FINE');
 
+  const Level._(this.name);
+
   final String name;
 
   @override
@@ -100,8 +100,6 @@ class Level {
 /// An enum type to control which log levels are displayed and how they are
 /// displayed.
 class Verbosity {
-  const Verbosity._(this.name, this._loggers);
-
   /// Silence all logging.
   static const none = Verbosity._('none', {
     Level.error: null,
@@ -182,6 +180,8 @@ class Verbosity {
     Level.fine: _logToStderrWithLabel
   });
 
+  const Verbosity._(this.name, this._loggers);
+
   final String name;
   final Map<Level, void Function(_Entry entry)?> _loggers;
 
@@ -194,19 +194,21 @@ class Verbosity {
 
 /// A single log entry.
 class _Entry {
-  _Entry(this.level, this.lines);
   final Level level;
   final List<String> lines;
+
+  _Entry(this.level, this.lines);
 }
 
 /// Logs [message] at [Level.error].
 ///
 /// If [error] is passed, it's appended to [message]. If [trace] is passed, it's
 /// printed at log level fine.
-void error(message, [error, StackTrace? trace]) {
+void error(Object? message, [error, StackTrace? trace]) {
   message ??= '';
+  var strMessage = message.toString();
   if (error != null) {
-    message = message.isEmpty ? '$error' : '$message: $error';
+    message = strMessage.isEmpty ? '$error' : '$strMessage: $error';
     if (error is Error && trace == null) trace = error.stackTrace;
   }
   write(Level.error, message);
@@ -231,7 +233,7 @@ void fine(message) => write(Level.fine, message);
 /// Logs [message] at [level].
 void write(Level level, message) {
   message = message.toString();
-  final lines = splitLines(message);
+  var lines = splitLines(message as String);
 
   // Discard a trailing newline. This is useful since StringBuffers often end
   // up with an extra newline at the end from using [writeln].
@@ -239,9 +241,9 @@ void write(Level level, message) {
     lines.removeLast();
   }
 
-  final entry = _Entry(level, lines);
+  var entry = _Entry(level, lines);
 
-  final logFn = verbosity._loggers[level];
+  var logFn = verbosity._loggers[level];
   if (logFn != null) logFn(entry);
 
   _transcript.add(entry);
@@ -250,15 +252,18 @@ void write(Level level, message) {
 /// Logs the spawning of an [executable] process with [arguments] at [io]
 /// level.
 void process(
-    String executable, List<String> arguments, String workingDirectory) {
-  io('Spawning "$executable ${arguments.join(' ')}" in '
+  String executable,
+  List<String> arguments,
+  String workingDirectory,
+) {
+  io("Spawning \"$executable ${arguments.join(' ')}\" in "
       '${p.absolute(workingDirectory)}');
 }
 
 /// Logs the results of running [executable].
 void processResult(String executable, PubProcessResult result) {
   // Log it all as one message so that it shows up as a single unit in the logs.
-  final buffer = StringBuffer();
+  var buffer = StringBuffer();
   buffer.writeln('Finished $executable. Exit code ${result.exitCode}.');
 
   void dumpOutput(String name, List<String> output) {
@@ -267,7 +272,7 @@ void processResult(String executable, PubProcessResult result) {
     } else {
       buffer.writeln('$name:');
       var numLines = 0;
-      for (final line in output) {
+      for (var line in output) {
         if (++numLines > 1000) {
           buffer.writeln('[${output.length - 1000}] more lines of output '
               'truncated...]');
@@ -289,7 +294,7 @@ void processResult(String executable, PubProcessResult result) {
 void exception(exception, [StackTrace? trace]) {
   if (exception is SilentException) return;
 
-  final chain = trace == null ? Chain.current() : Chain.forTrace(trace);
+  var chain = trace == null ? Chain.current() : Chain.forTrace(trace);
 
   // This is basically the top-level exception handler so that we don't
   // spew a stack trace on our users.
@@ -335,12 +340,19 @@ void dumpTranscriptToStdErr() {
   stderr.writeln('---- End log transcript ----');
 }
 
-String _limit(String input, int limit) {
+/// Shortens [input] to at most [limit] characters by omitting the middle part
+/// replacing it with '[...]' if it is too long.
+///
+/// [limit] must be more than 5.
+String limitLength(String input, int limit) {
   const snip = '[...]';
-  if (input.length < limit - snip.length) return input;
-  return '${input.substring(0, limit ~/ 2 - snip.length)}'
+  assert(limit > snip.length);
+  if (input.length <= limit) return input;
+  final half = (limit - snip.length) ~/ 2;
+  final extra = (limit - snip.length).isOdd ? 1 : 0;
+  return '${input.substring(0, half + extra)}'
       '$snip'
-      '${input.substring(limit)}';
+      '${input.substring(input.length - half)}';
 }
 
 /// Prints relevant system information and the log transcript to [path].
@@ -349,16 +361,16 @@ void dumpTranscriptToFile(String path, String command, Entrypoint? entrypoint) {
   buffer.writeln('''
 Information about the latest pub run.
 
-If you believe something is not working right, you can go to 
+If you believe something is not working right, you can go to
 https://github.com/dart-lang/pub/issues/new to post a new issue and attach this file.
 
 Before making this file public, make sure to remove any sensitive information!
 
 Pub version: ${sdk.version}
 Created: ${DateTime.now().toIso8601String()}
-FLUTTER_ROOT: ${Platform.environment['FLUTTER_ROOT'] ?? '<not set and not used>'}
-PUB_HOSTED_URL: ${Platform.environment['PUB_HOSTED_URL'] ?? '<not set and not used>'}
-PUB_CACHE: "${Platform.environment['PUB_CACHE'] ?? '<not set and not used>'}"
+FLUTTER_ROOT: ${Platform.environment['FLUTTER_ROOT'] ?? '<not set>'}
+PUB_HOSTED_URL: ${Platform.environment['PUB_HOSTED_URL'] ?? '<not set>'}
+PUB_CACHE: "${Platform.environment['PUB_CACHE'] ?? '<not set>'}"
 Command: $command
 Platform: ${Platform.operatingSystem}
 ''');
@@ -366,14 +378,14 @@ Platform: ${Platform.operatingSystem}
   if (entrypoint != null) {
     buffer.writeln('---- ${p.absolute(entrypoint.pubspecPath)} ----');
     if (fileExists(entrypoint.pubspecPath)) {
-      buffer.writeln(_limit(readTextFile(entrypoint.pubspecPath), 5000));
+      buffer.writeln(limitLength(readTextFile(entrypoint.pubspecPath), 5000));
     } else {
       buffer.writeln('<No pubspec.yaml>');
     }
     buffer.writeln('---- End pubspec.yaml ----');
     buffer.writeln('---- ${p.absolute(entrypoint.lockFilePath)} ----');
     if (fileExists(entrypoint.lockFilePath)) {
-      buffer.writeln(_limit(readTextFile(entrypoint.lockFilePath), 5000));
+      buffer.writeln(limitLength(readTextFile(entrypoint.lockFilePath), 5000));
     } else {
       buffer.writeln('<No pubspec.lock>');
     }
@@ -402,10 +414,10 @@ Platform: ${Platform.operatingSystem}
 /// Unless the user has overriden the verbosity,
 ///
 /// This is useful to not pollute stdout when the output is piped somewhere.
-Future<T> warningsOnlyUnlessTerminal<T>(FutureOr<T> Function() callback) async {
+Future<T> errorsOnlyUnlessTerminal<T>(FutureOr<T> Function() callback) async {
   final oldVerbosity = verbosity;
-  if (verbosity == Verbosity.normal && !stdout.hasTerminal) {
-    verbosity = Verbosity.warning;
+  if (verbosity == Verbosity.normal && !terminalOutputForStdout) {
+    verbosity = Verbosity.error;
   }
   final result = await callback();
   verbosity = oldVerbosity;
@@ -422,20 +434,25 @@ Future<T> warningsOnlyUnlessTerminal<T>(FutureOr<T> Function() callback) async {
 Future<T> progress<T>(String message, Future<T> Function() callback) {
   _stopProgress();
 
-  final progress = Progress(message);
+  var progress = Progress(message);
   _animatedProgress = progress;
   return callback().whenComplete(progress.stop);
 }
 
 /// Like [progress] but erases the message once done.
-Future<T> spinner<T>(String message, Future<T> Function() callback,
-    {bool condition = true}) {
+Future<T> spinner<T>(
+  String message,
+  Future<T> Function() callback, {
+  bool condition = true,
+}) {
   if (condition) {
     _stopProgress();
 
-    final progress = Progress(message);
+    var progress = Progress(message);
     _animatedProgress = progress;
-    return callback().whenComplete(progress.stopAndClear);
+    return callback().whenComplete(() {
+      progress.stopAndClear();
+    });
   }
   return callback();
 }
@@ -481,50 +498,53 @@ String bold(text) => '$_bold$text$_none';
 /// that supports that.
 ///
 /// Use this for text that's less important than the text around it.
-String gray(text) => '$_gray$text$_none';
+String gray(text) {
+  return '$_gray$text$_none';
+}
 
 /// Wraps [text] in the ANSI escape codes to color it cyan when on a platform
 /// that supports that.
 ///
 /// Use this to highlight something interesting but neither good nor bad.
-String cyan(text) => _addColor(text, _cyan);
+String cyan(Object text) => _addColor(text, _cyan);
 
 /// Wraps [text] in the ANSI escape codes to color it green when on a platform
 /// that supports that.
 ///
 /// Use this to highlight something successful or otherwise positive.
-String green(text) => _addColor(text, _green);
+String green(Object text) => _addColor(text, _green);
 
 /// Wraps [text] in the ANSI escape codes to color it magenta when on a
 /// platform that supports that.
 ///
 /// Use this to highlight something risky that the user should be aware of but
 /// may intend to do.
-String magenta(text) => _addColor(text, _magenta);
+String magenta(Object text) => _addColor(text, _magenta);
 
 /// Wraps [text] in the ANSI escape codes to color it red when on a platform
 /// that supports that.
 ///
 /// Use this to highlight unequivocal errors, problems, or failures.
-String red(text) => _addColor(text, _red);
+String red(Object text) => _addColor(text, _red);
 
 /// Wraps [text] in the ANSI escape codes to color it yellow when on a platform
 /// that supports that.
 ///
 /// Use this to highlight warnings, cautions or other things that are bad but
 /// do not prevent the user's goal from being reached.
-String yellow(text) => _addColor(text, _yellow);
+String yellow(Object text) => _addColor(text, _yellow);
 
 /// Returns [text] colored using the given [colorCode].
 ///
 /// This is resilient to the text containing other colors or bold text.
-String _addColor(Object text, String colorCode) =>
-    colorCode +
-    text
-        .toString()
-        .replaceAll(_none, _none + colorCode)
-        .replaceAll(_noColor, _none + colorCode) +
-    _noColor;
+String _addColor(Object text, String colorCode) {
+  return colorCode +
+      text
+          .toString()
+          .replaceAll(_none, _none + colorCode)
+          .replaceAll(_noColor, _none + colorCode) +
+      _noColor;
+}
 
 /// Log function that prints the message to stdout.
 void _logToStdout(_Entry entry) {
@@ -556,7 +576,7 @@ void _printToStream(StringSink sink, _Entry entry, {required bool showLabel}) {
   _stopProgress();
 
   var firstLine = true;
-  for (final line in entry.lines) {
+  for (var line in entry.lines) {
     if (showLabel) {
       if (firstLine) {
         sink.write('${entry.level.name}: ');
@@ -584,8 +604,8 @@ class _JsonLogger {
   /// is enabled.
   ///
   /// Always prints to stdout.
-  void error(error, [stackTrace]) {
-    final errorJson = {'error': error.toString()};
+  void error(error, [StackTrace? stackTrace]) {
+    var errorJson = {'error': error.toString()};
 
     if (stackTrace == null && error is Error) stackTrace = error.stackTrace;
     if (stackTrace != null) {
@@ -611,6 +631,6 @@ class _JsonLogger {
   void message(message) {
     if (!enabled) return;
 
-    print(jsonEncode(message));
+    stdout.writeln(jsonEncode(message));
   }
 }

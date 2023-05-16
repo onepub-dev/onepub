@@ -23,6 +23,7 @@ import 'source/hosted.dart';
 import 'source/path.dart';
 import 'source/sdk.dart';
 import 'source/unknown.dart';
+import 'utils.dart';
 
 /// The system-wide cache of downloaded packages.
 ///
@@ -31,7 +32,8 @@ import 'source/unknown.dart';
 /// cache.
 class SystemCache {
   /// The root directory where this package cache is located.
-  final String rootDir;
+  String get rootDir => _rootDir ??= defaultDir;
+  String? _rootDir;
 
   String rootDirForSource(CachedSource source) => p.join(rootDir, source.name);
 
@@ -41,27 +43,34 @@ class SystemCache {
     if (Platform.environment.containsKey('PUB_CACHE')) {
       return Platform.environment['PUB_CACHE']!;
     } else if (Platform.isWindows) {
-      // %LOCALAPPDATA% is preferred as the cache location over %APPDATA%, because the latter is synchronised between
-      // devices when the user roams between them, whereas the former is not.
-      // The default cache dir used to be in %APPDATA%, so to avoid breaking old installs,
-      // we use the old dir in %APPDATA% if it exists. Else, we use the new default location
-      // in %LOCALAPPDATA%.
-      //  TODO(sigurdm): handle missing APPDATA.
-      var appData = Platform.environment['APPDATA']!;
-      var appDataCacheDir = p.join(appData, 'Pub', 'Cache');
-      if (dirExists(appDataCacheDir)) {
-        return appDataCacheDir;
+      // %LOCALAPPDATA% is used as the cache location over %APPDATA%, because
+      // the latter is synchronised between devices when the user roams between
+      // them, whereas the former is not.
+      final localAppData = Platform.environment['LOCALAPPDATA'];
+      if (localAppData == null) {
+        dataError('''
+Could not find the pub cache. No `LOCALAPPDATA` environment variable exists.
+Consider setting the `PUB_CACHE` variable manually.
+''');
       }
-      var localAppData = Platform.environment['LOCALAPPDATA']!;
       return p.join(localAppData, 'Pub', 'Cache');
     } else {
-      return '${Platform.environment['HOME']}/.pub-cache';
+      final home = Platform.environment['HOME'];
+      if (home == null) {
+        dataError('''
+Could not find the pub cache. No `HOME` environment variable exists.
+Consider setting the `PUB_CACHE` variable manually.
+''');
+      }
+      return p.join(home, '.pub-cache');
     }
   })();
 
   /// The available sources.
-  late final _sources =
-      Map.fromIterable([hosted, git, path, sdk], key: (source) => source.name);
+  late final _sources = Map<String, Source>.fromIterable(
+    [hosted, git, path, sdk],
+    key: (source) => (source as Source).name,
+  );
 
   Source sources(String? name) {
     return name == null
@@ -84,6 +93,7 @@ class SystemCache {
   SdkSource get sdk => SdkSource.instance;
 
   /// The default credential store.
+  /// TODO(sigurdm): this does not really belong in the cache.
   final TokenStore tokenStore;
 
   /// If true, cached sources will attempt to use the cached packages for
@@ -95,7 +105,7 @@ class SystemCache {
   /// If [isOffline] is `true`, then the offline hosted source will be used.
   /// Defaults to `false`.
   SystemCache({String? rootDir, this.isOffline = false})
-      : rootDir = rootDir ?? SystemCache.defaultDir,
+      : _rootDir = rootDir,
         tokenStore = TokenStore(dartConfigDir);
 
   /// Loads the package identified by [id].
@@ -109,20 +119,13 @@ class SystemCache {
     final source = id.description.description.source;
     if (source is CachedSource) {
       return Package.load(
-          id.name, source.getDirectoryInCache(id, this), sources);
+        id.name,
+        source.getDirectoryInCache(id, this),
+        sources,
+      );
     } else {
       throw ArgumentError('Call only on Cached ids.');
     }
-  }
-
-  /// Determines if the system cache contains the package identified by [id].
-  bool contains(PackageId id) {
-    final source = id.source;
-
-    if (source is CachedSource) {
-      return source.isInSystemCache(id, this);
-    }
-    throw ArgumentError('Package $id is not cacheable.');
   }
 
   /// Create a new temporary directory within the system cache.
@@ -178,20 +181,31 @@ class SystemCache {
   /// If given, the [allowedRetractedVersion] is the only version which can be
   /// selected even if it is marked as retracted. Otherwise, all the returned
   /// IDs correspond to non-retracted versions.
-  Future<List<PackageId>> getVersions(PackageRef ref,
-      {Duration? maxAge, Version? allowedRetractedVersion}) async {
+  Future<List<PackageId>> getVersions(
+    PackageRef ref, {
+    Duration? maxAge,
+    Version? allowedRetractedVersion,
+  }) async {
     if (ref.isRoot) {
       throw ArgumentError('Cannot get versions for the root package.');
     }
     var versions = await ref.source.doGetVersions(ref, maxAge, this);
 
-    versions = (await Future.wait(versions.map((id) async {
-      final packageStatus = await ref.source.status(id, this, maxAge: maxAge);
-      if (!packageStatus.isRetracted || id.version == allowedRetractedVersion) {
-        return id;
-      }
-      return null;
-    })))
+    versions = (await Future.wait(
+      versions.map((id) async {
+        final packageStatus = await ref.source.status(
+          id.toRef(),
+          id.version,
+          this,
+          maxAge: maxAge,
+        );
+        if (!packageStatus.isRetracted ||
+            id.version == allowedRetractedVersion) {
+          return id;
+        }
+        return null;
+      }),
+    ))
         .whereNotNull()
         .toList();
 
@@ -208,10 +222,35 @@ class SystemCache {
     return id.source.doGetDirectory(id, this, relativeFrom: relativeFrom);
   }
 
-  Future<void> downloadPackage(PackageId id) async {
+  /// Downloads a cached package identified by [id] to the cache.
+  ///
+  /// [id] must refer to a cached package.
+  ///
+  /// If [allowOutdatedHashChecks] is `true` we use a cached version listing
+  /// response if present instead of probing the server. Not probing allows for
+  /// `pub get` with a filled cache to be a fast case that doesn't require any
+  /// new version-listings.
+  ///
+  /// Returns [id] with an updated [ResolvedDescription], this can be different
+  /// if the content-hash changed while downloading.
+  Future<DownloadPackageResult> downloadPackage(PackageId id) async {
     final source = id.source;
     assert(source is CachedSource);
-    await (source as CachedSource).downloadToSystemCache(id, this);
+    final result = await (source as CachedSource).downloadToSystemCache(
+      id,
+      this,
+    );
+
+    // We only update the README.md in the cache when a change to the cache has
+    // happened. This is:
+    // * to avoid failing if used with a read-only cache, and
+    // * because the cost of writing a single file is negligible compared to
+    //   downloading a package, but might be significant in the fast-case where
+    //   a the cache is already valid.
+    if (result.didUpdate) {
+      _ensureReadme();
+    }
+    return result;
   }
 
   /// Get the latest version of [package].
@@ -230,15 +269,23 @@ class SystemCache {
     if (package == null) {
       return null;
     }
-    // TODO: Pass some maxAge to getVersions
-    final available = await getVersions(package);
+
+    final List<PackageId> available;
+    try {
+      // TODO: Pass some maxAge to getVersions
+      available = await getVersions(package);
+    } on PackageNotFoundException {
+      return null;
+    }
     if (available.isEmpty) {
       return null;
     }
 
-    available.sort(allowPrereleases
-        ? (x, y) => x.version.compareTo(y.version)
-        : (x, y) => Version.prioritize(x.version, y.version));
+    available.sort(
+      allowPrereleases
+          ? (x, y) => x.version.compareTo(y.version)
+          : (x, y) => Version.prioritize(x.version, y.version),
+    );
     var latest = available.last;
 
     if (version != null && version.isPreRelease && version > latest.version) {
@@ -251,6 +298,51 @@ class SystemCache {
 
     return latest;
   }
+
+  /// Removes all contents of the system cache.
+  ///
+  /// Rewrites the README.md.
+  void clean() {
+    deleteEntry(rootDir);
+    ensureDir(rootDir);
+    _ensureReadme();
+  }
+
+  /// Write a README.md file in the root of the cache directory to document the
+  /// contents of the folder.
+  ///
+  /// This should only be called when we are doing another operation that is
+  /// modifying the `PUB_CACHE`. This ensures that users won't experience
+  /// permission errors because we writing a `README.md` file, in a flow that
+  /// the user expected wouldn't have issues with a read-only `PUB_CACHE`.
+  void _ensureReadme() {
+    /// We only want to do this once per run.
+    if (_hasEnsuredReadme) return;
+    _hasEnsuredReadme = true;
+    final readmePath = p.join(rootDir, 'README.md');
+    try {
+      writeTextFile(readmePath, '''
+Pub Package Cache
+=================
+
+This folder is used by Pub to store cached packages used in Dart / Flutter
+projects.
+
+The contents of this folder should only be modified using the `dart pub` and
+`flutter pub` commands.
+
+Modifying this folder manually can lead to inconsistent behavior.
+
+For details on how manage the `PUB_CACHE`, see:
+https://dart.dev/go/pub-cache
+''');
+    } on Exception catch (e) {
+      // Failing to write the README.md should not disrupt other operations.
+      log.fine('Failed to write README.md in PUB_CACHE: $e');
+    }
+  }
+
+  bool _hasEnsuredReadme = false;
 }
 
 typedef SourceRegistry = Source Function(String? name);

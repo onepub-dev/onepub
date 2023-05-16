@@ -23,10 +23,9 @@ class StrictDependenciesValidator extends Validator {
   /// Files that do not parse and directives that don't import or export
   /// `package:` URLs are ignored.
   Iterable<_Usage> _findPackages(Iterable<String> files) sync* {
-    final packagePath = p.normalize(p.absolute(entrypoint.root.dir));
+    final packagePath = p.normalize(p.absolute(entrypoint.rootDir));
     final AnalysisContextManager analysisContextManager =
-        AnalysisContextManager();
-    analysisContextManager.createContextsForDirectory(packagePath);
+        AnalysisContextManager(packagePath);
 
     for (var file in files) {
       List<UriBasedDirective> directives;
@@ -54,7 +53,8 @@ class StrictDependenciesValidator extends Validator {
                 (url.pathSegments.length < 2 ||
                     url.pathSegments.any((s) => s.isEmpty)))) {
           errors.add(
-              _Usage.errorMessage('Invalid URL.', file, contents, directive));
+            _Usage.errorMessage('Invalid URL.', file, contents, directive),
+          );
         } else if (url.scheme == 'package') {
           yield _Usage(file, contents, directive, url);
         }
@@ -114,8 +114,12 @@ class StrictDependenciesValidator extends Validator {
 /// A parsed import or export directive in a D source file.
 class _Usage {
   /// Returns a formatted error message highlighting [directive] in [file].
-  static String errorMessage(String message, String file, String contents,
-      UriBasedDirective directive) {
+  static String errorMessage(
+    String message,
+    String file,
+    String contents,
+    UriBasedDirective directive,
+  ) {
     return SourceFile.fromString(contents, url: file)
         .span(directive.offset, directive.offset + directive.length)
         .message(message);

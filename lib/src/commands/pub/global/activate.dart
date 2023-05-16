@@ -11,6 +11,7 @@ import '../../../exceptions.dart';
 import '../../../onepub_settings.dart';
 import '../../../pub/command.dart';
 import '../../../pub/global_packages.dart';
+import '../../../pub/package_name.dart';
 import '../../../pub/system_cache.dart';
 import '../../../util/one_pub_token_store.dart';
 
@@ -50,6 +51,14 @@ run: onepub login
 
     final package = readArg('No package to activate given.');
 
+    PackageRef ref;
+    try {
+      ref = cache.hosted
+          .refFor(package, url: argResults['hosted-url'] as String?);
+    } on FormatException catch (e) {
+      usageException('Invalid hosted-url: $e');
+    }
+
     // Parse the version constraint, if there is one.
     var constraint = VersionConstraint.any;
     if (args.isNotEmpty) {
@@ -62,8 +71,7 @@ run: onepub login
 
     await API().checkVersion();
     return globals.activateHosted(
-      package,
-      constraint,
+      ref.withConstraint(constraint),
       null, // all executables
       overwriteBinStubs: true,
       url: onepubApiUrl,

@@ -2,6 +2,9 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'dart:convert';
+
+import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
 import 'language_version.dart';
@@ -59,25 +62,30 @@ class PackageConfig {
     }
     final root = data;
 
-    void _throw(String property, String mustBe) => throw FormatException(
-        '"$property" in .dart_tool/package_config.json $mustBe');
+    void throwFormatException(String property, String mustBe) =>
+        throw FormatException(
+          '"$property" in .dart_tool/package_config.json $mustBe',
+        );
 
     /// Read the 'configVersion' property
     final configVersion = root['configVersion'];
     if (configVersion is! int) {
-      _throw('configVersion', 'must be an integer');
+      throwFormatException('configVersion', 'must be an integer');
     }
     if (configVersion != 2) {
-      _throw('configVersion', 'must be 2 (the only supported version)');
+      throwFormatException(
+        'configVersion',
+        'must be 2 (the only supported version)',
+      );
     }
 
     final packagesRaw = root['packages'];
     if (packagesRaw is! List) {
-      _throw('packages', 'must be a list');
+      throwFormatException('packages', 'must be a list');
     }
     final packages = <PackageConfigEntry>[];
-    for (final entry in packagesRaw) {
-      packages.add(PackageConfigEntry.fromJson(entry));
+    for (final entry in packagesRaw as List) {
+      packages.add(PackageConfigEntry.fromJson(entry as Object));
     }
 
     // Read the 'generated' property
@@ -85,16 +93,17 @@ class PackageConfig {
     final generatedRaw = root['generated'];
     if (generatedRaw != null) {
       if (generatedRaw is! String) {
-        _throw('generated', 'must be a string, if given');
+        throwFormatException('generated', 'must be a string, if given');
       }
-      generated = DateTime.parse(generatedRaw);
+      generated = DateTime.parse(generatedRaw as String);
     }
 
     // Read the 'generator' property
     final generator = root['generator'];
     if (generator != null && generator is! String) {
       throw FormatException(
-          '"generator" in package_config.json must be a string, if given');
+        '"generator" in package_config.json must be a string, if given',
+      );
     }
 
     // Read the 'generatorVersion' property
@@ -102,29 +111,36 @@ class PackageConfig {
     final generatorVersionRaw = root['generatorVersion'];
     if (generatorVersionRaw != null) {
       if (generatorVersionRaw is! String) {
-        _throw('generatorVersion', 'must be a string, if given');
+        throwFormatException('generatorVersion', 'must be a string, if given');
       }
       try {
-        generatorVersion = Version.parse(generatorVersionRaw);
+        generatorVersion = Version.parse(generatorVersionRaw as String);
       } on FormatException catch (e) {
-        _throw('generatorVersion',
-            'must be a semver version, if given, error: ${e.message}');
+        throwFormatException(
+          'generatorVersion',
+          'must be a semver version, if given, error: ${e.message}',
+        );
       }
     }
 
     return PackageConfig(
-        configVersion: configVersion as int,
-        packages: packages,
-        generated: generated,
-        generator: generator,
-        generatorVersion: generatorVersion,
-        additionalProperties: Map.fromEntries(root.entries.where((e) => !{
-              'configVersion',
-              'packages',
-              'generated',
-              'generator',
-              'generatorVersion',
-            }.contains(e.key))));
+      configVersion: configVersion as int,
+      packages: packages,
+      generated: generated,
+      generator: generator as String?,
+      generatorVersion: generatorVersion,
+      additionalProperties: Map.fromEntries(
+        root.entries.where(
+          (e) => !{
+            'configVersion',
+            'packages',
+            'generated',
+            'generator',
+            'generatorVersion',
+          }.contains(e.key),
+        ),
+      ),
+    );
   }
 
   /// Convert to JSON structure.
@@ -135,7 +151,21 @@ class PackageConfig {
         'generator': generator,
         'generatorVersion': generatorVersion?.toString(),
       }..addAll(additionalProperties);
+
+  // We allow the package called 'flutter_gen' to be injected into
+  // package_config.
+  //
+  // This is somewhat a hack. But it allows flutter to generate code in a
+  // package as it likes.
+  //
+  // See https://github.com/flutter/flutter/issues/73870 .
+  Iterable<PackageConfigEntry> get nonInjectedPackages =>
+      packages.where((package) => !_isInjectedFlutterGenPackage(package));
 }
+
+bool _isInjectedFlutterGenPackage(PackageConfigEntry package) =>
+    package.name == 'flutter_gen' &&
+    package.rootUri.toString() == 'flutter_gen';
 
 class PackageConfigEntry {
   /// Package name.
@@ -160,8 +190,6 @@ class PackageConfigEntry {
   /// Given as `<major>.<minor>` version, similar to the `// @dart = X.Y`
   /// comment. This is derived from the lower-bound on the Dart SDK requirement
   /// in the `pubspec.yaml` for the given package.
-  ///
-  /// `null` if not given.
   LanguageVersion? languageVersion;
 
   /// Additional properties not in the specification for the
@@ -173,10 +201,8 @@ class PackageConfigEntry {
     required this.rootUri,
     this.packageUri,
     this.languageVersion,
-    this.additionalProperties,
-  }) {
-    additionalProperties ??= {};
-  }
+    this.additionalProperties = const {},
+  });
 
   /// Create [PackageConfigEntry] from JSON [data].
   ///
@@ -185,34 +211,37 @@ class PackageConfigEntry {
   factory PackageConfigEntry.fromJson(Object data) {
     if (data is! Map<String, dynamic>) {
       throw FormatException(
-          'packages[] entries in package_config.json must be JSON objects');
+        'packages[] entries in package_config.json must be JSON objects',
+      );
     }
     final root = data;
 
-    Never _throw(String property, String mustBe) => throw FormatException(
-        '"packages[].$property" in .dart_tool/package_config.json $mustBe');
+    Never throwFormatException(String property, String mustBe) =>
+        throw FormatException(
+          '"packages[].$property" in .dart_tool/package_config.json $mustBe',
+        );
 
     final name = root['name'];
     if (name is! String) {
-      _throw('name', 'must be a string');
+      throwFormatException('name', 'must be a string');
     }
 
     final Uri rootUri;
     final rootUriRaw = root['rootUri'];
     if (rootUriRaw is! String) {
-      _throw('rootUri', 'must be a string');
+      throwFormatException('rootUri', 'must be a string');
     }
     try {
       rootUri = Uri.parse(rootUriRaw);
     } on FormatException {
-      _throw('rootUri', 'must be a URI');
+      throwFormatException('rootUri', 'must be a URI');
     }
 
     Uri? packageUri;
     var packageUriRaw = root['packageUri'];
     if (packageUriRaw != null) {
       if (packageUriRaw is! String) {
-        _throw('packageUri', 'must be a string');
+        throwFormatException('packageUri', 'must be a string');
       }
       if (!packageUriRaw.endsWith('/')) {
         packageUriRaw = '$packageUriRaw/';
@@ -220,7 +249,7 @@ class PackageConfigEntry {
       try {
         packageUri = Uri.parse(packageUriRaw);
       } on FormatException {
-        _throw('packageUri', 'must be a URI');
+        throwFormatException('packageUri', 'must be a URI');
       }
     }
 
@@ -228,12 +257,15 @@ class PackageConfigEntry {
     final languageVersionRaw = root['languageVersion'];
     if (languageVersionRaw != null) {
       if (languageVersionRaw is! String) {
-        _throw('languageVersion', 'must be a string');
+        throwFormatException('languageVersion', 'must be a string');
       }
       try {
         languageVersion = LanguageVersion.parse(languageVersionRaw);
       } on FormatException {
-        _throw('languageVersion', 'must be on the form <major>.<minor>');
+        throwFormatException(
+          'languageVersion',
+          'must be on the form <major>.<minor>',
+        );
       }
     }
 
@@ -249,7 +281,17 @@ class PackageConfigEntry {
   Map<String, Object?> toJson() => {
         'name': name,
         'rootUri': rootUri.toString(),
-        if (packageUri != null) 'packageUri': packageUri?.toString(),
+        if (packageUri != null) 'packageUri': packageUri.toString(),
         if (languageVersion != null) 'languageVersion': '$languageVersion',
       }..addAll(additionalProperties ?? {});
+
+  @override
+  String toString() {
+    // TODO: implement toString
+    return JsonEncoder.withIndent('  ').convert(toJson());
+  }
+
+  String resolvedRootDir(String packageConfigPath) {
+    return p.join(p.dirname(packageConfigPath), p.fromUri(rootUri));
+  }
 }

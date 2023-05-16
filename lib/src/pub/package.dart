@@ -39,7 +39,8 @@ class Package {
   String get dir {
     if (isInMemory) {
       throw UnsupportedError(
-          'Package directory cannot be used for an in-memory package');
+        'Package directory cannot be used for an in-memory package',
+      );
     }
 
     return _dir!;
@@ -105,8 +106,10 @@ class Package {
       // git repo. `git check-ignore` will return a status code of 0 for
       // ignored, 1 for not ignored, and 128 for not a Git repo.
       var result = runProcessSync(
-          git.command!, ['check-ignore', '--quiet', '.'],
-          workingDir: dir);
+        git.command!,
+        ['check-ignore', '--quiet', '.'],
+        workingDir: dir,
+      );
       return result.exitCode == 1;
     }
   }
@@ -125,8 +128,12 @@ class Package {
     SourceRegistry sources, {
     bool withPubspecOverrides = false,
   }) {
-    final pubspec = Pubspec.load(dir, sources,
-        expectedName: name, allowOverridesFile: withPubspecOverrides);
+    final pubspec = Pubspec.load(
+      dir,
+      sources,
+      expectedName: name,
+      allowOverridesFile: withPubspecOverrides,
+    );
     return Package._(dir, pubspec);
   }
 
@@ -148,13 +155,15 @@ class Package {
   /// This is similar to `p.join(dir, part1, ...)`, except that subclasses may
   /// override it to report that certain paths exist elsewhere than within
   /// [dir].
-  String path(String? part1,
-      [String? part2,
-      String? part3,
-      String? part4,
-      String? part5,
-      String? part6,
-      String? part7]) {
+  String path(
+    String? part1, [
+    String? part2,
+    String? part3,
+    String? part4,
+    String? part5,
+    String? part6,
+    String? part7,
+  ]) {
     if (isInMemory) {
       throw StateError("Package $name is in-memory and doesn't have paths "
           'on disk.');
@@ -172,25 +181,12 @@ class Package {
     return p.relative(path, from: dir);
   }
 
-  /// Returns the type of dependency from this package onto [name].
-  DependencyType dependencyType(String? name) {
-    if (pubspec.fields['dependencies']?.containsKey(name) ?? false) {
-      return DependencyType.direct;
-    } else if (pubspec.fields['dev_dependencies']?.containsKey(name) ?? false) {
-      return DependencyType.dev;
-    } else {
-      return DependencyType.none;
-    }
-  }
-
   static final _basicIgnoreRules = [
     '.*', // Don't include dot-files.
     '!.htaccess', // Include .htaccess anyways.
-    // TODO(sigurdm): consider removing this. `packages` folders are not used
-    // anymore.
-    'packages/',
     'pubspec.lock',
     '!pubspec.lock/', // We allow a directory called pubspec lock.
+    '/pubspec_overrides.yaml',
   ];
 
   /// Returns a list of files that are considered to be part of this package.
@@ -219,8 +215,11 @@ class Package {
     var packageDir = dir;
     var root = git.repoRoot(packageDir) ?? packageDir;
     beneath = p
-        .toUri(p.normalize(
-            p.relative(p.join(packageDir, beneath ?? '.'), from: root)))
+        .toUri(
+          p.normalize(
+            p.relative(p.join(packageDir, beneath ?? '.'), from: root),
+          ),
+        )
         .path;
     if (beneath == './') beneath = '.';
     String resolve(String path) {
@@ -242,11 +241,13 @@ class Package {
             final target = Link(entity.path).targetSync();
             if (dirExists(entity.path)) {
               throw DataException(
-                  '''Pub does not support publishing packages with directory symlinks: `${entity.path}`.''');
+                '''Pub does not support publishing packages with directory symlinks: `${entity.path}`.''',
+              );
             }
             if (!fileExists(entity.path)) {
               throw DataException(
-                  '''Pub does not support publishing packages with non-resolving symlink: `${entity.path}` => `$target`.''');
+                '''Pub does not support publishing packages with non-resolving symlink: `${entity.path}` => `$target`.''',
+              );
             }
           }
           final relative = p.relative(entity.path, from: root);
@@ -273,7 +274,8 @@ class Package {
                 rules,
                 onInvalidPattern: (pattern, exception) {
                   log.warning(
-                      '$ignoreFile had invalid pattern $pattern. ${exception.message}');
+                    '$ignoreFile had invalid pattern $pattern. ${exception.message}',
+                  );
                 },
                 // Ignore case on MacOs and Windows, because `git clone` and
                 // `git init` will set `core.ignoreCase = true` in the local
@@ -315,23 +317,4 @@ class Package {
       isDir: (dir) => dirExists(resolve(dir)),
     ).map(resolve).toList();
   }
-}
-
-/// The type of dependency from one package to another.
-class DependencyType {
-  /// A dependency declared in `dependencies`.
-  static const direct = DependencyType._('direct');
-
-  /// A dependency declared in `dev_dependencies`.
-  static const dev = DependencyType._('dev');
-
-  /// No dependency exists.
-  static const none = DependencyType._('none');
-
-  final String _name;
-
-  const DependencyType._(this._name);
-
-  @override
-  String toString() => _name;
 }

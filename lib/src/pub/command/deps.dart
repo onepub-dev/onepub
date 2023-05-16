@@ -8,9 +8,9 @@ import 'dart:convert';
 import '../ascii_tree.dart' as tree;
 import '../command.dart';
 import '../command_runner.dart';
-import '../dart.dart';
 import '../log.dart' as log;
 import '../package.dart';
+import '../pubspec.dart';
 import '../sdk.dart';
 import '../utils.dart';
 
@@ -31,55 +31,65 @@ class DepsCommand extends PubCommand {
   @override
   bool get takesArguments => false;
 
-  final AnalysisContextManager analysisContextManager =
-      AnalysisContextManager();
-
-  /// The [StringBuffer] used to accumulate the output.
-  // TODO(sigurdm): use a local variable for this.
-  final _buffer = StringBuffer();
-
   /// Whether to include dev dependencies.
-  bool get _includeDev => argResults['dev'];
+  bool get _includeDev => asBool(argResults['dev']);
 
   DepsCommand() {
-    argParser.addOption('style',
-        abbr: 's',
-        help: 'How output should be displayed.',
-        allowed: ['compact', 'tree', 'list'],
-        defaultsTo: 'tree');
+    argParser.addOption(
+      'style',
+      abbr: 's',
+      help: 'How output should be displayed.',
+      allowed: ['compact', 'tree', 'list'],
+      defaultsTo: 'tree',
+    );
 
-    argParser.addFlag('dev',
-        help: 'Whether to include dev dependencies.', defaultsTo: true);
+    argParser.addFlag(
+      'dev',
+      help: 'Whether to include dev dependencies.',
+      defaultsTo: true,
+    );
 
-    argParser.addFlag('executables',
-        negatable: false, help: 'List all available executables.');
+    argParser.addFlag(
+      'executables',
+      negatable: false,
+      help: 'List all available executables.',
+    );
 
-    argParser.addFlag('json',
-        negatable: false,
-        help: 'Output dependency information in a json format.');
+    argParser.addFlag(
+      'json',
+      negatable: false,
+      help: 'Output dependency information in a json format.',
+    );
 
-    argParser.addOption('directory',
-        abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
+    argParser.addOption(
+      'directory',
+      abbr: 'C',
+      help: 'Run this in the directory <dir>.',
+      valueHelp: 'dir',
+    );
   }
 
   @override
   Future<void> runProtected() async {
     // Explicitly Run this in the directorycase we don't access `entrypoint.packageGraph`.
-    entrypoint.assertUpToDate();
-    _buffer.clear();
+    await entrypoint.ensureUpToDate();
+    final buffer = StringBuffer();
 
-    if (argResults['json']) {
+    if (asBool(argResults['json'])) {
       if (argResults.wasParsed('dev')) {
         usageException(
-            'Cannot combine --json and --dev.\nThe json output contains the dependency type in the output.');
+          'Cannot combine --json and --dev.\nThe json output contains the dependency type in the output.',
+        );
       }
       if (argResults.wasParsed('executables')) {
         usageException(
-            'Cannot combine --json and --executables.\nThe json output always lists available executables.');
+          'Cannot combine --json and --executables.\nThe json output always lists available executables.',
+        );
       }
       if (argResults.wasParsed('style')) {
         usageException('Cannot combine --json and --style.');
       }
+      await entrypoint.ensureUpToDate();
       final visited = <String>[];
       final toVisit = [entrypoint.root.name];
       final packagesJson = <dynamic>[];
@@ -93,7 +103,7 @@ class DepsCommand extends PubCommand {
                 : currentPackage.dependencies)
             .keys
             .toList();
-        final dependencyType = entrypoint.root.dependencyType(current);
+        final dependencyType = entrypoint.root.pubspec.dependencyType(current);
         final kind = currentPackage == entrypoint.root
             ? 'root'
             : (dependencyType == DependencyType.direct
@@ -102,8 +112,7 @@ class DepsCommand extends PubCommand {
                     ? 'dev'
                     : 'transitive'));
         final source =
-            entrypoint.packageGraph.lockFile.packages[current]?.source.name ??
-                'root';
+            entrypoint.lockFile.packages[current]?.source.name ?? 'root';
         packagesJson.add({
           'name': current,
           'version': currentPackage.version.toString(),
@@ -119,12 +128,14 @@ class DepsCommand extends PubCommand {
           ...entrypoint.root.immediateDependencies.keys
               .map((name) => entrypoint.packageGraph.packages[name])
         ])
-          ...package!.executableNames.map((name) => package == entrypoint.root
-              ? ':$name'
-              : (package.name == name ? name : '${package.name}:$name'))
+          ...package!.executableNames.map(
+            (name) => package == entrypoint.root
+                ? ':$name'
+                : (package.name == name ? name : '${package.name}:$name'),
+          )
       ];
 
-      _buffer.writeln(
+      buffer.writeln(
         JsonEncoder.withIndent('  ').convert(
           {
             'root': entrypoint.root.name,
@@ -139,31 +150,31 @@ class DepsCommand extends PubCommand {
         ),
       );
     } else {
-      if (argResults['executables']) {
-        _outputExecutables();
+      if (asBool(argResults['executables'])) {
+        _outputExecutables(buffer);
       } else {
         for (var sdk in sdks.values) {
           if (!sdk.isAvailable) continue;
-          _buffer.writeln("${log.bold('${sdk.name} SDK')} ${sdk.version}");
+          buffer.writeln("${log.bold('${sdk.name} SDK')} ${sdk.version}");
         }
 
-        _buffer.writeln(_labelPackage(entrypoint.root));
+        buffer.writeln(_labelPackage(entrypoint.root));
 
         switch (argResults['style']) {
           case 'compact':
-            _outputCompact();
+            _outputCompact(buffer);
             break;
           case 'list':
-            _outputList();
+            _outputList(buffer);
             break;
           case 'tree':
-            _outputTree();
+            _outputTree(buffer);
             break;
         }
       }
     }
 
-    log.message(_buffer);
+    log.message(buffer);
   }
 
   /// Outputs a list of all of the package's immediate, dev, override, and
@@ -172,35 +183,48 @@ class DepsCommand extends PubCommand {
   /// For each dependency listed, *that* package's immediate dependencies are
   /// shown. Unlike [_outputList], this prints all of these dependencies on one
   /// line.
-  void _outputCompact() {
+  void _outputCompact(
+    StringBuffer buffer,
+  ) {
     var root = entrypoint.root;
-    _outputCompactPackages('dependencies', root.dependencies.keys);
+    _outputCompactPackages('dependencies', root.dependencies.keys, buffer);
     if (_includeDev) {
-      _outputCompactPackages('dev dependencies', root.devDependencies.keys);
+      _outputCompactPackages(
+        'dev dependencies',
+        root.devDependencies.keys,
+        buffer,
+      );
     }
     _outputCompactPackages(
-        'dependency overrides', root.dependencyOverrides.keys);
+      'dependency overrides',
+      root.dependencyOverrides.keys,
+      buffer,
+    );
 
     var transitive = _getTransitiveDependencies();
-    _outputCompactPackages('transitive dependencies', transitive);
+    _outputCompactPackages('transitive dependencies', transitive, buffer);
   }
 
   /// Outputs one section of packages in the compact output.
-  void _outputCompactPackages(String section, Iterable<String> names) {
+  void _outputCompactPackages(
+    String section,
+    Iterable<String> names,
+    StringBuffer buffer,
+  ) {
     if (names.isEmpty) return;
 
-    _buffer.writeln();
-    _buffer.writeln('$section:');
+    buffer.writeln();
+    buffer.writeln('$section:');
     for (var name in ordered(names)) {
       var package = _getPackage(name);
 
-      _buffer.write('- ${_labelPackage(package)}');
+      buffer.write('- ${_labelPackage(package)}');
       if (package.dependencies.isEmpty) {
-        _buffer.writeln();
+        buffer.writeln();
       } else {
         var depNames = package.dependencies.keys;
         var depsList = "[${depNames.join(' ')}]";
-        _buffer.writeln(' ${log.gray(depsList)}');
+        buffer.writeln(' ${log.gray(depsList)}');
       }
     }
   }
@@ -210,34 +234,41 @@ class DepsCommand extends PubCommand {
   ///
   /// For each dependency listed, *that* package's immediate dependencies are
   /// shown.
-  void _outputList() {
+  void _outputList(StringBuffer buffer) {
     var root = entrypoint.root;
-    _outputListSection('dependencies', root.dependencies.keys);
+    _outputListSection('dependencies', root.dependencies.keys, buffer);
     if (_includeDev) {
-      _outputListSection('dev dependencies', root.devDependencies.keys);
+      _outputListSection('dev dependencies', root.devDependencies.keys, buffer);
     }
-    _outputListSection('dependency overrides', root.dependencyOverrides.keys);
+    _outputListSection(
+      'dependency overrides',
+      root.dependencyOverrides.keys,
+      buffer,
+    );
 
     var transitive = _getTransitiveDependencies();
     if (transitive.isEmpty) return;
 
-    _outputListSection('transitive dependencies', ordered(transitive));
+    _outputListSection('transitive dependencies', ordered(transitive), buffer);
   }
 
   /// Outputs one section of packages in the list output.
-  void _outputListSection(String name, Iterable<String> deps) {
+  void _outputListSection(
+    String name,
+    Iterable<String> deps,
+    StringBuffer buffer,
+  ) {
     if (deps.isEmpty) return;
 
-    _buffer.writeln();
-    _buffer.writeln('$name:');
+    buffer.writeln();
+    buffer.writeln('$name:');
 
     for (var name in deps) {
       var package = _getPackage(name);
-      _buffer.writeln('- ${_labelPackage(package)}');
+      buffer.writeln('- ${_labelPackage(package)}');
 
       for (var dep in package.dependencies.values) {
-        _buffer
-            .writeln('  - ${log.bold(dep.name)} ${log.gray(dep.constraint)}');
+        buffer.writeln('  - ${log.bold(dep.name)} ${log.gray(dep.constraint)}');
       }
     }
   }
@@ -248,7 +279,9 @@ class DepsCommand extends PubCommand {
   /// dependency), later ones are not traversed. This is done in breadth-first
   /// fashion so that a package will always be expanded at the shallowest
   /// depth that it appears at.
-  void _outputTree() {
+  void _outputTree(
+    StringBuffer buffer,
+  ) {
     // The work list for the breadth-first traversal. It contains the package
     // being added to the tree, and the parent map that will receive that
     // package.
@@ -288,7 +321,7 @@ class DepsCommand extends PubCommand {
       }
     }
 
-    _buffer.write(tree.fromMap(packageTree, showAllChildren: true));
+    buffer.write(tree.fromMap(packageTree));
   }
 
   String _labelPackage(Package package) =>
@@ -332,7 +365,7 @@ class DepsCommand extends PubCommand {
   }
 
   /// Outputs all executables reachable from [entrypoint].
-  void _outputExecutables() {
+  void _outputExecutables(StringBuffer buffer) {
     var packages = [
       entrypoint.root,
       ...(_includeDev
@@ -345,7 +378,7 @@ class DepsCommand extends PubCommand {
     for (var package in packages) {
       var executables = package.executableNames;
       if (executables.isNotEmpty) {
-        _buffer.writeln(_formatExecutables(package.name, executables.toList()));
+        buffer.writeln(_formatExecutables(package.name, executables.toList()));
       }
     }
   }

@@ -9,7 +9,6 @@ import 'source.dart';
 import 'source/hosted.dart';
 import 'source/root.dart';
 import 'system_cache.dart';
-import 'object_hash.dart';
 
 /// A reference to a [Package], but not any particular version(s) of it.
 ///
@@ -56,7 +55,7 @@ class PackageRef {
       description == other.description;
 
   @override
-  int get hashCode => Hasher.hash(name, description);
+  int get hashCode => Object.hash(name, description);
 }
 
 /// A reference to a specific version of a package.
@@ -86,11 +85,14 @@ class PackageId {
   PackageId(this.name, this.version, this.description);
 
   /// Creates an ID for the given root package.
-  static PackageId root(Package package) => PackageId(package.name,
-      package.version, ResolvedRootDescription(RootDescription(package)));
+  static PackageId root(Package package) => PackageId(
+        package.name,
+        package.version,
+        ResolvedRootDescription(RootDescription(package)),
+      );
 
   @override
-  int get hashCode => Hasher.hash(name, version, description);
+  int get hashCode => Object.hash(name, version, description);
 
   @override
   bool operator ==(other) =>
@@ -203,7 +205,7 @@ class PackageRange {
       constraint.allows(id.version);
 
   @override
-  int get hashCode => Hasher.hash(_ref, constraint);
+  int get hashCode => Object.hash(_ref, constraint);
 
   @override
   bool operator ==(other) =>
@@ -236,15 +238,18 @@ class PackageDetail {
   /// This defaults to `false`.
   final bool showDescription;
 
-  const PackageDetail(
-      {this.showVersion, bool? showSource, bool? showDescription})
-      : showSource = showDescription == true ? true : showSource,
+  const PackageDetail({
+    this.showVersion,
+    bool? showSource,
+    bool? showDescription,
+  })  : showSource = showDescription == true ? true : showSource,
         showDescription = showDescription ?? false;
 
   /// Returns a [PackageDetail] with the maximum amount of detail between [this]
   /// and [other].
   PackageDetail max(PackageDetail other) => PackageDetail(
-      showVersion: showVersion! || other.showVersion!,
-      showSource: showSource! || other.showSource!,
-      showDescription: showDescription || other.showDescription);
+        showVersion: showVersion! || other.showVersion!,
+        showSource: showSource! || other.showSource!,
+        showDescription: showDescription || other.showDescription,
+      );
 }

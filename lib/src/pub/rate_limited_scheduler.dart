@@ -6,7 +6,6 @@ import 'dart:async';
 import 'dart:collection';
 
 import 'package:pool/pool.dart';
-import 'package:pedantic/pedantic.dart';
 
 /// Handles rate-limited scheduling of tasks.
 ///
@@ -61,9 +60,10 @@ class RateLimitedScheduler<J, V> {
   /// Jobs that have started running.
   final Set<J> _started = {};
 
-  RateLimitedScheduler(Future<V> Function(J) runJob,
-      {required int maxConcurrentOperations})
-      : _runJob = runJob,
+  RateLimitedScheduler(
+    Future<V> Function(J) runJob, {
+    required int maxConcurrentOperations,
+  })  : _runJob = runJob,
         _pool = Pool(maxConcurrentOperations);
 
   /// Pick the next task in [_queue] and run it.
@@ -111,7 +111,7 @@ class RateLimitedScheduler<J, V> {
       return await callback((jobId) {
         if (_started.contains(jobId)) return;
         final task = _Task(jobId, Zone.current);
-        _cache.putIfAbsent(jobId, () => Completer());
+        _cache.putIfAbsent(jobId, Completer.new);
         _queue.addLast(task);
         prescheduled.add(task);
 
@@ -128,7 +128,7 @@ class RateLimitedScheduler<J, V> {
   /// If [jobId] is not yet running, it will go to the front of the work queue
   /// to be scheduled next when there are free resources.
   Future<V> schedule(J jobId) {
-    final completer = _cache.putIfAbsent(jobId, () => Completer());
+    final completer = _cache.putIfAbsent(jobId, Completer.new);
     if (!_started.contains(jobId)) {
       final task = _Task(jobId, Zone.current);
       _queue.addFirst(task);

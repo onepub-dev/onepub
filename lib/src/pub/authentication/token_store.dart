@@ -29,7 +29,7 @@ class TokenStore {
   /// [Credential].
   List<Credential> _loadCredentials() {
     final result = <Credential>[];
-    final path = _tokensFile;
+    final path = tokensFile;
     if (path == null || !fileExists(path)) {
       return result;
     }
@@ -97,46 +97,47 @@ class TokenStore {
 
   /// Writes [credentials] into "pub-tokens.json".
   void _saveCredentials(List<Credential> credentials) {
-    final tokensFile = _tokensFile;
+    final tokensFile = this.tokensFile;
     if (tokensFile == null) {
       missingConfigDir();
     }
     ensureDir(path.dirname(tokensFile));
     writeTextFile(
-        tokensFile,
-        jsonEncode(<String, dynamic>{
-          'version': 1,
-          'hosted': credentials.map((it) => it.toJson()).toList(),
-        }));
+      tokensFile,
+      jsonEncode(<String, dynamic>{
+        'version': 1,
+        'hosted': credentials.map((it) => it.toJson()).toList(),
+      }),
+    );
   }
 
   /// Adds [token] into store and writes into disk.
   void addCredential(Credential token) {
-    final _credentials = _loadCredentials();
+    final credentials = _loadCredentials();
 
     // Remove duplicate tokens
-    _credentials.removeWhere((it) => it.url == token.url);
-    _credentials.add(token);
-    _saveCredentials(_credentials);
+    credentials.removeWhere((it) => it.url == token.url);
+    credentials.add(token);
+    _saveCredentials(credentials);
   }
 
   /// Removes tokens with matching [hostedUrl] from store. Returns whether or
   /// not there's a stored token with matching url.
   bool removeCredential(Uri hostedUrl) {
-    final _credentials = _loadCredentials();
+    final credentials = _loadCredentials();
 
     var i = 0;
     var found = false;
-    while (i < _credentials.length) {
-      if (_credentials[i].url == hostedUrl) {
-        _credentials.removeAt(i);
+    while (i < credentials.length) {
+      if (credentials[i].url == hostedUrl) {
+        credentials.removeAt(i);
         found = true;
       } else {
         i++;
       }
     }
 
-    _saveCredentials(_credentials);
+    _saveCredentials(credentials);
 
     return found;
   }
@@ -170,7 +171,7 @@ class TokenStore {
 
   /// Deletes pub-tokens.json file from the disk.
   void deleteTokensFile() {
-    final tokensFile = _tokensFile;
+    final tokensFile = this.tokensFile;
     if (tokensFile == null) {
       missingConfigDir();
     } else if (!fileExists(tokensFile)) {
@@ -184,7 +185,7 @@ class TokenStore {
   /// Full path to the "pub-tokens.json" file.
   ///
   /// `null` if no config directory could be found.
-  String? get _tokensFile {
+  String? get tokensFile {
     var dir = configDir;
     return dir == null ? null : path.join(dir, 'pub-tokens.json');
   }

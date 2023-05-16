@@ -4,6 +4,8 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
+import 'dart:async';
+
 import 'package:dcli/dcli.dart';
 
 import '../../api/api.dart';
@@ -21,7 +23,7 @@ import '../../util/one_pub_token_store.dart';
 ///
 /// Currently supports only adding one dependency at a time.
 class AddPrivateDependencyCommand extends AddCommand {
-  AddPrivateDependencyCommand() : super(includeSourceOptions: false);
+  AddPrivateDependencyCommand();
   @override
   String get name => 'add';
   @override
@@ -33,7 +35,7 @@ class AddPrivateDependencyCommand extends AddCommand {
   String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-add';
 
   @override
-  String? get hostUrl {
+  String hostedUrl(String? argsHostedUrl) {
     final url = OnePubSettings.use().onepubApiUrlAsString;
     print(url);
     return url;
@@ -43,9 +45,6 @@ class AddPrivateDependencyCommand extends AddCommand {
   bool get isOffline => false;
 
   @override
-  bool get hasHostOptions => hostUrl != null;
-
-  @override
   Future<void> runProtected() async {
     if (!OnePubTokenStore().isLoggedIn(OnePubSettings.use().onepubApiUrl)) {
       throw ExitException(exitCode: 1, message: '''
@@ -53,6 +52,8 @@ You must be logged in to run this command.
 run: onepub login
   ''');
     }
+
+    // cache.setDefault
     await API().checkVersion();
     await super.runProtected();
   }

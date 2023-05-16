@@ -7,7 +7,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
+import 'dart:typed_data';
 
+import 'package:convert/convert.dart';
 import 'package:crypto/crypto.dart' as crypto;
 import 'package:pub_semver/pub_semver.dart';
 import 'package:stack_trace/stack_trace.dart';
@@ -102,11 +104,15 @@ class Pair<E, F> {
 /// [Chain]. By default, this chain will contain only the local stack trace, but
 /// if [captureStackChains] is passed, it will contain the full stack chain for
 /// the error.
-Future<T> captureErrors<T>(Future<T> Function() callback,
-    {bool captureStackChains = false}) {
+Future<T> captureErrors<T>(
+  Future<T> Function() callback, {
+  bool captureStackChains = false,
+}) {
   var completer = Completer<T>();
   void wrappedCallback() {
-    Future.sync(callback).then(completer.complete).catchError((e, stackTrace) {
+    Future.sync(callback)
+        .then(completer.complete)
+        .catchError((Object e, StackTrace? stackTrace) {
       // [stackTrace] can be null if we're running without [captureStackChains],
       // since dart:io will often throw errors without stack traces.
       if (stackTrace != null) {
@@ -114,14 +120,19 @@ Future<T> captureErrors<T>(Future<T> Function() callback,
       } else {
         stackTrace = Chain([]);
       }
-      if (!completer.isCompleted) completer.completeError(e, stackTrace);
+      if (!completer.isCompleted) {
+        completer.completeError(e, stackTrace);
+      }
     });
   }
 
   if (captureStackChains) {
-    Chain.capture(wrappedCallback, onError: (error, stackTrace) {
-      if (!completer.isCompleted) completer.completeError(error, stackTrace);
-    });
+    Chain.capture(
+      wrappedCallback,
+      onError: (error, stackTrace) {
+        if (!completer.isCompleted) completer.completeError(error, stackTrace);
+      },
+    );
   } else {
     runZonedGuarded(wrappedCallback, (e, stackTrace) {
       stackTrace = Chain([Trace.from(stackTrace)]);
@@ -138,12 +149,15 @@ Future<T> captureErrors<T>(Future<T> Function() callback,
 ///
 /// This will wrap the first error thrown in a [SilentException] and rethrow it.
 Future<List<T>> waitAndPrintErrors<T>(Iterable<Future<T>> futures) {
-  return Future.wait(futures.map((future) {
-    return future.catchError((error, stackTrace) {
-      log.exception(error, stackTrace);
-      throw error;
-    });
-  })).catchError((error, stackTrace) {
+  return Future.wait(
+    futures.map((future) {
+      return future.catchError((Object error, StackTrace? stackTrace) {
+        log.exception(error, stackTrace);
+        // ignore: only_throw_errors
+        throw error;
+      });
+    }),
+  ).catchError((Object error, StackTrace? stackTrace) {
     throw SilentException(error, stackTrace);
   });
 }
@@ -153,10 +167,12 @@ Future<List<T>> waitAndPrintErrors<T>(Iterable<Future<T>> futures) {
 ///
 /// The stream will be passed through unchanged.
 StreamTransformer<T, T> onDoneTransformer<T>(void Function() onDone) {
-  return StreamTransformer<T, T>.fromHandlers(handleDone: (sink) {
-    onDone();
-    sink.close();
-  });
+  return StreamTransformer<T, T>.fromHandlers(
+    handleDone: (sink) {
+      onDone();
+      sink.close();
+    },
+  );
 }
 
 /// Pads [source] to [length] by adding [char]s at the beginning.
@@ -186,7 +202,7 @@ String namedSequence(String name, Iterable iter, [String? plural]) {
 /// commas and/or [conjunction] (`"and"` by default) where appropriate.
 String toSentence(Iterable iter, {String conjunction = 'and'}) {
   if (iter.length == 1) return iter.first.toString();
-  return iter.take(iter.length - 1).join(', ') + ' $conjunction ${iter.last}';
+  return '${iter.take(iter.length - 1).join(', ')} $conjunction ${iter.last}';
 }
 
 /// Returns [name] if [number] is 1, or the plural of [name] otherwise.
@@ -195,8 +211,7 @@ String toSentence(Iterable iter, {String conjunction = 'and'}) {
 /// [plural] is passed, that's used instead.
 String pluralize(String name, int number, {String? plural}) {
   if (number == 1) return name;
-  if (plural != null) return plural;
-  return '${name}s';
+  return plural ?? '${name}s';
 }
 
 /// Returns [text] with the first letter capitalized.
@@ -277,7 +292,7 @@ Future<S?> minByAsync<S, T>(
 ) async {
   int? minIndex;
   T? minOrderBy;
-  List valuesList = values.toList();
+  var valuesList = values.toList();
   final orderByResults = await Future.wait(values.map(orderBy));
   for (var i = 0; i < orderByResults.length; i++) {
     final elementOrderBy = orderByResults[i];
@@ -297,18 +312,27 @@ Future<S?> minByAsync<S, T>(
 Iterable<T> slice<T>(Iterable<T> values, int start, int end) {
   if (end <= start) {
     throw RangeError.range(
-        end, start + 1, null, 'end', 'must be greater than start');
+      end,
+      start + 1,
+      null,
+      'end',
+      'must be greater than start',
+    );
   }
   return values.skip(start).take(end - start);
 }
 
 /// Like [Iterable.fold], but for an asynchronous [combine] function.
-Future<S> foldAsync<S, T>(Iterable<T> values, S initialValue,
-        Future<S> Function(S previous, T element) combine) =>
+Future<S> foldAsync<S, T>(
+  Iterable<T> values,
+  S initialValue,
+  Future<S> Function(S previous, T element) combine,
+) =>
     values.fold(
-        Future.value(initialValue),
-        (previousFuture, element) =>
-            previousFuture.then((previous) => combine(previous, element)));
+      Future.value(initialValue),
+      (previousFuture, element) =>
+          previousFuture.then((previous) => combine(previous, element)),
+    );
 
 /// Replace each instance of [matcher] in [source] with the return value of
 /// [fn].
@@ -327,6 +351,10 @@ String replace(String source, Pattern matcher, String Function(Match) fn) {
 /// Returns the hex-encoded sha1 hash of [source].
 String sha1(String source) =>
     crypto.sha1.convert(utf8.encode(source)).toString();
+
+String hexEncode(List<int> bytes) => hex.encode(bytes);
+
+Uint8List hexDecode(String string) => hex.decode(string) as Uint8List;
 
 /// A regular expression matching a trailing CR character.
 final _trailingCR = RegExp(r'\r$');
@@ -389,8 +417,14 @@ String niceDuration(Duration duration) {
 String _urlDecode(String encoded) =>
     Uri.decodeComponent(encoded.replaceAll('+', ' '));
 
-/// Set to `true` if ANSI colors should be output regardless of terminalD
-bool forceColors = false;
+enum ForceColorOption {
+  always,
+  never,
+  auto,
+}
+
+/// Change to decide if ANSI colors should be output regardless of terminalD.
+ForceColorOption forceColors = ForceColorOption.auto;
 
 /// Whether ansi codes such as color escapes are safe to use.
 ///
@@ -398,8 +432,18 @@ bool forceColors = false;
 ///
 /// Tests should make sure to run the subprocess with or without an attached
 /// terminal to decide if colors will be provided.
-bool get canUseAnsiCodes =>
-    forceColors || (stdout.hasTerminal && stdout.supportsAnsiEscapes);
+bool get canUseAnsiCodes {
+  switch (forceColors) {
+    case ForceColorOption.always:
+      return true;
+    case ForceColorOption.never:
+      return false;
+    case ForceColorOption.auto:
+      return (!Platform.environment.containsKey('NO_COLOR')) &&
+          terminalOutputForStdout &&
+          stdout.supportsAnsiEscapes;
+  }
+}
 
 /// Gets an ANSI escape if those are supported by stdout (or nothing).
 String getAnsi(String ansiCode) => canUseAnsiCodes ? ansiCode : '';
@@ -417,7 +461,7 @@ bool get canUseUnicode =>
     // The tests support unicode also on windows.
     runningFromTest ||
     // When not outputting to terminal we can also use unicode.
-    !stdout.hasTerminal ||
+    !terminalOutputForStdout ||
     !Platform.isWindows ||
     Platform.environment.containsKey('WT_SESSION');
 
@@ -447,7 +491,7 @@ final _unquotableYamlString = RegExp(r'^[a-zA-Z_-][a-zA-Z_0-9-]*$');
 String yamlToString(data) {
   var buffer = StringBuffer();
 
-  void _stringify(bool isMapValue, String indent, data) {
+  void stringify(bool isMapValue, String indent, data) {
     // TODO(nweiz): Serialize using the YAML library once it supports
     // serialization.
 
@@ -473,7 +517,7 @@ String yamlToString(data) {
         }
 
         buffer.write('$indent$keyString:');
-        _stringify(true, indent, data[key]);
+        stringify(true, indent, data[key]);
       }
 
       return;
@@ -495,7 +539,7 @@ String yamlToString(data) {
     }
   }
 
-  _stringify(false, '', data);
+  stringify(false, '', data);
   return buffer.toString();
 }
 
@@ -622,3 +666,83 @@ Map<K2, V2> mapMap<K1, V1, K2, V2>(
       key(entry.key, entry.value): value(entry.key, entry.value),
   };
 }
+
+/// Compares two lists. If the lists have equal length this comparison will
+/// iterate all elements, thus taking a fixed amount of time making timing
+/// attacks harder.
+bool fixedTimeBytesEquals(List<int>? a, List<int>? b) {
+  if (a == null || b == null) return a == b;
+  if (a.length != b.length) return false;
+  var e = 0;
+  for (var i = 0; i < a.length; i++) {
+    e |= a[i] ^ b[i];
+  }
+  return e == 0;
+}
+
+/// Call [fn] retrying so long as [retryIf] return `true` for the exception
+/// thrown, up-to [maxAttempts] times.
+///
+/// Defaults to 8 attempts, sleeping as following after 1st, 2nd, 3rd, ...,
+/// 7th attempt:
+///  1. 400 ms +/- 25%
+///  2. 800 ms +/- 25%
+///  3. 1600 ms +/- 25%
+///  4. 3200 ms +/- 25%
+///  5. 6400 ms +/- 25%
+///  6. 12800 ms +/- 25%
+///  7. 25600 ms +/- 25%
+///
+/// ```dart
+/// final response = await retry(
+///   // Make a GET request
+///   () => http.get('https://google.com').timeout(Duration(seconds: 5)),
+///   // Retry on SocketException or TimeoutException
+///   retryIf: (e) => e is SocketException || e is TimeoutException,
+/// );
+/// print(response.body);
+/// ```
+///
+/// If no [retryIf] function is given this will retry any for any [Exception]
+/// thrown. To retry on an [Error], the error must be caught and _rethrown_
+/// as an [Exception].
+///
+/// See https://github.com/google/dart-neats/blob/master/retry/lib/retry.dart
+Future<T> retry<T>(
+  FutureOr<T> Function() fn, {
+  Duration delayFactor = const Duration(milliseconds: 200),
+  double randomizationFactor = 0.25,
+  Duration maxDelay = const Duration(seconds: 30),
+  int maxAttempts = 8,
+  FutureOr<bool> Function(Exception)? retryIf,
+  FutureOr<void> Function(Exception, int attemptNumber)? onRetry,
+}) async {
+  var attempt = 0;
+  // ignore: literal_only_boolean_expressions
+  while (true) {
+    attempt++; // first invocation is the first attempt
+    try {
+      return await fn();
+    } on Exception catch (e) {
+      if (attempt >= maxAttempts || (retryIf != null && !(await retryIf(e)))) {
+        rethrow;
+      }
+
+      if (onRetry != null) {
+        await onRetry(e, attempt + 1);
+      }
+    }
+
+    // Sleep for a delay
+    final rf = randomizationFactor * (random.nextDouble() * 2 - 1) + 1;
+    final exp = math.min(attempt, 31); // prevent overflows.
+    final delay = delayFactor * math.pow(2.0, exp) * rf;
+    await Future.delayed(delay < maxDelay ? delay : maxDelay);
+  }
+}
+
+bool asBool(dynamic value, {bool whenNull = false}) =>
+    value as bool? ?? whenNull;
+
+String asString(dynamic value, {String whenNull = ''}) =>
+    value as String? ?? whenNull;

@@ -10,12 +10,14 @@ import 'package:http/http.dart' as http;
 import '../ascii_tree.dart' as tree;
 import '../authentication/client.dart';
 import '../command.dart';
+import '../command_runner.dart';
 import '../exceptions.dart' show DataException;
 import '../exit_codes.dart' as exit_codes;
 import '../http.dart';
 import '../io.dart';
 import '../log.dart' as log;
 import '../oauth2.dart' as oauth2;
+import '../solver/type.dart';
 import '../source/hosted.dart' show validateAndNormalizeHostedUrl;
 import '../utils.dart';
 import '../validator.dart';
@@ -25,7 +27,7 @@ class LishCommand extends PubCommand {
   @override
   String get name => 'publish';
   @override
-  String get description => 'Publish the current package to pub.dartlang.org.';
+  String get description => 'Publish the current package to pub.dev.';
   @override
   String get argumentsDescription => '[options]';
   @override
@@ -38,7 +40,7 @@ class LishCommand extends PubCommand {
     // An explicit argument takes precedence.
     if (argResults.wasParsed('server')) {
       try {
-        return validateAndNormalizeHostedUrl(argResults['server']);
+        return validateAndNormalizeHostedUrl(asString(argResults['server']));
       } on FormatException catch (e) {
         usageException('Invalid server: $e');
       }
@@ -59,26 +61,44 @@ class LishCommand extends PubCommand {
   }();
 
   /// Whether the publish is just a preview.
-  bool get dryRun => argResults['dry-run'];
+  bool get dryRun => asBool(argResults['dry-run']);
 
   /// Whether the publish requires confirmation.
-  bool get force => argResults['force'];
+  bool get force => asBool(argResults['force']);
+
+  bool get skipValidation => asBool(argResults['skip-validation']);
 
   LishCommand() {
-    argParser.addFlag('dry-run',
-        abbr: 'n',
-        negatable: false,
-        help: 'Validate but do not publish the package.');
-    argParser.addFlag('force',
-        abbr: 'f',
-        negatable: false,
-        help: 'Publish without confirmation if there are no errors.');
-    argParser.addOption('server',
-        help: 'The package server to which to upload this package.',
-        hide: true);
+    argParser.addFlag(
+      'dry-run',
+      abbr: 'n',
+      negatable: false,
+      help: 'Validate but do not publish the package.',
+    );
+    argParser.addFlag(
+      'force',
+      abbr: 'f',
+      negatable: false,
+      help: 'Publish without confirmation if there are no errors.',
+    );
+    argParser.addFlag(
+      'skip-validation',
+      negatable: false,
+      help:
+          'Publish without validation and resolution (this will ignore errors).',
+    );
+    argParser.addOption(
+      'server',
+      help: 'The package server to which to upload this package.',
+      hide: true,
+    );
 
-    argParser.addOption('directory',
-        abbr: 'C', help: 'Run this in the directory<dir>.', valueHelp: 'dir');
+    argParser.addOption(
+      'directory',
+      abbr: 'C',
+      help: 'Run this in the directory <dir>.',
+      valueHelp: 'dir',
+    );
   }
 
   Future<void> _publishUsingClient(
@@ -89,52 +109,74 @@ class LishCommand extends PubCommand {
 
     try {
       await log.progress('Uploading', () async {
-        var newUri = host.resolve('api/packages/versions/new');
-        var response = await client.get(newUri, headers: pubApiHeaders);
-        var parameters = parseJsonResponse(response);
+        /// 1. Initiate upload
+        final parametersResponse =
+            await retryForHttp('initiating upload', () async {
+          final request =
+              http.Request('GET', host.resolve('api/packages/versions/new'));
+          request.attachPubApiHeaders();
+          request.attachMetadataHeaders();
+          return await client.fetch(request);
+        });
+        final parameters = parseJsonResponse(parametersResponse);
 
-        var url = _expectField(parameters, 'url', response);
-        if (url is! String) invalidServerResponse(response);
+        /// 2. Upload package
+        var url = _expectField(parameters, 'url', parametersResponse);
+        if (url is! String) invalidServerResponse(parametersResponse);
         cloudStorageUrl = Uri.parse(url);
-        // TODO(nweiz): Cloud Storage can provide an XML-formatted error. We
-        // should report that error and exit.
-        var request = http.MultipartRequest('POST', cloudStorageUrl!);
+        final uploadResponse =
+            await retryForHttp('uploading package', () async {
+          // TODO(nweiz): Cloud Storage can provide an XML-formatted error. We
+          // should report that error and exit.
+          var request = http.MultipartRequest('POST', cloudStorageUrl!);
 
-        var fields = _expectField(parameters, 'fields', response);
-        if (fields is! Map) invalidServerResponse(response);
-        fields.forEach((key, value) {
-          if (value is! String) invalidServerResponse(response);
-          request.fields[key] = value;
+          var fields = _expectField(parameters, 'fields', parametersResponse);
+          if (fields is! Map) invalidServerResponse(parametersResponse);
+          fields.forEach((key, value) {
+            if (value is! String) invalidServerResponse(parametersResponse);
+            request.fields[key as String] = value;
+          });
+
+          request.followRedirects = false;
+          request.files.add(
+            http.MultipartFile.fromBytes(
+              'file',
+              packageBytes,
+              filename: 'package.tar.gz',
+            ),
+          );
+          return await client.fetch(request);
         });
 
-        request.followRedirects = false;
-        request.files.add(http.MultipartFile.fromBytes('file', packageBytes,
-            filename: 'package.tar.gz'));
-        var postResponse =
-            await http.Response.fromStream(await client.send(request));
-
-        var location = postResponse.headers['location'];
-        if (location == null) throw PubHttpException(postResponse);
-        handleJsonSuccess(
-            await client.get(Uri.parse(location), headers: pubApiHeaders));
+        /// 3. Finalize publish
+        var location = uploadResponse.headers['location'];
+        if (location == null) throw PubHttpResponseException(uploadResponse);
+        final finalizeResponse =
+            await retryForHttp('finalizing publish', () async {
+          final request = http.Request('GET', Uri.parse(location));
+          request.attachPubApiHeaders();
+          request.attachMetadataHeaders();
+          return await client.fetch(request);
+        });
+        handleJsonSuccess(finalizeResponse);
       });
     } on AuthenticationException catch (error) {
       var msg = '';
       if (error.statusCode == 401) {
         msg += '$host package repository requested authentication!\n'
             'You can provide credentials using:\n'
-            '    pub token add $host\n';
+            '    $topLevelProgram pub token add $host\n';
       }
       if (error.statusCode == 403) {
         msg += 'Insufficient permissions to the resource at the $host '
             'package repository.\nYou can modify credentials using:\n'
-            '    pub token add $host\n';
+            '    $topLevelProgram pub token add $host\n';
       }
       if (error.serverMessage != null) {
-        msg += '\n' + error.serverMessage! + '\n';
+        msg += '\n${error.serverMessage!}\n';
       }
       dataError(msg + log.red('Authentication failed!'));
-    } on PubHttpException catch (error) {
+    } on PubHttpResponseException catch (error) {
       var url = error.response.request!.url;
       if (url == cloudStorageUrl) {
         // TODO(nweiz): the response may have XML-formatted information about
@@ -152,9 +194,9 @@ class LishCommand extends PubCommand {
   Future<void> _publish(List<int> packageBytes) async {
     try {
       final officialPubServers = {
-        'https://pub.dartlang.org',
-        // [validateAndNormalizeHostedUrl] normalizes https://pub.dev to
-        // https://pub.dartlang.org, so we don't need to do allow that here.
+        'https://pub.dev',
+        // [validateAndNormalizeHostedUrl] normalizes https://pub.dartlang.org
+        // to https://pub.dev, so we don't need to do allow that here.
 
         // Pub uses oauth2 credentials only for authenticating official pub
         // servers for security purposes (to not expose pub.dev access token to
@@ -169,14 +211,14 @@ class LishCommand extends PubCommand {
       };
 
       // Using OAuth2 authentication client for the official pub servers
-      final isOfficalServer = officialPubServers.contains(host.toString());
-      if (isOfficalServer && !cache.tokenStore.hasCredential(host)) {
+      final isOfficialServer = officialPubServers.contains(host.toString());
+      if (isOfficialServer && !cache.tokenStore.hasCredential(host)) {
         // Using OAuth2 authentication client for the official pub servers, when
         // we don't have an explicit token from [TokenStore] to use instead.
         //
         // This allows us to use `dart pub token add` to inject a token for use
         // with the official servers.
-        await oauth2.withClient(cache, (client) {
+        await oauth2.withClient((client) {
           return _publishUsingClient(packageBytes, client);
         });
       } else {
@@ -185,7 +227,7 @@ class LishCommand extends PubCommand {
           return _publishUsingClient(packageBytes, client);
         });
       }
-    } on PubHttpException catch (error) {
+    } on PubHttpResponseException catch (error) {
       var url = error.response.request!.url;
       if (Uri.parse(url.origin) == Uri.parse(host.origin)) {
         handleJsonError(error.response);
@@ -198,7 +240,7 @@ class LishCommand extends PubCommand {
   @override
   Future runProtected() async {
     if (argResults.wasParsed('server')) {
-      await log.warningsOnlyUnlessTerminal(() {
+      await log.errorsOnlyUnlessTerminal(() {
         log.message(
           '''
 The --server option is deprecated. Use `publish_to` in your pubspec.yaml or set
@@ -217,20 +259,34 @@ the \$PUB_HOSTED_URL environment variable.''',
           'pubspec.');
     }
 
+    if (!skipValidation) {
+      await entrypoint.acquireDependencies(SolveType.get, analytics: analytics);
+    } else {
+      log.warning(
+        'Running with `skip-validation`. No client-side validation is done.',
+      );
+    }
+
     var files = entrypoint.root.listFiles();
     log.fine('Archiving and publishing ${entrypoint.root.name}.');
 
     // Show the package contents so the user can verify they look OK.
     var package = entrypoint.root;
-    log.message('Publishing ${package.name} ${package.version} to $host:\n'
-        '${tree.fromFiles(files, baseDir: entrypoint.root.dir)}');
+    log.message(
+      'Publishing ${package.name} ${package.version} to $host:\n'
+      '${tree.fromFiles(files, baseDir: entrypoint.rootDir, showFileSizes: true)}',
+    );
 
     var packageBytesFuture =
-        createTarGz(files, baseDir: entrypoint.root.dir).toBytes();
+        createTarGz(files, baseDir: entrypoint.rootDir).toBytes();
 
     // Validate the package.
-    var isValid = await _validate(
-        packageBytesFuture.then((bytes) => bytes.length), files);
+    var isValid = skipValidation
+        ? true
+        : await _validate(
+            packageBytesFuture.then((bytes) => bytes.length),
+            files,
+          );
     if (!isValid) {
       overrideExitCode(exit_codes.DATA);
       return;
@@ -256,14 +312,17 @@ the \$PUB_HOSTED_URL environment variable.''',
     final warnings = <String>[];
     final errors = <String>[];
 
-    await Validator.runAll(
-      entrypoint,
-      packageSize,
-      host,
-      files,
-      hints: hints,
-      warnings: warnings,
-      errors: errors,
+    await log.spinner(
+      'Validating package',
+      () async => await Validator.runAll(
+        entrypoint,
+        packageSize,
+        host,
+        files,
+        hints: hints,
+        warnings: warnings,
+        errors: errors,
+      ),
     );
 
     if (errors.isNotEmpty) {
@@ -277,10 +336,11 @@ the \$PUB_HOSTED_URL environment variable.''',
     if (force) return true;
 
     String formatWarningCount() {
-      final hs = hints.length == 1 ? '' : 's';
-      final hintText = hints.isEmpty ? '' : ' and ${hints.length} hint$hs.';
-      final ws = warnings.length == 1 ? '' : 's';
-      return '\nPackage has ${warnings.length} warning$ws$hintText.';
+      final hintText = hints.isEmpty
+          ? ''
+          : ' and ${hints.length} ${pluralize('hint', hints.length)}';
+      return '\nPackage has ${warnings.length} '
+          '${pluralize('warning', warnings.length)}$hintText.';
     }
 
     if (dryRun) {
@@ -292,7 +352,8 @@ the \$PUB_HOSTED_URL environment variable.''',
         '\nPolicy details are available at https://pub.dev/policy');
 
     final package = entrypoint.root;
-    var message = 'Do you want to publish ${package.name} ${package.version}';
+    var message =
+        'Do you want to publish ${package.name} ${package.version} to $host';
 
     if (warnings.isNotEmpty || hints.isNotEmpty) {
       final warning = formatWarningCount();

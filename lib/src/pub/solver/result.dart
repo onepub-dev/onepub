@@ -16,8 +16,6 @@ import '../pubspec.dart';
 import '../source/cached.dart';
 import '../source/hosted.dart';
 import '../system_cache.dart';
-import 'report.dart';
-import 'type.dart';
 
 /// The result of a successful version resolution.
 class SolveResult {
@@ -50,43 +48,66 @@ class SolveResult {
   /// The wall clock time the resolution took.
   final Duration resolutionTime;
 
-  /// The [LockFile] representing the packages selected by this version
-  /// resolution.
-  LockFile get lockFile {
+  /// Downloads all the cached packages selected by this version resolution.
+  ///
+  /// If some already cached package differs from what is provided by the server
+  /// (according to the content-hash) a warning is printed and the package is
+  /// redownloaded.
+  ///
+  /// Returns the [LockFile] representing the packages selected by this version
+  /// resolution. Any resolved [PackageId]s will correspond to those in the
+  /// cache (and thus to the one provided by the server).
+  ///
+  /// If there is a mismatch between the previous content-hash from pubspec.lock
+  /// and the new one a warning will be printed but the new one will be
+  /// returned.
+  Future<LockFile> downloadCachedPackages(SystemCache cache) async {
+    final resolvedPackageIds = await Future.wait(
+      packages.map((id) async {
+        if (id.source is CachedSource) {
+          return await withDependencyType(_root.pubspec.dependencyType(id.name),
+              () async {
+            return (await cache.downloadPackage(
+              id,
+            ))
+                .packageId;
+          });
+        }
+        return id;
+      }),
+    );
+
+    // Invariant: the content-hashes in PUB_CACHE matches those provided by the
+    // server.
+
     // Don't factor in overridden dependencies' SDK constraints, because we'll
     // accept those packages even if their constraints don't match.
     var nonOverrides = pubspecs.values
         .where(
-            (pubspec) => !_root.dependencyOverrides.containsKey(pubspec.name))
+          (pubspec) => !_root.dependencyOverrides.containsKey(pubspec.name),
+        )
         .toList();
 
     var sdkConstraints = <String, VersionConstraint>{};
     for (var pubspec in nonOverrides) {
       pubspec.sdkConstraints.forEach((identifier, constraint) {
-        sdkConstraints[identifier] = constraint
+        sdkConstraints[identifier] = constraint.effectiveConstraint
             .intersect(sdkConstraints[identifier] ?? VersionConstraint.any);
       });
     }
-
-    return LockFile(packages,
-        sdkConstraints: sdkConstraints,
-        mainDependencies: MapKeySet(_root.dependencies),
-        devDependencies: MapKeySet(_root.devDependencies),
-        overriddenDependencies: MapKeySet(_root.dependencyOverrides));
+    return LockFile(
+      resolvedPackageIds,
+      sdkConstraints: {
+        for (final MapEntry(:key, :value) in sdkConstraints.entries)
+          key: SdkConstraint(value),
+      },
+      mainDependencies: MapKeySet(_root.dependencies),
+      devDependencies: MapKeySet(_root.devDependencies),
+      overriddenDependencies: MapKeySet(_root.dependencyOverrides),
+    );
   }
 
   final LockFile _previousLockFile;
-
-  /// Downloads all cached packages in [packages].
-  Future<void> downloadCachedPackages(SystemCache cache) async {
-    await Future.wait(packages.map((id) async {
-      final source = id.source;
-      if (source is! CachedSource) return;
-      return await withDependencyType(_root.dependencyType(id.name), () async {
-        await source.downloadToSystemCache(id, cache);
-      });
-    }));
-  }
 
   /// Returns the names of all packages that were changed.
   ///
@@ -97,37 +118,22 @@ class SolveResult {
         .map((id) => id.name)
         .toSet();
 
-    return changed.union(_previousLockFile.packages.keys
-        .where((package) => !availableVersions.containsKey(package))
-        .toSet());
+    return changed.union(
+      _previousLockFile.packages.keys
+          .where((package) => !availableVersions.containsKey(package))
+          .toSet(),
+    );
   }
 
-  SolveResult(this._root, this._previousLockFile, this.packages, this.pubspecs,
-      this.availableVersions, this.attemptedSolutions, this.resolutionTime);
-
-  /// Displays a report of what changes were made to the lockfile.
-  ///
-  /// [type] is the type of version resolution that was run.
-  Future<void> showReport(SolveType type, SystemCache cache) async {
-    await SolveReport(type, _root, _previousLockFile, this, cache).show();
-  }
-
-  /// Displays a one-line message summarizing what changes were made (or would
-  /// be made) to the lockfile.
-  ///
-  /// If [type] is `SolveType.UPGRADE` it also shows the number of packages
-  /// that are not at the latest available version.
-  ///
-  /// [type] is the type of version resolution that was run.
-  Future<void> summarizeChanges(SolveType type, SystemCache cache,
-      {bool dryRun = false}) async {
-    final report = SolveReport(type, _root, _previousLockFile, this, cache);
-    report.summarize(dryRun: dryRun);
-    if (type == SolveType.upgrade) {
-      await report.reportDiscontinued();
-      report.reportOutdated();
-    }
-  }
+  SolveResult(
+    this._root,
+    this._previousLockFile,
+    this.packages,
+    this.pubspecs,
+    this.availableVersions,
+    this.attemptedSolutions,
+    this.resolutionTime,
+  );
 
   /// Send analytics about the package resolution.
   void sendAnalytics(PubAnalytics pubAnalytics) {
@@ -151,7 +157,7 @@ class SolveResult {
         DependencyType.dev: 'dev',
         DependencyType.direct: 'direct',
         DependencyType.none: 'transitive'
-      }[_root.dependencyType(package.name)]!;
+      }[_root.pubspec.dependencyType(package.name)]!;
       analytics.sendEvent(
         'pub-get',
         package.name,
@@ -163,7 +169,8 @@ class SolveResult {
         },
       );
       log.fine(
-          'Sending analytics hit for "pub-get" of ${package.name} version ${package.version} as dependency-kind $dependencyKind');
+        'Sending analytics hit for "pub-get" of ${package.name} version ${package.version} as dependency-kind $dependencyKind',
+      );
     }
 
     analytics.sendTiming(
@@ -172,7 +179,8 @@ class SolveResult {
       category: 'pub-get',
     );
     log.fine(
-        'Sending analytics timing "pub-get" took ${resolutionTime.inMilliseconds} miliseconds');
+      'Sending analytics timing "pub-get" took ${resolutionTime.inMilliseconds} miliseconds',
+    );
   }
 
   @override
