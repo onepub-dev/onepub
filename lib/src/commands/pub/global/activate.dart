@@ -49,14 +49,13 @@ run: onepub login
 
     final onepubApiUrl = OnePubSettings.use().onepubApiUrlAsString;
 
-    final package = readArg('No package to activate given.');
+    final package = readArg('Please provide a package name to activate');
 
     PackageRef ref;
     try {
-      ref = cache.hosted
-          .refFor(package, url: argResults['hosted-url'] as String?);
+      ref = cache.hosted.refFor(package, url: onepubApiUrl);
     } on FormatException catch (e) {
-      usageException('Invalid hosted-url: $e');
+      usageException('Invalid OnePub Url: $e');
     }
 
     // Parse the version constraint, if there is one.
@@ -74,7 +73,6 @@ run: onepub login
       ref.withConstraint(constraint),
       null, // all executables
       overwriteBinStubs: true,
-      url: onepubApiUrl,
     );
 
     // print('${blue('Successfully activated into $organisationName.')}');

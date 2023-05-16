@@ -1,4 +1,4 @@
-include: package:extra_pedantic/analysis_options.2.0.0.yaml
+include: package:lints/recommended.yaml
 
 analyzer:
   language:
@@ -15,3 +15,4 @@ linter:
     no_default_cases: false
     prefer_asserts_with_message: false # We only use asserts for library-internal invariants
     prefer_final_parameters: false # Too much noise
+    constant_identifier_names: false

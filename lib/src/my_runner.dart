@@ -63,6 +63,8 @@ class MyRunner extends CommandRunner<int> implements PubTopLevel {
   CommandSet commandSet;
 
   void init() {
+    PubTopLevel.addColorFlag(argParser);
+
     results = argParser.parse(args);
 
     Settings().setVerbose(enabled: results['debug'] as bool);
@@ -110,6 +112,7 @@ class MyRunner extends CommandRunner<int> implements PubTopLevel {
         defaultsTo: '.',
         valueHelp: 'dir',
       );
+
     addCommand(LishCommand());
     addCommand(GetCommand());
     addCommand(AddCommand());
