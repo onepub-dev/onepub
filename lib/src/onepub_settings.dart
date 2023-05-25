@@ -269,8 +269,6 @@ class OnePubSettings {
 
   ///
   void config({required bool dev}) {
-    print('Configure OnePub');
-
     promptForConfig(dev: dev);
   }
 
@@ -279,6 +277,7 @@ class OnePubSettings {
   void promptForConfig({required bool dev}) {
     var url = OnePubSettings.defaultOnePubUrl;
     if (dev) {
+      print('Configure OnePub');
       url = ask('OnePub URL:', validator: UrlValidator(), defaultValue: url);
       testingFlagPath.write('onepubtesting');
     }
