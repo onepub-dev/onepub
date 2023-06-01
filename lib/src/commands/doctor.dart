@@ -8,13 +8,15 @@ import 'dart:io';
 
 import 'package:args/command_runner.dart';
 import 'package:dcli/dcli.dart';
-import 'package:pub_semver/pub_semver.dart';
 import 'package:strings_xxx/strings.dart';
 
 import '../api/api.dart';
 import '../onepub_settings.dart';
 import '../util/one_pub_token_store.dart';
-import '../version/version.g.dart';
+
+/// The major version of the server this version of onepub is
+/// compatible with.
+const serverMajorVersion = 4;
 
 ///
 class DoctorCommand extends Command<int> {
@@ -119,7 +121,7 @@ run: onepub login'''));
         print('');
         print('Server Version: ${status.version}');
 
-        if (Version.parse(packageVersion).major != status.version.major) {
+        if (serverMajorVersion != status.version.major) {
           print(red('${'*' * 40} ERROR ${'*' * 40}'));
           print(red(
               'The OnePub Server version does not match your onepub version.'));
