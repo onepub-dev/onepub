@@ -1,3 +1,6 @@
+# 3.2.1
+ - Fixes #528 - server version mis-match for dart 2.19.x
+
 # 3.2.0
 - Legacy patch to fix issue with 2.19 not being supported.
 - Fixed the server version comparision so this legacy version will run 

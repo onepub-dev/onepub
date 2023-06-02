@@ -48,7 +48,7 @@ class TestUsers {
       emailAddress: emailAddress,
       firstname: 'One',
       lastname: 'Member',
-      role: RoleEnum.Member);
+      role: RoleEnum.Collaborator);
 
   //   Future<Member> createCICDMember(String emailAddress) async
   //    => _fetchOrCreate(

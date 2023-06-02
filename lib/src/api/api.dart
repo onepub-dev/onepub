@@ -15,11 +15,15 @@ import 'organisation.dart';
 import 'status.dart';
 import 'versions.dart';
 
+/// The major version of the server this version of onepub is
+/// compatible with.
+const supportedApiVersion = 4;
+
 class API {
   Future<void> checkVersion() async {
     final result = await status();
 
-    if (result.version.major != Version.parse(packageVersion).major) {
+    if (!isCompatible(result.version)) {
       throw ExitException(exitCode: -1, message: '''
 The server's major version "${result.version.major}" does not match your onepub version.
 
@@ -28,6 +32,9 @@ dart pub global activate onepub
           ''');
     }
   }
+
+  static bool isCompatible(Version serverVersion) =>
+      supportedApiVersion == serverVersion.major;
 
   Future<Status> status() async {
     try {

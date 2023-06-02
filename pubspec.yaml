@@ -1,7 +1,8 @@
 name: onepub
-version: 3.2.0
+version: 3.2.1
 homepage: https://onepub.dev
 documentation: https://docs.onepub.dev
+publish_to: https://onepub.dev/api/jbbxpsdavu/
 description: Command line tools for the OnePub private Dart/Flutter repository.
 repository: https://github.com/onepub-dev/onepub
 environment: 

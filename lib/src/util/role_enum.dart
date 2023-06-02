@@ -11,9 +11,11 @@ enum RoleEnum {
   Administrator,
   Uploader,
   TeamLeader,
-  Member,
+  Collaborator,
+  Customer,
   PackageLicensee,
-  DartDocumenter
+  DartDocumenter,
+  CICD
 }
 
 extension RoleEnumHelper on RoleEnum {

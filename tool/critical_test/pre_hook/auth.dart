@@ -4,8 +4,10 @@ import 'dart:io';
 
 import 'package:dcli/dcli.dart';
 import 'package:onepub/src/api/member.dart';
+import 'package:onepub/src/exceptions.dart';
 import 'package:onepub/src/onepub_settings.dart';
 import 'package:onepub/src/util/one_pub_token_store.dart';
+import 'package:onepub/src/util/role_enum.dart';
 
 /// Called by Critical Test when running unit tests
 ///
@@ -39,6 +41,39 @@ Future<void> main(List<String> args) async {
 
   await preConditionIsLoggedIn();
 }
+
+/// Check that the user is logged in before we proceed.
+Future<void> preConditionIsLoggedIn() async {
+  if (OnePubSettings.use()
+      .onepubApiUrl
+      .toString()
+      .startsWith('https://onepub.dev')) {
+    printerr(red(
+        'You need to modify ~/.onepub/onepub.yaml:onepubUri to use a non-production system to run this test'));
+    exit(1);
+  }
+  final tokenStore = OnePubTokenStore();
+  if (!tokenStore.isLoggedIn(OnePubSettings.use().onepubApiUrl)) {
+    printerr(red('Please use onepub import to import a '
+        'System Administrator from the test db'));
+    exit(1);
+  }
+
+  try {
+    final member = await Member.loggedInMember();
+
+    if (!member.hasRole(RoleEnum.SystemAdministrator)) {
+      printerr(red(
+          'The Imported user ${member.email} is not a System Administrator'));
+      exit(1);
+    }
+  } on CredentialsException catch (e) {
+    printerr(e.message);
+    exit(1);
+  }
+}
+
+
 
 // await withTestSettings((testSettings) async {
 
@@ -87,18 +122,3 @@ Future<void> main(List<String> args) async {
 //     'dart $pathToOnePubExe login'.run;
 //   }
 // }
-
-/// Check that the user is logged in before we proceed.
-Future<void> preConditionIsLoggedIn() async {
-  final tokenStore = OnePubTokenStore();
-  if (!tokenStore.isLoggedIn(OnePubSettings.use().onepubApiUrl)) {
-    printerr(red('Please use onepub import to import a '
-        'System Administrator from the test db'));
-    exit(1);
-  }
-
-  if (!(await Member.isSystemAdministrator())) {
-    printerr(red('The Imported user is not a System Administrator'));
-    exit(1);
-  }
-}

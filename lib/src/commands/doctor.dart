@@ -14,10 +14,6 @@ import '../api/api.dart';
 import '../onepub_settings.dart';
 import '../util/one_pub_token_store.dart';
 
-/// The major version of the server this version of onepub is
-/// compatible with.
-const serverMajorVersion = 4;
-
 ///
 class DoctorCommand extends Command<int> {
   ///
@@ -120,8 +116,9 @@ run: onepub login'''));
         print(green(status.message));
         print('');
         print('Server Version: ${status.version}');
+        print('Supported API Version: $supportedApiVersion');
 
-        if (serverMajorVersion != status.version.major) {
+        if (!API.isCompatible(status.version)) {
           print(red('${'*' * 40} ERROR ${'*' * 40}'));
           print(red(
               'The OnePub Server version does not match your onepub version.'));

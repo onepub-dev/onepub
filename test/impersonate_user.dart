@@ -22,7 +22,7 @@ Future<void> impersonateMemberByEmail({
         userEmail: userEmailAddress,
         firstname: 'Test',
         lastname: 'User',
-        role: RoleEnum.Member);
+        role: RoleEnum.Collaborator);
     onepubTokenResponse = await API().exportMemberToken(userEmailAddress);
   }
 
@@ -87,7 +87,7 @@ Future<void> withTestZone({
         userEmail: userEmailAddress,
         firstname: 'Test',
         lastname: 'User',
-        role: RoleEnum.Member);
+        role: RoleEnum.Collaborator);
     onepubTokenResponse = await API().exportMemberToken(userEmailAddress);
   }
 

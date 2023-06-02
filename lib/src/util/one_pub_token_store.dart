@@ -73,7 +73,14 @@ class OnePubTokenStore {
   // if it is stored.
   String? getToken(String onepubApiUrl) {
     final url = Uri.parse(onepubApiUrl);
-    final credential = tokenStore.findCredential(url);
+
+    return getTokenByUri(url);
+  }
+
+  // returns the token for the given [onepubApiUrl]
+  // if it is stored.
+  String? getTokenByUri(Uri onepubApiUrl) {
+    final credential = tokenStore.findCredential(onepubApiUrl);
     if (credential != null) {
       return credential.token;
     }
