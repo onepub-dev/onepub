@@ -1,3 +1,8 @@
+# 3.2.0
+- Legacy patch to fix issue with 2.19 not being supported.
+- Fixed the server version comparision so this legacy version will run 
+  against the server.
+
 # 3.1.0-beta.1
 - moved some dependencies into the dev_dependencies section to help
 with Dart 3.x compatability.
