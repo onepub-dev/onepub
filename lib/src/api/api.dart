@@ -5,7 +5,6 @@ import 'package:pub_semver/pub_semver.dart';
 import '../exceptions.dart';
 import '../util/role_enum.dart';
 import '../util/send_command.dart';
-import '../version/version.g.dart';
 import 'auth_response.dart';
 import 'logout.dart';
 import 'member_create.dart';
