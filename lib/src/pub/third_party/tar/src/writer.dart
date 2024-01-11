@@ -1,3 +1,5 @@
+// ignore_for_file: prefer_asserts_with_message
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
@@ -10,9 +12,8 @@ import 'header.dart';
 import 'utils.dart';
 
 class _WritingTransformer extends StreamTransformerBase<TarEntry, List<int>> {
-  final OutputFormat format;
-
   const _WritingTransformer(this.format);
+  final OutputFormat format;
 
   @override
   Stream<List<int>> bind(Stream<TarEntry> stream) {
@@ -56,9 +57,8 @@ const StreamTransformer<TarEntry, List<int>> tarWriter =
 /// When using the default options, prefer using the constant [tarWriter]
 /// instead.
 StreamTransformer<TarEntry, List<int>> tarWriterWith(
-    {OutputFormat format = OutputFormat.pax}) {
-  return _WritingTransformer(format);
-}
+        {OutputFormat format = OutputFormat.pax}) =>
+    _WritingTransformer(format);
 
 /// Create a sink emitting encoded tar files to the [output] sink.
 ///
@@ -95,9 +95,8 @@ StreamTransformer<TarEntry, List<int>> tarWriterWith(
 ///  - [tarWriter], a stream transformer using this sink
 ///  - [StreamSink]
 StreamSink<TarEntry> tarWritingSink(StreamSink<List<int>> output,
-    {OutputFormat format = OutputFormat.pax}) {
-  return _WritingSink(output, format);
-}
+        {OutputFormat format = OutputFormat.pax}) =>
+    _WritingSink(output, format);
 
 /// A synchronous encoder for in-memory tar files.
 ///
@@ -122,9 +121,8 @@ const Converter<SynchronousTarEntry, List<int>> tarConverter =
 ///
 /// For more information on how to use the converter, see [tarConverter].
 Converter<SynchronousTarEntry, List<int>> tarConverterWith(
-    {OutputFormat format = OutputFormat.pax}) {
-  return _SynchronousTarConverter(format);
-}
+        {OutputFormat format = OutputFormat.pax}) =>
+    _SynchronousTarConverter(format);
 
 /// This option controls how long file and link names should be written.
 ///
@@ -153,6 +151,8 @@ enum OutputFormat {
 }
 
 class _WritingSink extends StreamSink<TarEntry> {
+  _WritingSink(this._output, OutputFormat format)
+      : _synchronousWriter = _SynchronousTarSink(_output, format);
   final StreamSink<List<int>> _output;
   final _SynchronousTarSink _synchronousWriter;
   bool _closed = false;
@@ -160,9 +160,6 @@ class _WritingSink extends StreamSink<TarEntry> {
 
   int _pendingOperations = 0;
   Future<void> _ready = Future.value();
-
-  _WritingSink(this._output, OutputFormat format)
-      : _synchronousWriter = _SynchronousTarSink(_output, format);
 
   @override
   Future<void> get done => _done.future;
@@ -249,14 +246,12 @@ Uint8List _paddingBytes(int size) {
 
 class _SynchronousTarConverter
     extends Converter<SynchronousTarEntry, List<int>> {
+  const _SynchronousTarConverter(this.format);
   final OutputFormat format;
 
-  const _SynchronousTarConverter(this.format);
-
   @override
-  Sink<SynchronousTarEntry> startChunkedConversion(Sink<List<int>> sink) {
-    return _SynchronousTarSink(sink, format);
-  }
+  Sink<SynchronousTarEntry> startChunkedConversion(Sink<List<int>> sink) =>
+      _SynchronousTarSink(sink, format);
 
   @override
   List<int> convert(SynchronousTarEntry input) {
@@ -270,13 +265,12 @@ class _SynchronousTarConverter
 }
 
 class _SynchronousTarSink extends Sink<SynchronousTarEntry> {
+  _SynchronousTarSink(this._output, this._format);
   final OutputFormat _format;
   final Sink<List<int>> _output;
 
   bool _closed = false;
   int _paxHeaderCount = 0;
-
-  _SynchronousTarSink(this._output, this._format);
 
   @override
   void add(SynchronousTarEntry data) {
@@ -287,18 +281,22 @@ class _SynchronousTarSink extends Sink<SynchronousTarEntry> {
     _throwIfClosed();
 
     _writeHeader(header, data.length);
-    _output..add(data)..add(_paddingBytes(data.length));
+    _output
+      ..add(data)
+      ..add(_paddingBytes(data.length));
   }
 
   @override
   void close() {
-    if (_closed) return;
+    if (_closed) {
+      return;
+    }
 
     // End the tar archive by writing two zero blocks.
     _output
       ..add(UnmodifiableUint8ListView(zeroBlock))
-      ..add(UnmodifiableUint8ListView(zeroBlock));
-    _output.close();
+      ..add(UnmodifiableUint8ListView(zeroBlock))
+      ..close();
 
     _closed = true;
   }
@@ -419,7 +417,6 @@ class _SynchronousTarSink extends Sink<SynchronousTarEntry> {
         format: TarFormat.pax,
         modified: millisecondsSinceEpoch(0),
         name: 'PaxHeader/${_paxHeaderCount++}',
-        mode: 0,
         size: paxData.length,
         typeFlag: TypeFlag.xHeader,
       ),
@@ -442,17 +439,15 @@ class _SynchronousTarSink extends Sink<SynchronousTarEntry> {
     final name = values[paxPath];
     final linkName = values[paxLinkpath];
 
-    void create(List<int> name, TypeFlag flag) {
-      return addHeaderAndData(
-        HeaderImpl.internal(
-          name: '././@LongLink',
-          modified: millisecondsSinceEpoch(0),
-          format: TarFormat.gnu,
-          typeFlag: flag,
-        ),
-        name,
-      );
-    }
+    void create(List<int> name, TypeFlag flag) => addHeaderAndData(
+          HeaderImpl.internal(
+            name: '././@LongLink',
+            modified: millisecondsSinceEpoch(0),
+            format: TarFormat.gnu,
+            typeFlag: flag,
+          ),
+          name,
+        );
 
     if (name != null) {
       create(name, TypeFlag.gnuLongName);
