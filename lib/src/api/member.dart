@@ -25,14 +25,14 @@ class Member {
   /// Returns true if the currently logged in and active user is a system
   /// administrator
   static Future<bool> isSystemAdministrator() async {
-    final onepubUrl = OnePubSettings.use().onepubUrl!;
+    final onepubApiUrl = OnePubSettings.use().onepubApiUrl;
 
     final tokenStore = OnePubTokenStore();
 
-    final token = tokenStore.getToken(onepubUrl);
+    final token = tokenStore.getToken(onepubApiUrl.toString());
     if (token != null) {
       final member = await API().fetchMember(token);
-      return member.roles.contains('System Administrator');
+      return member.roles.contains(RoleEnum.SystemAdministrator.name);
     }
 
     return false;

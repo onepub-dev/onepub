@@ -91,9 +91,19 @@ Future<void> main(List<String> args) async {
 /// Check that the user is logged in before we proceed.
 Future<void> preConditionIsLoggedIn() async {
   final tokenStore = OnePubTokenStore();
-  if (!tokenStore.isLoggedIn(OnePubSettings.use().onepubApiUrl)) {
+  final onepubApiUrl = OnePubSettings.use().onepubApiUrl;
+  if (!tokenStore.isLoggedIn(onepubApiUrl)) {
     printerr(red('Please use onepub import to import a '
         'System Administrator from the test db'));
+    exit(1);
+  }
+
+  final token =
+      tokenStore.getToken(onepubApiUrl.toString());
+  if (token == null) {
+    printerr(red('''
+Token store is in an inconsistent state - no credential found for logged in user.
+Delete tokens using `dart pub token remove` and then re-auth'''));
     exit(1);
   }
 
