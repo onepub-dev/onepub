@@ -8,7 +8,8 @@ import 'package:onepub/src/api/api.dart';
 import 'package:onepub/src/entry_point.dart';
 import 'package:onepub/src/my_runner.dart';
 import 'package:path/path.dart' hide equals;
-import 'package:pub_semver/pub_semver.dart';
+import 'package:pub_semver/pub_semver.dart' as ps;
+import 'package:pubspec_manager/pubspec_manager.dart';
 import 'package:scope/scope.dart';
 import 'package:test/test.dart';
 
@@ -32,12 +33,16 @@ void main() {
 
             // increment the package 2 version number so we can publish it.
             final pathToPackage2Pubspec = dartProject.pathToPubSpec;
-            final pubspec = PubSpec.fromFile(pathToPackage2Pubspec);
+            final pubspec = PubSpec.loadFromPath(pathToPackage2Pubspec);
+
             final versions = await API()
                 .fetchVersions(member.obfuscatedOrganisationId, packageName);
+            final next = ps.Version.parse(versions.latest.version).nextMinor;
+
             pubspec
-              ..version = Version.parse(versions.latest.version).nextMinor
-              ..save(pathToPackage2Pubspec);
+              ..version = VersionBuilder.parse(next.canonicalizedVersion)
+                  .attach(pubspec)
+              ..saveTo(pathToPackage2Pubspec);
 
             // add new version to change log to stop pub publish complaining.
             join(pathToProjectRoot, 'CHANGELOG.md')
@@ -62,7 +67,7 @@ void main() {
           member: member,
           action: () async {
             var pubSpec = dartProject.pubSpec;
-            expect(pubSpec.dependencies.containsKey('test_packag_2'), isFalse);
+            expect(pubSpec.dependencies.exists('test_packag_2'), isFalse);
 
             // run onepub add <dep>
             final progress = 'dart $pathToOnePubScript pub add test_packag_2'
@@ -70,8 +75,8 @@ void main() {
             expect(progress.exitCode, equals(0));
 
             // load the updated pubspec
-            pubSpec = PubSpec.fromFile(dartProject.pathToPubSpec);
-            expect(pubSpec.dependencies.containsKey('test_packag_2'), isTrue);
+            pubSpec = PubSpec.loadFromPath(dartProject.pathToPubSpec);
+            expect(pubSpec.dependencies.exists('test_packag_2'), isTrue);
           });
     });
   });

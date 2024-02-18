@@ -8,6 +8,7 @@ import 'package:onepub/src/entry_point.dart';
 import 'package:onepub/src/my_runner.dart';
 import 'package:onepub/src/onepub_settings.dart';
 import 'package:onepub/src/version/version.g.dart';
+import 'package:pubspec_manager/pubspec_manager.dart';
 import 'package:scope/scope.dart';
 import 'package:test/test.dart';
 import 'package:url_builder/url_builder.dart';
@@ -31,7 +32,7 @@ void main() {
           action: () async {
             final settings = OnePubSettings.use();
             final organisationName = settings.organisationName;
-            expect(dartProject.pubSpec.pubspec.publishTo, isNull);
+            expect(dartProject.pubSpec.publishTo, isNull);
 
             final size = stat(dartProject.pathToPubSpec).size;
 
@@ -54,8 +55,8 @@ void main() {
             final url = OnePubSettings.use().onepubWebUrl;
             expect(clean.contains('See ${urlJoin(url, 'publish')}'), isTrue);
 
-            final pubSpec = PubSpec.fromFile(dartProject.pathToPubSpec);
-            expect(pubSpec.pubspec.publishTo.toString(),
+            final pubSpec = PubSpec.loadFromPath(dartProject.pathToPubSpec);
+            expect(pubSpec.publishTo.toString(),
                 equals(settings.onepubApiUrlAsString));
 
             expect(stat(dartProject.pathToPubSpec).size, greaterThan(size));

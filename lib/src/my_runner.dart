@@ -37,8 +37,8 @@ import 'pub/command/upgrade.dart';
 import 'pub/command/uploader.dart';
 import 'pub/command/version.dart';
 import 'pub/io.dart';
-import 'pub/log.dart' hide red;
 import 'pub/log.dart' as plog;
+import 'pub/log.dart' hide red;
 
 enum CommandSet { opub, onepub }
 
@@ -62,7 +62,7 @@ class MyRunner extends CommandRunner<int> implements PubTopLevel {
   }
   CommandSet commandSet;
 
-  void init() {
+  Future<void> init() async {
     PubTopLevel.addColorFlag(argParser);
 
     results = argParser.parse(args);
@@ -76,7 +76,7 @@ class MyRunner extends CommandRunner<int> implements PubTopLevel {
     }
 
     if (commandSet == CommandSet.onepub) {
-      OnePubSettings.install(dev: results['dev'] as bool);
+      await OnePubSettings.install(dev: results['dev'] as bool);
     }
   }
 

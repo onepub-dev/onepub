@@ -34,7 +34,7 @@ Future<void> entrypoint(
     final runner = MyRunner(args, executableName, _description, commandSet);
     try {
       printPreamble();
-      runner.init();
+      await runner.init();
       await runner.run(args);
     } on FormatException catch (e) {
       printerr(e.message);

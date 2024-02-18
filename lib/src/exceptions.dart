@@ -33,3 +33,7 @@ class APIException extends OnePubCliException {
 class NotInitialisedException extends OnePubCliException {
   NotInitialisedException(super.message);
 }
+
+class SettingsException extends OnePubCliException {
+  SettingsException(super.message);
+}

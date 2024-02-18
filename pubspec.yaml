@@ -57,8 +57,8 @@ dependencies:
   pool: 1.5.1
   posix: 5.0.0
   pub_semver: 2.1.4
-  pubspec2: 2.4.2
   pubspec_lock: ^3.0.2
+  pubspec_manager: ^1.0.0-alpha.14
   quiver: 3.2.1
   random_string: 2.3.1
   scope: 3.0.0

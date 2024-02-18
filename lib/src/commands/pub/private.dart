@@ -3,11 +3,9 @@
  * Written by Brett Sutton <bsutton@onepub.dev>, Jan 2022
  */
 
-import 'dart:io';
-
 import 'package:args/command_runner.dart';
-import 'package:dcli/dcli.dart' hide PubSpec;
-import 'package:pubspec2/pubspec2.dart';
+import 'package:dcli/dcli.dart';
+import 'package:pubspec_manager/pubspec_manager.dart';
 import 'package:scope/scope.dart';
 import 'package:url_builder/url_builder.dart';
 
@@ -66,36 +64,34 @@ run: onepub login
     final currentOrganisationName = settings.organisationName;
     final url = settings.onepubApiUrlAsString;
 
-    final pubspec = await PubSpec.loadFile(project.pathToPubSpec);
-    if (pubspec.publishTo != null) {
-      if (pubspec.publishTo.toString() == url) {
-        print(orange('${pubspec.name} is already a private package.'));
-        return;
-      }
-
-      await API().checkVersion();
-      final organisation = await getOrganisation(obfuscatedOrganisationId);
-      if (organisation == null) {
-        print(orange('${pubspec.name} is already a private package '
-            'for another organisation'));
-      } else {
-        print(orange('${pubspec.name} is already a private package of '
-            '${organisation.name}'));
-      }
-      if (!confirm('Do you want to change the organisation to '
-          '$currentOrganisationName?')) {
-        print(red('Action cancelled'));
-        return;
-      }
+    final pubspec = PubSpec.loadFromPath(project.pathToPubSpec);
+    if (pubspec.publishTo.toString() == url) {
+      print(orange('${pubspec.name} is already a private package.'));
+      return;
     }
 
-    final pubspecUpdated = pubspec.copy(publishTo: Uri.parse(url));
-    await pubspecUpdated.save(Directory(project.pathToProjectRoot));
+    await API().checkVersion();
+    final organisation = await getOrganisation(obfuscatedOrganisationId);
+    if (organisation == null) {
+      print(orange('${pubspec.name} is already a private package '
+          'for another organisation'));
+    } else {
+      print(orange('${pubspec.name} is already a private package of '
+          '${organisation.name}'));
+    }
+    if (!confirm('Do you want to change the organisation to '
+        '$currentOrganisationName?')) {
+      print(red('Action cancelled'));
+      return;
+    }
+
+    pubspec.publishTo.set(url);
+    pubspec.saveTo(project.pathToProjectRoot);
 
     print('''
-${pubspecUpdated.name} has been marked as a private package for the organisation ${settings.organisationName}.
+${pubspec.name} has been marked as a private package for the organisation ${settings.organisationName}.
 
-Run 'dart/flutter pub publish' to publish ${pubspecUpdated.name} to OnePub
+Run 'dart/flutter pub publish' to publish ${pubspec.name} to OnePub
 
 See ${urlJoin(settings.onepubWebUrl, 'publish')}
 ''');

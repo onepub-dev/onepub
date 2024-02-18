@@ -49,8 +49,8 @@ class OnePubLoginCommand extends Command<int> {
       final settings = OnePubSettings.use()
         ..obfuscatedOrganisationId = auth.obfuscatedOrganisationId
         ..organisationName = auth.organisationName
-        ..operatorEmail = auth.operatorEmail
-        ..save();
+        ..operatorEmail = auth.operatorEmail;
+      await settings.save();
 
       final onepubApiUrl = settings.onepubApiUrlAsString;
 

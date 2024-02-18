@@ -32,8 +32,7 @@ class TokenExportFile {
   late final String pathToExportFile;
   late final SettingsYaml settings;
 
-  // ignore: discarded_futures
-  void save() => waitForEx(settings.save());
+  Future<void> save() async => settings.save();
 
   bool get hasToken => settings.validString(onepubTokenKey);
   String get onepubToken => settings.asString(onepubTokenKey);

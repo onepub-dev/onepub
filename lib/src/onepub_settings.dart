@@ -200,12 +200,12 @@ class OnePubSettings {
   String get operatorEmail => _settings.asString('operatorEmail');
 
   // ignore: discarded_futures
-  void save() => waitForEx(_settings.save());
+  Future<void> save() async => _settings.save();
 
-  void saveTo(String tempSettingsDir) {
+  Future<void> saveTo(String tempSettingsDir) async {
     _settings.filePath = join(tempSettingsDir, defaultSettingsFilename);
     // ignore: discarded_futures
-    waitForEx(_settings.save());
+    await _settings.save();
   }
 
   String resolveApiEndPoint(String command, {String? queryParams}) {
@@ -241,7 +241,7 @@ class OnePubSettings {
   //   });
   // }
 
-  static void install({required bool dev}) {
+  static Future<void> install({required bool dev}) async {
     final create = !exists(defaultPathToSettings);
     final settings = OnePubSettings._load(create: create);
 
@@ -251,7 +251,7 @@ class OnePubSettings {
     }
 
     if (settings.onepubUrl == null || settings.onepubUrl!.isEmpty || dev) {
-      settings.config(dev: dev);
+      await settings.config(dev: dev);
 
       print(orange('Installed OnePub version: $packageVersion.'));
     }
@@ -268,13 +268,15 @@ class OnePubSettings {
   }
 
   ///
-  void config({required bool dev}) {
-    promptForConfig(dev: dev);
+  Future<void> config({required bool dev}) async {
+    print('Configure OnePub');
+
+    await promptForConfig(dev: dev);
   }
 
   final testingFlagPath = join(HOME, '.onepubtesting');
 
-  void promptForConfig({required bool dev}) {
+  Future<void> promptForConfig({required bool dev}) async {
     var url = OnePubSettings.defaultOnePubUrl;
     if (dev) {
       print('Configure OnePub');
@@ -282,9 +284,8 @@ class OnePubSettings {
       testingFlagPath.write('onepubtesting');
     }
 
-    OnePubSettings.use()
-      ..onepubUrl = url
-      ..save();
+    final settings = OnePubSettings.use()..onepubUrl = url;
+    await settings.save();
   }
 
   /// If the settings are using a non-standard url (e.g. not https;//onepub.dev)

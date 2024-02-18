@@ -189,10 +189,10 @@ packages:
     dependency: "direct main"
     description:
       name: file
-      sha256: "1b92bec4fc2a72f59a8e15af5f52cd441e4a7860b49499d69dfa817af20e925d"
+      sha256: "5fc22d7c25582e38ad9a8515372cd9a93834027aacf1801cf01164dac0ffa08c"
       url: "https://pub.dev"
     source: hosted
-    version: "6.1.4"
+    version: "7.0.0"
   file_utils:
     dependency: "direct main"
     description:
@@ -201,6 +201,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.1"
+  fixnum:
+    dependency: transitive
+    description:
+      name: fixnum
+      sha256: "25517a4deb0c03aa0f32fd12db525856438902d9c16536311e76cdc57b31d7d1"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.0"
   frontend_server_client:
     dependency: "direct main"
     description:
@@ -428,8 +436,15 @@ packages:
   pubspec2:
     dependency: "direct main"
     description:
-      name: pubspec2
-      sha256: "7b1fd81927f1da6d88457c83b51134e1bc8cb07638bd8d9e205b2ce1cd9ec091"
+      path: "../../pubspec_manager"
+      relative: true
+    source: path
+    version: "1.0.0-alpha.14"
+  quiver:
+    dependency: transitive
+    description:
+      name: quiver
+      sha256: b1c1ac5ce6688d77f65f3375a9abb9319b3cb32486bdc7a1e0fdf004d7ba4e47
       url: "https://pub.dev"
     source: hosted
     version: "2.4.2"
@@ -461,10 +476,10 @@ packages:
     dependency: "direct main"
     description:
       name: scope
-      sha256: e0c880d8f0db2ffd2accd63eeb02396748f3b8a2f71bce4b7d3f8dab75fc8a74
+      sha256: "80cf1cb727791fdaaa4131817974a6084815ed59b9ab02ef352c3a1badea488b"
       url: "https://pub.dev"
     source: hosted
-    version: "3.0.0"
+    version: "4.1.0"
   settings_yaml:
     dependency: "direct main"
     description:

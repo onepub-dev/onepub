@@ -27,8 +27,7 @@ class TestSettings {
   // set organisationId(String obsfucatedId) =>
   //     _settings['organisationId'] = obsfucatedId;
 
-  // ignore: discarded_futures
-  void save() => waitForEx(_settings.save());
+  Future<void> save() async => _settings.save();
 
   String get pathToTestSettings {
     final pathToTest = DartProject.self.pathToTestDir;

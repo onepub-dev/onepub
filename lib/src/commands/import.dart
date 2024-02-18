@@ -88,11 +88,11 @@ Use `onepub export` to obtain the OnePub token.
       throw ExitException(exitCode: 1, message: organisation.errorMessage!);
     }
 
-    OnePubSettings.use()
+    final settings = OnePubSettings.use()
       ..operatorEmail = 'not set during import'
       ..obfuscatedOrganisationId = organisation.obfuscatedId
-      ..organisationName = organisation.name
-      ..save();
+      ..organisationName = organisation.name;
+    await settings.save();
 
     OnePubTokenStore().addToken(
       onepubApiUrl: OnePubSettings.use().onepubApiUrlAsString,

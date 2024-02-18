@@ -64,7 +64,7 @@ run: onepub login
                 'Found $user');
       }
       await API().checkVersion();
-      final response = waitForEx(API().exportMemberToken(user));
+      final response = await API().exportMemberToken(user);
 
       if (response.success) {
         onepubToken = response.token!;
@@ -86,9 +86,8 @@ run: onepub login
             exitCode: 1, message: 'You may only pass one argument to --file.');
       }
 
-      final exportFile = TokenExportFile(pathToFile)
-        ..onepubToken = onepubToken
-        ..save();
+      final exportFile = TokenExportFile(pathToFile)..onepubToken = onepubToken;
+      await exportFile.save();
 
       print('''
 

@@ -60,8 +60,8 @@ Future<void> impersonateMember({
         ..operatorEmail = member.email
         ..onepubUrl = testSettings.onepubUrl
         ..organisationName = member.organisationName
-        ..obfuscatedOrganisationId = member.obfuscatedOrganisationId
-        ..save();
+        ..obfuscatedOrganisationId = member.obfuscatedOrganisationId;
+      await settings.save();
 
       // set an alternate location for the token store
       await OnePubTokenStore.withPathTo(tempSettingsDir, () async {
