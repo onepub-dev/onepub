@@ -3,7 +3,9 @@
  * Written by Brett Sutton <bsutton@onepub.dev>, Jan 2022
  */
 import 'package:args/command_runner.dart';
-import 'package:dcli/dcli.dart';
+import 'package:dcli_core/dcli_core.dart';
+import 'package:dcli_input/dcli_input.dart';
+import 'package:dcli_terminal/dcli_terminal.dart';
 import 'package:path/path.dart';
 
 import '../api/api.dart';
@@ -75,7 +77,7 @@ Use `onepub export` to obtain the OnePub token.
     final String onepubToken;
 
     if (ask) {
-      onepubToken = fromUser();
+      onepubToken = await fromUser();
     } else if (file) {
       onepubToken = fromFile();
     } else {
@@ -94,7 +96,7 @@ Use `onepub export` to obtain the OnePub token.
       ..organisationName = organisation.name;
     await settings.save();
 
-    OnePubTokenStore().addToken(
+    await OnePubTokenStore().addToken(
       onepubApiUrl: OnePubSettings.use().onepubApiUrlAsString,
       onepubToken: onepubToken,
     );
@@ -138,7 +140,7 @@ Found: ${argResults!.rest.join(',')}''');
     return env[onepubSecretEnvKey]!;
   }
 
-  String fromUser() => ask('ONEPUB_TOKEN:',
+  Future<String> fromUser() async => ask('ONEPUB_TOKEN:',
       validator: Ask.all([
         Ask.regExp('[a-zA-Z0-9-=]*',
             error: 'The secret contains invalid characters.'),

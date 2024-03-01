@@ -1,5 +1,6 @@
-import 'package:dcli/dcli.dart';
 import 'package:dcli_core/dcli_core.dart' as core;
+import 'package:dcli_input/dcli_input.dart';
+import 'package:dcli_terminal/dcli_terminal.dart';
 import 'package:onepub/src/api/api.dart';
 import 'package:onepub/src/api/member.dart';
 import 'package:onepub/src/exceptions.dart';
@@ -22,7 +23,7 @@ Future<void> impersonateMemberByEmail({
         userEmail: userEmailAddress,
         firstname: 'Test',
         lastname: 'User',
-        role: RoleEnum.Member);
+        role: RoleEnum.Collaborator);
     onepubTokenResponse = await API().exportMemberToken(userEmailAddress);
   }
 
@@ -43,7 +44,7 @@ Future<void> impersonateMember({
   required Member member,
   required Future<void> Function() action,
 }) async {
-  await core.withTempDir((tempSettingsDir) async {
+  await core.withTempDirAsync((tempSettingsDir) async {
     // control the location of the onepub settings file.
     // Create our own version of the OnePubSettings file.
     await OnePubSettings.withPathTo<void>(tempSettingsDir, () async {
@@ -65,7 +66,7 @@ Future<void> impersonateMember({
 
       // set an alternate location for the token store
       await OnePubTokenStore.withPathTo(tempSettingsDir, () async {
-        OnePubTokenStore().addToken(
+        await OnePubTokenStore().addToken(
             onepubApiUrl: settings.onepubApiUrlAsString,
             onepubToken: member.onepubToken);
 
@@ -87,7 +88,7 @@ Future<void> withTestZone({
         userEmail: userEmailAddress,
         firstname: 'Test',
         lastname: 'User',
-        role: RoleEnum.Member);
+        role: RoleEnum.Collaborator);
     onepubTokenResponse = await API().exportMemberToken(userEmailAddress);
   }
 
@@ -110,7 +111,7 @@ Future<Member> fetchTestUser({required String userEmailAddress}) async {
   Note: this token expires in an hour.
   ''');
 
-  final onepubTokenOfTargetMember = ask('Temp Token:', hidden: true);
+  final onepubTokenOfTargetMember = await ask('Temp Token:', hidden: true);
 
   final response = await API().fetchMember(onepubTokenOfTargetMember);
   if (!response.success) {

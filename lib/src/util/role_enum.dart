@@ -11,7 +11,7 @@ enum RoleEnum {
   Administrator,
   Uploader,
   TeamLeader,
-  Member,
+  Collaborator,
   PackageLicensee,
   DartDocumenter
 }

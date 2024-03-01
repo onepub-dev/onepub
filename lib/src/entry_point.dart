@@ -1,15 +1,16 @@
-#! /usr/bin/env dcli
+#! /usr/bin/env dart
 
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
-import 'package:dcli/dcli.dart';
+import 'package:dcli_terminal/dcli_terminal.dart';
 import 'package:scope/scope.dart';
 
 import 'exceptions.dart';
 import 'my_runner.dart';
 import 'onepub_settings.dart';
 import 'util/log.dart' as ulog;
+import 'util/printerr.dart';
 import 'version/version.g.dart';
 
 /* Copyright (C) OnePub IP Pty Ltd - All Rights Reserved

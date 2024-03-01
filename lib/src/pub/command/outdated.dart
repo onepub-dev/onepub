@@ -911,8 +911,8 @@ class _MarkedVersionDetails {
 
     var jsonExplanation = _jsonExplanation;
     return jsonExplanation == null
-        ? _versionDetails!.toJson()
-        : (_versionDetails!.toJson()..addEntries([jsonExplanation]));
+        ? _versionDetails.toJson()
+        : (_versionDetails.toJson()..addEntries([jsonExplanation]));
   }
 }
 

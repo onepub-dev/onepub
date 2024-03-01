@@ -794,7 +794,7 @@ class GitDescription extends Description {
   // Similar in intend to [p.prettyUri] but does not fail if the input doesn't
   // parse with [Uri.parse].
   static String prettyUri(String url) {
-    // HACK: Working around the fact that `Uri.parse` does not allow strings of
+    // Working around the fact that `Uri.parse` does not allow strings of
     // the form: 'git@github.com:dart-lang/pub.git'.
     final parsedAsUri = Uri.tryParse(url);
     if (parsedAsUri == null) {

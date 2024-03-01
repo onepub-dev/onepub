@@ -3,7 +3,8 @@
  * Written by Brett Sutton <bsutton@onepub.dev>, Jan 2022
  */
 import 'package:args/command_runner.dart';
-import 'package:dcli/dcli.dart';
+import 'package:dcli_core/dcli_core.dart';
+import 'package:dcli_terminal/dcli_terminal.dart';
 import 'package:validators2/validators2.dart';
 
 import '../api/api.dart';
@@ -47,7 +48,7 @@ Pass in a filename or leave blank to use the default filename.''')
     final file = argResults!['file'] as bool;
     final user = argResults!['user'] as String?;
 
-    if (!OnePubTokenStore().isLoggedIn(OnePubSettings.use().onepubApiUrl)) {
+    if (!await OnePubTokenStore().isLoggedIn(OnePubSettings.use().onepubApiUrl)) {
       throw ExitException(exitCode: 1, message: '''
 You must be logged in to run this command.
 run: onepub login
@@ -72,7 +73,7 @@ run: onepub login
         throw ExitException(exitCode: 1, message: response.errorMessage!);
       }
     } else {
-      onepubToken = OnePubTokenStore().load();
+      onepubToken = await OnePubTokenStore().load();
     }
     print(orange('Exporting OnePub token for '
         '${OnePubSettings.use().organisationName}.'));

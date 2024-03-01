@@ -5,12 +5,15 @@
 import 'dart:async';
 
 import 'package:args/command_runner.dart';
-import 'package:dcli/dcli.dart';
+import 'package:dcli_core/dcli_core.dart';
+import 'package:dcli_terminal/dcli_terminal.dart';
 
 import '../api/api.dart';
+import '../exceptions.dart';
 import '../onepub_settings.dart';
 import '../util/bread_butter_auth.dart';
 import '../util/one_pub_token_store.dart';
+import '../util/printerr.dart';
 import '../util/send_command.dart';
 
 /// onepub login
@@ -54,7 +57,7 @@ class OnePubLoginCommand extends Command<int> {
 
       final onepubApiUrl = settings.onepubApiUrlAsString;
 
-      OnePubTokenStore().addToken(
+      await OnePubTokenStore().addToken(
         onepubApiUrl: onepubApiUrl,
         onepubToken: auth.onepubToken,
       );

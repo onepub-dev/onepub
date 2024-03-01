@@ -6,7 +6,7 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:dcli/dcli.dart';
+import 'package:dcli_terminal/dcli_terminal.dart';
 import 'package:usage/uuid/uuid.dart';
 
 import '../api/api.dart';
@@ -56,7 +56,7 @@ Waiting for your authorisation...''');
 
       retry = auth.status == AwaitLoginStatus.retry;
       if (retry) {
-        sleep(auth.pollInterval);
+        await Future.delayed(Duration(seconds: auth.pollInterval), () {});
       }
     }
 

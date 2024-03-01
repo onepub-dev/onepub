@@ -7,13 +7,17 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
-import 'package:dcli/dcli.dart';
+import 'package:dcli_core/dcli_core.dart';
+import 'package:dcli_input/dcli_input.dart';
+import 'package:dcli_terminal/dcli_terminal.dart';
 import 'package:pub_semver/pub_semver.dart';
 import 'package:strings/strings.dart';
 
 import '../api/api.dart';
 import '../onepub_settings.dart';
 import '../util/one_pub_token_store.dart';
+import '../util/printerr.dart';
+import '../util/pub_cache.dart';
 import '../version/version.g.dart';
 
 ///
@@ -34,7 +38,7 @@ class DoctorCommand extends Command<int> {
     _printEnvironment();
     _printShell();
 
-    tokenStatus();
+    await tokenStatus();
     await _status();
     return 0;
   }
@@ -84,22 +88,22 @@ class DoctorCommand extends Command<int> {
     print(blue('Shell Settings'));
     _colprint([r'$SHELL:', env['SHELL'] ?? '']);
 
-    final shell = Shell.current;
-    _colprint(['Detected:', shell.name]);
-
-    if (shell.hasStartScript) {
-      final startScriptPath = shell.pathToStartScript;
-      _colprint(['Start script:', privatePath(startScriptPath ?? 'not found')]);
-    } else {
-      _colprint(['Start script:', 'not supported by shell']);
-    }
+    // TODO(bsutton): restore once dcli resolves waitfor issue.
+    // final shell = Shell.current;
+    // _colprint(['Detected:', shell.name]);
+    // if (shell.hasStartScript) {
+    //   final startScriptPath = shell.pathToStartScript;
+    //   _colprint(['Start script:', privatePath(startScriptPath ?? 'not found')]);
+    // } else {
+    //   _colprint(['Start script:', 'not supported by shell']);
+    // }
   }
 
   Future<void> _status() async {
     print('');
     print(blue('Status'));
     final settings = OnePubSettings.use();
-    if (OnePubTokenStore().isLoggedIn(settings.onepubApiUrl)) {
+    if (await OnePubTokenStore().isLoggedIn(settings.onepubApiUrl)) {
       _colprint(['Logged In:', 'true']);
       _colprint(['Active Member:', settings.operatorEmail]);
       _colprint(['Organisation:', settings.organisationName]);
@@ -109,7 +113,7 @@ You are not logged into OnePub.
 run: onepub login'''));
     }
     try {
-      echo('checking status...  ');
+      await echo('checking status...  ');
 
       final status = await API().status();
 
@@ -138,20 +142,20 @@ run: onepub login'''));
   }
 }
 
-void tokenStatus() {
+Future<void> tokenStatus() async {
   print(blue('\nRepository tokens'));
 
   final store = OnePubTokenStore();
 
   var hasOnePubToken = false;
-  for (final credential in store.credentials) {
+  for (final credential in await store.credentials) {
     if (credential.url.host == 'onepub.dev' ||
         credential.url.host == 'beta.onepub.dev') {
       hasOnePubToken = true;
     }
   }
 
-  if (!store.isLoggedIn(OnePubSettings.use().onepubApiUrl)) {
+  if (!await store.isLoggedIn(OnePubSettings.use().onepubApiUrl)) {
     print(red('Not logged into OnePub.'));
     if (hasOnePubToken) {
       print('''
@@ -162,7 +166,7 @@ as listed below.
     }
   }
 
-  for (final credential in store.credentials) {
+  for (final credential in await store.credentials) {
     print(credential.url);
   }
 }
@@ -170,8 +174,8 @@ as listed below.
 void _printPlatform() {
   print(blue('Platform'));
 
-  _colprint(['Dart version:', DartSdk().version]);
-  _colprint(['Dart path:', DartSdk().pathToDartExe]);
+  _colprint(['Dart version:', Platform.version]);
+  _colprint(['Dart path:', Platform.executable]);
   print('');
 
   _colprint(['OS:', Platform.operatingSystem]);

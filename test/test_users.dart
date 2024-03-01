@@ -25,9 +25,10 @@ class TestUsers {
   Future<void> init() async {
     if (!initialised) {
       initialised = true;
-      administrator = await createAdministrator('admin@testdomain.com');
-      teamLeader = await createTeamLeader('teamleader@testdomain.com');
-      basicMember = await createBasicMember('basicmember@testdomain.com');
+      administrator = await createAdministrator('sysadmin@testdomain.com');
+      teamLeader = await createTeamLeader('teamleader-on-sys@testdomain.com');
+      basicMember =
+          await createBasicMember('basicmember-on-sys@testdomain.com');
       // cicdMember = await createCICD('cicd@testdomain.com');
     }
   }
@@ -48,7 +49,7 @@ class TestUsers {
       emailAddress: emailAddress,
       firstname: 'One',
       lastname: 'Member',
-      role: RoleEnum.Member);
+      role: RoleEnum.Collaborator);
 
   //   Future<Member> createCICDMember(String emailAddress) async
   //    => _fetchOrCreate(

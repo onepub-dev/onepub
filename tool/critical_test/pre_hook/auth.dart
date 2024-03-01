@@ -1,11 +1,12 @@
-#! /usr/bin/env dcli
+#! /usr/bin/env dart
 
 import 'dart:io';
 
-import 'package:dcli/dcli.dart';
+import 'package:dcli_terminal/dcli_terminal.dart';
 import 'package:onepub/src/api/member.dart';
 import 'package:onepub/src/onepub_settings.dart';
 import 'package:onepub/src/util/one_pub_token_store.dart';
+import 'package:onepub/src/util/printerr.dart';
 
 /// Called by Critical Test when running unit tests
 ///
@@ -92,14 +93,13 @@ Future<void> main(List<String> args) async {
 Future<void> preConditionIsLoggedIn() async {
   final tokenStore = OnePubTokenStore();
   final onepubApiUrl = OnePubSettings.use().onepubApiUrl;
-  if (!tokenStore.isLoggedIn(onepubApiUrl)) {
+  if (!await tokenStore.isLoggedIn(onepubApiUrl)) {
     printerr(red('Please use onepub import to import a '
         'System Administrator from the test db'));
     exit(1);
   }
 
-  final token =
-      tokenStore.getToken(onepubApiUrl.toString());
+  final token = await tokenStore.getToken(onepubApiUrl.toString());
   if (token == null) {
     printerr(red('''
 Token store is in an inconsistent state - no credential found for logged in user.

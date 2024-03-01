@@ -4,7 +4,10 @@
  */
 
 import 'package:args/command_runner.dart';
-import 'package:dcli/dcli.dart';
+import 'package:dcli_core/dcli_core.dart';
+import 'package:dcli_input/dcli_input.dart';
+import 'package:dcli_terminal/dcli_terminal.dart';
+import 'package:path/path.dart';
 import 'package:pubspec_manager/pubspec_manager.dart';
 import 'package:scope/scope.dart';
 import 'package:url_builder/url_builder.dart';
@@ -14,6 +17,7 @@ import '../../api/organisation.dart';
 import '../../entry_point.dart';
 import '../../exceptions.dart';
 import '../../onepub_settings.dart';
+import '../../util/dart_project.dart';
 import '../../util/one_pub_token_store.dart';
 
 ///
@@ -42,15 +46,16 @@ See ${urlJoin(OnePubSettings.use().onepubWebUrl, 'publish')}''';
 
   ///
   Future<void> private() async {
-    if (!OnePubTokenStore().isLoggedIn(OnePubSettings.use().onepubApiUrl)) {
+    if (!await OnePubTokenStore()
+        .isLoggedIn(OnePubSettings.use().onepubApiUrl)) {
       throw ExitException(exitCode: 1, message: '''
 You must be logged in to run this command.
 run: onepub login
   ''');
     }
 
-    final project = DartProject.findProject(getWorkingDirectory());
-    if (project == null) {
+    final pathToProject = DartProject.findProject(getWorkingDirectory());
+    if (pathToProject == null) {
       throw ExitException(
           exitCode: 1,
           message:
@@ -64,34 +69,34 @@ run: onepub login
     final currentOrganisationName = settings.organisationName;
     final url = settings.onepubApiUrlAsString;
 
-    final pubspec = PubSpec.loadFromPath(project.pathToPubSpec);
+    final pubspec = PubSpec.load(directory: pathToProject);
     if (pubspec.publishTo.toString() == url) {
-      print(orange('${pubspec.name} is already a private package.'));
+      print(orange('${pubspec.name.value} is already a private package.'));
       return;
     }
 
     await API().checkVersion();
     final organisation = await getOrganisation(obfuscatedOrganisationId);
     if (organisation == null) {
-      print(orange('${pubspec.name} is already a private package '
+      print(orange('${pubspec.name.value} is already a private package '
           'for another organisation'));
     } else {
-      print(orange('${pubspec.name} is already a private package of '
+      print(orange('${pubspec.name.value} is already a private package of '
           '${organisation.name}'));
     }
-    if (!confirm('Do you want to change the organisation to '
+    if (!await confirm('Do you want to change the organisation to '
         '$currentOrganisationName?')) {
       print(red('Action cancelled'));
       return;
     }
 
     pubspec.publishTo.set(url);
-    pubspec.saveTo(project.pathToProjectRoot);
+    pubspec.saveTo(join(pathToProject, 'pubspec.yaml'));
 
     print('''
-${pubspec.name} has been marked as a private package for the organisation ${settings.organisationName}.
+${pubspec.name.value} has been marked as a private package for the organisation ${settings.organisationName}.
 
-Run 'dart/flutter pub publish' to publish ${pubspec.name} to OnePub
+Run 'dart/flutter pub publish' to publish ${pubspec.name.value} to OnePub
 
 See ${urlJoin(settings.onepubWebUrl, 'publish')}
 ''');

@@ -11,7 +11,7 @@ import 'package:test/test.dart';
 
 void main() {
   test('login clean', () async {
-    await withTempDir((tempDir) async {
+    await withTempDirAsync((tempDir) async {
       await withEnvironment(() async {
         await entrypoint(['login'], CommandSet.onepub, 'onepub');
       }, environment: {OnePubSettings.onepubPathEnvKey: tempDir});

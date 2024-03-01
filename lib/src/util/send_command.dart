@@ -6,7 +6,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:dcli/dcli.dart';
+import 'package:dcli_core/dcli_core.dart';
+import 'package:dcli_terminal/dcli_terminal.dart';
 
 import '../exceptions.dart';
 import '../onepub_settings.dart';
@@ -53,7 +54,7 @@ Future<EndpointResponse> sendCommand(
     return await _processData(client, response, commandType);
   } on SocketException catch (e) {
     throw FetchException.fromException(e);
-  } finally {}
+  }
 }
 
 Future<HttpClientResponse> _startRequest(HttpClient client, Method method,
@@ -61,13 +62,14 @@ Future<HttpClientResponse> _startRequest(HttpClient client, Method method,
   final headers0 = <String, String>{}..addAll(headers);
 
   if (authorised) {
-    if (!OnePubTokenStore().isLoggedIn(OnePubSettings.use().onepubApiUrl)) {
+    if (!await OnePubTokenStore()
+        .isLoggedIn(OnePubSettings.use().onepubApiUrl)) {
       throw ExitException(exitCode: 1, message: '''
 You must be logged in to run this command.
 run: onepub login
   ''');
     }
-    final onepubToken = OnePubTokenStore().load();
+    final onepubToken = await OnePubTokenStore().load();
 
     headers0.addAll({'authorization': onepubToken});
   }

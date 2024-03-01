@@ -7,7 +7,7 @@ import 'dart:io';
 
 import 'package:args/args.dart';
 import 'package:args/command_runner.dart';
-import 'package:dcli/dcli.dart';
+import 'package:dcli_core/dcli_core.dart';
 import 'package:scope/scope.dart';
 
 import 'commands/doctor.dart';
@@ -67,7 +67,7 @@ class MyRunner extends CommandRunner<int> implements PubTopLevel {
 
     results = argParser.parse(args);
 
-    Settings().setVerbose(enabled: results['debug'] as bool);
+    await Settings().setVerbose(enabled: results['debug'] as bool);
 
     final version = results['version'] as bool == true;
     if (version == true) {

@@ -4,7 +4,7 @@
  */
 
 import 'package:args/command_runner.dart';
-import 'package:dcli/dcli.dart';
+import 'package:dcli_terminal/dcli_terminal.dart';
 
 import 'global/activate.dart';
 import 'global/deactivate.dart';

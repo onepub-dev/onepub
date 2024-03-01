@@ -1,4 +1,4 @@
-#! /usr/bin/env dcli
+#! /usr/bin/env dart
 
 /* Copyright (C) OnePub IP Pty Ltd - All Rights Reserved
  * licensed under the GPL v2.

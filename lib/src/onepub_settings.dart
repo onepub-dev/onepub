@@ -4,7 +4,9 @@
  */
 import 'dart:io';
 
-import 'package:dcli/dcli.dart';
+import 'package:dcli_core/dcli_core.dart';
+import 'package:dcli_input/dcli_input.dart';
+import 'package:dcli_terminal/dcli_terminal.dart';
 import 'package:path/path.dart';
 import 'package:scope/scope.dart';
 import 'package:settings_yaml/settings_yaml.dart';
@@ -14,6 +16,7 @@ import 'package:yaml/yaml.dart';
 import 'exceptions.dart';
 import 'pub/source/hosted.dart';
 import 'util/log.dart';
+import 'util/string_extension.dart';
 import 'util/url_validator.dart';
 import 'version/version.g.dart';
 
@@ -280,7 +283,8 @@ class OnePubSettings {
     var url = OnePubSettings.defaultOnePubUrl;
     if (dev) {
       print('Configure OnePub');
-      url = ask('OnePub URL:', validator: UrlValidator(), defaultValue: url);
+      url = await ask('OnePub URL:',
+          validator: UrlValidator(), defaultValue: url);
       testingFlagPath.write('onepubtesting');
     }
 

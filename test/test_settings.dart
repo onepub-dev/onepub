@@ -1,4 +1,4 @@
-import 'package:dcli/dcli.dart';
+import 'package:dcli/dcli.dart' as dcli;
 import 'package:path/path.dart';
 import 'package:settings_yaml/settings_yaml.dart';
 
@@ -30,7 +30,7 @@ class TestSettings {
   Future<void> save() async => _settings.save();
 
   String get pathToTestSettings {
-    final pathToTest = DartProject.self.pathToTestDir;
+    final pathToTest = dcli.DartProject.self.pathToTestDir;
 
     return join(pathToTest, 'test_settings.yaml');
   }

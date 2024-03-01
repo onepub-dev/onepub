@@ -1,11 +1,12 @@
 import 'dart:math';
 
-import 'package:dcli/dcli.dart';
+import 'package:dcli_input/dcli_input.dart';
+import 'package:dcli_terminal/dcli_terminal.dart';
 import 'package:validators2/validators2.dart';
 
 class UrlValidator extends AskValidator {
   @override
-  String validate(String line) {
+  Future<String> validate(String line) async {
     final finalLine = line.trim().toLowerCase();
 
     if (!line.startsWith('https://')) {

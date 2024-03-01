@@ -1,9 +1,10 @@
-import 'package:dcli/dcli.dart';
+import 'package:dcli/dcli.dart' as dcli;
+import 'package:dcli_core/dcli_core.dart';
 import 'package:path/path.dart';
 
 void main() {
-  final projectRoot = DartProject.self.pathToProjectRoot;
-  final onepubSrc = DartProject.self.pathToLibSrcDir;
+  final projectRoot = dcli.DartProject.self.pathToProjectRoot;
+  final onepubSrc = dcli.DartProject.self.pathToLibSrcDir;
   final pubTarget = join(onepubSrc, 'pub');
   final pubSrcRoot = join(projectRoot, '..', '..', 'pub', 'lib', 'src');
 

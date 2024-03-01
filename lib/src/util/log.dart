@@ -2,7 +2,10 @@
  * licensed under the GPL v2.
  * Written by Brett Sutton <bsutton@onepub.dev>, Jan 2022
  */
-import 'package:dcli/dcli.dart';
+import 'package:dcli_terminal/dcli_terminal.dart';
+
+import 'printerr.dart';
+import 'string_extension.dart';
 
 void log(String message) {
   final message0 = Ansi.strip(message);

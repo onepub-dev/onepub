@@ -5,7 +5,7 @@
 import 'dart:async';
 
 import 'package:args/command_runner.dart';
-import 'package:dcli/dcli.dart';
+import 'package:dcli_terminal/dcli_terminal.dart';
 
 import '../api/api.dart';
 import '../exceptions.dart';
@@ -34,10 +34,10 @@ The logout command takes no arguments. Found ${argResults!.rest.join(',')}.
 
     final settings = OnePubSettings.use();
     final onepubApiUrl = settings.onepubApiUrl;
-    if (OnePubTokenStore().isLoggedIn(onepubApiUrl)) {
+    if (await OnePubTokenStore().isLoggedIn(onepubApiUrl)) {
       await API().checkVersion();
       final response = await API().logout();
-      OnePubTokenStore().clearOldTokens(onepubApiUrl);
+      await OnePubTokenStore().clearOldTokens(onepubApiUrl);
 
       if (!response.success) {
         throw ExitException(exitCode: 1, message: response.errorMessage);
@@ -47,7 +47,7 @@ The logout command takes no arguments. Found ${argResults!.rest.join(',')}.
           '${settings.organisationName} '
           'on all your devices.'));
     } else {
-      OnePubTokenStore().clearOldTokens(settings.onepubApiUrl);
+      await OnePubTokenStore().clearOldTokens(settings.onepubApiUrl);
       print(orange('You are already logged out.'));
     }
 

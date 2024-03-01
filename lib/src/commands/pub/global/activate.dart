@@ -3,7 +3,7 @@
  * Written by Brett Sutton <bsutton@onepub.dev>, Jan 2022
  */
 
-import 'package:dcli/dcli.dart';
+import 'package:dcli_terminal/dcli_terminal.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 import '../../../api/api.dart';
@@ -40,7 +40,7 @@ class ActivateCommand extends PubCommand {
 
   @override
   Future<void> runProtected() async {
-    if (!OnePubTokenStore().isLoggedIn(OnePubSettings.use().onepubApiUrl)) {
+    if (!await OnePubTokenStore().isLoggedIn(OnePubSettings.use().onepubApiUrl)) {
       throw ExitException(exitCode: 1, message: '''
 You must be logged in to run this command.
 run: onepub login

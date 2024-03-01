@@ -29,7 +29,7 @@ class Member {
 
     final tokenStore = OnePubTokenStore();
 
-    final token = tokenStore.getToken(onepubApiUrl.toString());
+    final token = await tokenStore.getToken(onepubApiUrl.toString());
     if (token != null) {
       final member = await API().fetchMember(token);
       return member.roles.contains(RoleEnum.SystemAdministrator.name);

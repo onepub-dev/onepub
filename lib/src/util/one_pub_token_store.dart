@@ -3,7 +3,7 @@
  * Written by Brett Sutton <bsutton@onepub.dev>, Jan 2022
  */
 
-import 'package:dcli/dcli.dart';
+import 'package:dcli_core/dcli_core.dart';
 import 'package:scope/scope.dart';
 
 import '../onepub_settings.dart';
@@ -15,24 +15,25 @@ import '../token_store/token_store.dart';
 class OnePubTokenStore {
   // Adds a OnePub Token into the pub.dev token store.
   //
-  void addToken({
+  Future<void> addToken({
     required String onepubApiUrl,
     required String onepubToken,
-  }) {
+  }) async {
     final normalisedUrl = validateAndNormalizeHostedUrl(onepubApiUrl);
-    clearOldTokens(normalisedUrl);
-    tokenStore.addCredential(Credential.token(normalisedUrl, onepubToken));
+    await clearOldTokens(normalisedUrl);
+    await tokenStore
+        .addCredential(Credential.token(normalisedUrl, onepubToken));
   }
 
 // True if we have a onepub token for the given [onepubApiUrl]
-  bool isLoggedIn(Uri onepubApiUrl) =>
-      tokenStore.findCredential(onepubApiUrl) != null;
+  Future<bool> isLoggedIn(Uri onepubApiUrl) async =>
+      (await tokenStore.findCredential(onepubApiUrl)) != null;
 
   /// throws [StateError] if called when not logged in.
   /// returns the onepubToken.
-  String load() {
+  Future<String> load() async {
     final settings = OnePubSettings.use();
-    final credentials = tokenStore.findCredential(settings.onepubApiUrl);
+    final credentials = await tokenStore.findCredential(settings.onepubApiUrl);
 
     if (credentials == null || credentials.token == null) {
       throw StateError('You may not call fetch when not logged in');
@@ -41,12 +42,12 @@ class OnePubTokenStore {
     return credentials.token!;
   }
 
-  Iterable<Credential> get credentials => tokenStore.credentials;
+  Future<Iterable<Credential>> get credentials async => tokenStore.credentials;
 
   /// Removes any onepub token from the pub token store
   /// for the given Url
-  void clearOldTokens(Uri onepubApiUrl) {
-    tokenStore.removeMatchingCredential(onepubApiUrl);
+  Future<void> clearOldTokens(Uri onepubApiUrl) async {
+    await tokenStore.removeMatchingCredential(onepubApiUrl);
   }
 
   TokenStore get tokenStore => TokenStore(pathToTokenStore);
@@ -71,9 +72,9 @@ class OnePubTokenStore {
 
   // returns the token for the given [onepubApiUrl]
   // if it is stored.
-  String? getToken(String onepubApiUrl) {
+  Future<String?> getToken(String onepubApiUrl) async {
     final url = Uri.parse(onepubApiUrl);
-    final credential = tokenStore.findCredential(url);
+    final credential = await tokenStore.findCredential(url);
     if (credential != null) {
       return credential.token;
     }

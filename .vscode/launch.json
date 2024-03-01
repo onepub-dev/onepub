@@ -5,22 +5,29 @@
             "type": "dart",
             "request": "launch",
             "program": "bin/onepub.dart",
-            "args": ["doctor"]
+            "args": [
+                "doctor"
+            ]
         },
         {
             "name": "onepub team create",
             "type": "dart",
             "request": "launch",
             "program": "bin/onepub.dart",
-            "args": ["team", "create", "one"]
-        }
-        ,
+            "args": [
+                "team",
+                "create",
+                "one"
+            ]
+        },
         {
             "name": "onepub login",
             "type": "dart",
             "request": "launch",
             "program": "bin/onepub.dart",
-            "args": ["login"],
+            "args": [
+                "login"
+            ],
             "console": "terminal"
         },
         {
@@ -28,85 +35,101 @@
             "type": "dart",
             "request": "launch",
             "program": "bin/onepub.dart",
-            "args": ["logout"]
-        }
-        ,
+            "args": [
+                "logout"
+            ]
+        },
         {
             "name": "onepub doctor",
             "type": "dart",
             "request": "launch",
             "program": "bin/onepub.dart",
-            "args": ["doctor"]
-        }
-        ,
+            "args": [
+                "doctor"
+            ]
+        },
         {
             "name": "onepub export",
             "type": "dart",
             "request": "launch",
             "program": "bin/onepub.dart",
-            "args": ["export"]
-        }
-        ,
+            "args": [
+                "export"
+            ]
+        },
         {
             "name": "onepub export to file",
             "type": "dart",
             "request": "launch",
             "program": "bin/onepub.dart",
-            "args": ["export", "--file"]
-        }
-
-        ,
+            "args": [
+                "export",
+                "--file"
+            ]
+        },
         {
             "name": "onepub export CI/CD User",
             "type": "dart",
             "request": "launch",
             "program": "bin/onepub.dart",
-            "args": ["export", "--user", "ci@onepub.dev"]
-        }
-        ,
+            "args": [
+                "export",
+                "--user",
+                "ci@onepub.dev"
+            ]
+        },
         {
             "name": "onepub import",
             "type": "dart",
             "request": "launch",
             "program": "bin/onepub.dart",
-            "args": ["import"],
-            "env": {"ONEPUB_TOKEN" : "ABCDE"}
+            "args": [
+                "import"
+            ],
+            "env": {
+                "ONEPUB_TOKEN": "ABCDE"
+            }
         },
-
         {
             "name": "onepub pub private",
             "type": "dart",
             "request": "launch",
             "program": "bin/onepub.dart",
-            "args": ["pub", "private"],
+            "args": [
+                "pub",
+                "private"
+            ],
             "console": "terminal"
         },
-
         {
             "name": "opub login",
             "type": "dart",
             "request": "launch",
             "program": "bin/opub.dart",
-            "args": ["login"],
+            "args": [
+                "login"
+            ],
             "console": "terminal"
         },
-
         {
             "name": "opub publish",
             "type": "dart",
             "request": "launch",
             "program": "/home/bsutton/git/onepub/onepub/bin/opub.dart",
-            "args": ["publish"],
+            "args": [
+                "publish"
+            ],
             "console": "terminal",
             "cwd": "/home/bsutton/git/dcli/dcli_core"
         },
-
         {
             "name": "opub get",
             "type": "dart",
             "request": "launch",
             "program": "bin/opub.dart",
-            "args": ["get"],
+            "args": [
+                "get"
+            ],
             "console": "terminal"
         },
         {
@@ -115,21 +138,26 @@
             "request": "launch",
             "program": "/home/bsutton/git/onepub/onepub/bin/onepub.dart",
             "cwd": "/home/bsutton/git/setversion",
-            "args": ["pub", "global","activate","setversion"],
+            "args": [
+                "pub",
+                "global",
+                "activate",
+                "setversion"
+            ],
             "console": "terminal"
         },
-
-
         {
             "name": "onepub pub private ",
             "type": "dart",
             "request": "launch",
             "program": "/home/bsutton/git/onepub/onepub/bin/onepub.dart",
-            "args": ["pub", "private"],
+            "args": [
+                "pub",
+                "private"
+            ],
             "cwd": "/home/bsutton/git/dvault",
             "console": "terminal"
         },
-
         {
             "name": "test ct auth",
             "type": "dart",
@@ -137,6 +165,18 @@
             "program": "/home/bsutton/git/onepub/onepub/tool/critical_test/pre_hook/auth.dart",
             "console": "terminal"
         },
-
+        {
+            "name": "onepub pub add ",
+            "type": "dart",
+            "request": "launch",
+            "program": "/home/bsutton/git/onepub/onepub/bin/onepub.dart",
+            "args": [
+                "pub",
+                "add",
+                "dcli"
+            ],
+            "cwd": "/home/bsutton/git/issues/token",
+            "console": "terminal"
+        },
     ]
 }

@@ -5,10 +5,12 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:dcli/dcli.dart';
+import 'package:dcli_core/dcli_core.dart';
 import 'package:path/path.dart' as path;
 
 import '../util/log.dart';
+import '../util/read.dart';
+import '../util/string_extension.dart';
 import 'credential.dart';
 import 'exceptions.dart';
 
@@ -23,11 +25,11 @@ class TokenStore {
   ///
   /// Modifying this field will not write changes to the disk. You have to call
   /// flush to save changes.
-  Iterable<Credential> get credentials => _loadCredentials();
+  Future<List<Credential>> get credentials => _loadCredentials();
 
   /// Reads "pub-tokens.json" and parses / deserializes it into list of
   /// [Credential].
-  List<Credential> _loadCredentials() {
+  Future<List<Credential>> _loadCredentials() async {
     final result = <Credential>[];
     final path = _tokensFile;
     if (path == null || !exists(path)) {
@@ -37,7 +39,7 @@ class TokenStore {
     try {
       dynamic json;
       try {
-        json = jsonDecode(read(path).toParagraph());
+        json = jsonDecode(await readFileAsString(path));
       } on FormatException {
         throw FormatException('$path is not valid JSON');
       }
@@ -118,8 +120,8 @@ class TokenStore {
   }
 
   /// Adds [token] into store and writes into disk.
-  void addCredential(Credential token) {
-    final credentials = _loadCredentials()
+  Future<void> addCredential(Credential token) async {
+    final credentials = await _loadCredentials()
       // Remove duplicate tokens
       ..removeWhere((it) => it.url == token.url)
       ..add(token);
@@ -128,8 +130,8 @@ class TokenStore {
 
   /// Removes tokens with matching [hostedUrl] from store. Returns whether or
   /// not there's a stored token with matching url.
-  bool removeCredential(Uri hostedUrl) {
-    final credentials = _loadCredentials();
+  Future<bool> removeCredential(Uri hostedUrl) async {
+    final credentials = await _loadCredentials();
 
     var i = 0;
     var found = false;
@@ -150,8 +152,8 @@ class TokenStore {
   /// Removes tokens which start with the same [hostedUrlSuffix] from store.
   /// Returns whether or not there was at least one stored token with matching
   /// url.
-  bool removeMatchingCredential(Uri hostedUrlSuffix) {
-    final credentials = _loadCredentials();
+  Future<bool> removeMatchingCredential(Uri hostedUrlSuffix) async {
+    final credentials = await _loadCredentials();
 
     var i = 0;
     var found = false;
@@ -174,9 +176,9 @@ class TokenStore {
   /// matching credential is found.
   /// For onepub the [apiUrl] is of the form:
   /// https://onepub.dev/api/xxxxxxx
-  Credential? findCredential(Uri apiUrl) {
+  Future<Credential?> findCredential(Uri apiUrl) async {
     Credential? matchedCredential;
-    for (final credential in credentials) {
+    for (final credential in await credentials) {
       if (credential.url == apiUrl && credential.isValid()) {
         if (matchedCredential == null) {
           matchedCredential = credential;
@@ -195,8 +197,8 @@ class TokenStore {
 
   /// Returns whether or not store contains a token that could be used for
   /// authenticating given [url].
-  bool hasCredential(Uri url) =>
-      credentials.any((it) => it.url == url && it.isValid());
+  Future<bool> hasCredential(Uri url) async =>
+      (await credentials).any((it) => it.url == url && it.isValid());
 
   /// Deletes pub-tokens.json file from the disk.
   void deleteTokensFile() {

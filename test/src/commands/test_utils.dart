@@ -3,8 +3,10 @@
  * Written by Brett Sutton <bsutton@onepub.dev>, Jan 2022
  */
 
-import 'package:dcli/dcli.dart';
+import 'package:dcli/dcli.dart' hide copyTree, printerr;
 import 'package:dcli_core/dcli_core.dart' as core;
+import 'package:dcli_core/dcli_core.dart';
+import 'package:onepub/src/util/printerr.dart';
 import 'package:path/path.dart';
 
 /// Runs a onepub command on the cli and returns the output
@@ -38,7 +40,7 @@ List<String> runCmd(String command, {String? workingDirectory}) {
 Future<void> withTempProject(String projectName,
     Future<void> Function(DartProject dartProject) action) async {
   final pathToRoot = DartProject.self.pathToProjectRoot;
-  await core.withTempDir((workingDir) async {
+  await core.withTempDirAsync((workingDir) async {
     copyTree(join(pathToRoot, 'test', 'fixtures', projectName), workingDir);
 
     await action(DartProject.fromPath(workingDir));
