@@ -1,3 +1,11 @@
+# 4.2.0
+- upgraded dependencies dcli, pubspec_manager and settings_yaml
+- Fixed the welcome message link to getting-started which didn't exist
+ now points to the my first package blog.
+
+# 4.1.0
+- support for dart 3.2 +
+
 # 4.1.0-beta.1
 - support for dart 3.2.x
 
