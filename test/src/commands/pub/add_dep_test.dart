@@ -40,8 +40,7 @@ void main() {
             final next = ps.Version.parse(versions.latest.version).nextMinor;
 
             pubspec
-              ..version = VersionBuilder.parse(next.canonicalizedVersion)
-                  .attach(pubspec)
+              ..version.set(next.canonicalizedVersion)
               ..saveTo(pathToPackage2Pubspec);
 
             // add new version to change log to stop pub publish complaining.

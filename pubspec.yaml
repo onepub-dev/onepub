@@ -1,5 +1,5 @@
 name: onepub
-version: 4.1.0
+version: 4.2.0
 homepage: https://onepub.dev
 documentation: https://docs.onepub.dev
 description: Command line tools for the OnePub private Dart/Flutter repository.
@@ -7,7 +7,7 @@ repository: https://github.com/onepub-dev/onepub
 environment:
   sdk: '>=3.2.0 <4.0.0'
 dependencies:
-  _fe_analyzer_shared: ^67.0.0
+  _fe_analyzer_shared: 67.0.0
   analyzer: 6.4.1
   archive: 3.4.10
   args: 2.4.2
@@ -26,18 +26,18 @@ dependencies:
   crypto: 3.0.3
   csv: 5.1.1
   dart_console2: 3.0.0
-  dcli_core: 4.0.1-alpha.9
-  dcli_input: 4.0.1-alpha.10
-  dcli_terminal: 4.0.1-alpha.9
+  dcli_core: 4.0.1-alpha.11
+  dcli_input: 4.0.1-alpha.11
+  dcli_terminal: 4.0.1-alpha.11
   equatable: 2.0.5
-  ffi: ^2.1.0
+  ffi: 2.1.0
   file: 7.0.0
   file_utils: 1.0.1
   frontend_server_client: 3.2.0
   functional_data: 1.1.1
   glob: 2.1.2
   globbing: 1.0.0
-  http: ^1.2.0
+  http: 1.2.0
   http_multi_server: 3.2.1
   http_parser: 4.0.2
   ini: 2.1.0
@@ -59,11 +59,11 @@ dependencies:
   posix: 6.0.1
   pub_semver: 2.1.4
   pubspec_lock: 3.0.2
-  pubspec_manager: 1.0.0-beta.1
+  pubspec_manager: 0.9.1
   quiver: 3.2.1
   random_string: 2.3.1
   scope: 4.1.0
-  settings_yaml: 8.1.0-alpha.1
+  settings_yaml: 8.1.0-alpha.2
   shelf: 1.4.1
   source_map_stack_trace: 2.1.1
   source_maps: 0.10.12
@@ -84,13 +84,13 @@ dependencies:
   uuid: 4.3.3
   validators2: 5.0.0
   watcher: 1.1.0
-  web_socket_channel: ^2.4.3
+  web_socket_channel: 2.4.3
   webkit_inspection_protocol: 1.2.1
   win32: 4.1.4
   yaml: 3.1.2
   yaml_edit: 2.2.0
 dev_dependencies:
-  dcli: 4.0.1-alpha.8
+  dcli: 4.0.1-alpha.12
   lint_hard: 4.0.0
   lints: 3.0.0
   matcher: 0.12.16+1
@@ -100,7 +100,7 @@ dev_dependencies:
   test: 1.25.2
   test_api: 0.7.0
   test_core: 0.6.0
-  vm_service: ^14.0.0
+  vm_service: 14.0.0
 executables:
   onepub:
   opub:
@@ -111,3 +111,4 @@ platforms:
 false_secrets:
   - lib/src/pub/validator/leak_detection.dart
   - lib/src/pub/oauth2.dart
+
