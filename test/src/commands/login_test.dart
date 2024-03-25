@@ -4,6 +4,7 @@
  */
 
 import 'package:dcli_core/dcli_core.dart';
+import 'package:onepub/src/commands/login.dart';
 import 'package:onepub/src/entry_point.dart';
 import 'package:onepub/src/my_runner.dart';
 import 'package:onepub/src/onepub_settings.dart';
@@ -19,4 +20,11 @@ void main() {
   }
       // , tags: ['manual']
       );
+
+  test('welcome', () {
+    showWelcome(
+        firstLogin: true,
+        organisationName: 'Test Org',
+        operator: 'Test Operator');
+  });
 }

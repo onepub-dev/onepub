@@ -7,6 +7,7 @@ import 'dart:async';
 import 'package:args/command_runner.dart';
 import 'package:dcli_core/dcli_core.dart';
 import 'package:dcli_terminal/dcli_terminal.dart';
+import 'package:url_builder/url_builder.dart';
 
 import '../api/api.dart';
 import '../exceptions.dart';
@@ -108,14 +109,17 @@ void showWelcome(
     firstMessage = '''
 Welcome to OnePub.
 Read the getting started guide at:
-${orange('${OnePubSettings.use().onepubWebUrl}/getting-started')}
+${blue(urlJoin(OnePubSettings.use().onepubWebUrl, 'Blog?id=zuhnoflygz'))}
+
+The OnePub manual can be found at:
+${blue('https://docs.onepub.dev')}
 
 ''';
   }
 
   print('''
 
-${blue('Successfully logged into $organisationName as $operator.')}
+${green('Successfully logged into $organisationName as $operator.')}
 
 $firstMessage
 ''');
