@@ -298,8 +298,8 @@ class _SynchronousTarSink implements Sink<SynchronousTarEntry> {
 
     // End the tar archive by writing two zero blocks.
     _output
-      ..add(UnmodifiableUint8ListView(zeroBlock))
-      ..add(UnmodifiableUint8ListView(zeroBlock));
+      ..add(zeroBlock.asUnmodifiableView())
+      ..add(zeroBlock.asUnmodifiableView());
     _output.close();
 
     _closed = true;
