@@ -1,11 +1,11 @@
 name: onepub
-version: 4.2.0
+version: 5.0.0
 homepage: https://onepub.dev
 documentation: https://docs.onepub.dev
 description: Command line tools for the OnePub private Dart/Flutter repository.
 repository: https://github.com/onepub-dev/onepub
 environment:
-  sdk: '>=3.4.0 <4.0.0'
+  sdk: '>=3.5.0 <4.0.0'
 dependencies:
   # _fe_analyzer_shared: ^68.0.0
   

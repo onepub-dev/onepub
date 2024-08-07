@@ -1,3 +1,7 @@
+# 5.0.0
+- Upgraded package deps to support dart 3.5
+- replaced deprecated call to  UnmodifiableUnit8ListView
+
 # 4.2.0
 - upgraded dependencies dcli, pubspec_manager and settings_yaml
 - Fixed the welcome message link to getting-started which didn't exist

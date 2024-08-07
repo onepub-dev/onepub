@@ -2,7 +2,7 @@ name: test_packag_1
 version: 1.0.0
 description: A simple command-line application.
 environment:
-  sdk: '>=2.19.0 <4.0.0'
+  sdk: '>=3.5.0 <4.0.0'
 dev_dependencies:
   args: ^2.3.0
   async: ^2.8.2
