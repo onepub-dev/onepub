@@ -5,9 +5,25 @@ packages:
     dependency: "direct dev"
     description:
       name: lint_hard
-      sha256: d9cb96856a6c08f9d9d012de17bd45a9aa3950738c7bb6e01676a1c29625a4aa
+      sha256: "638d2cce6d3d5499826be71311d18cded797a51351eaa1aee7a35a2f0f9bc46e"
       url: "https://pub.dev"
     source: hosted
-    version: "3.0.1"
+    version: "5.0.0"
+  meta:
+    dependency: transitive
+    description:
+      name: meta
+      sha256: bdb68674043280c3428e9ec998512fb681678676b3c54e773629ffe74419f8c7
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.15.0"
+  scope:
+    dependency: "direct dev"
+    description:
+      name: scope
+      sha256: d4ee4dacb133196db274c202d507622a619b01aa7d2354c42ce5cdc4b267ead6
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.0.0"
 sdks:
-  dart: ">=2.19.0 <4.0.0"
+  dart: ">=3.0.0 <4.0.0"

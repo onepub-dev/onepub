@@ -79,14 +79,12 @@ run: onepub login
     case Method.get:
       request = await client.getUrl(uri);
       _addHeaders(headers0, request);
-      break;
     case Method.post:
       request = await client.postUrl(uri);
       _addHeaders(headers0, request);
       if (body != null) {
         request.write(body);
       }
-      break;
   }
 
   final response = await request.close();

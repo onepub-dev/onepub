@@ -1,9 +1,10 @@
 name: test_packag_2
 version: 1.32.0
 homepage: https://github.com
-publish_to: https://squarephone.biz/api/jbbxpsdavu/
+publish_to: https://onepub.dev/api/jbbxpsdavu/
 description: A simple command-line application.
-environment: 
+environment:
   sdk: '>=2.19.0 <4.0.0'
-dev_dependencies: 
-  lint_hard: ^3.0.0
+dev_dependencies:
+  lint_hard: ^5.0.0
+  scope: ^5.0.0

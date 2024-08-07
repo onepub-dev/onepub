@@ -52,7 +52,6 @@ class MyRunner extends CommandRunner<int> implements PubTopLevel {
       switch (commandSet) {
         case CommandSet.onepub:
           onepubCommands(commandSet);
-          break;
         case CommandSet.opub:
           opubCommands();
       }
@@ -69,8 +68,8 @@ class MyRunner extends CommandRunner<int> implements PubTopLevel {
 
     await Settings().setVerbose(enabled: results['debug'] as bool);
 
-    final version = results['version'] as bool == true;
-    if (version == true) {
+    final version = results['version'] as bool;
+    if (version) {
       // no output required as the startup logic already prints the version.
       exit(0);
     }

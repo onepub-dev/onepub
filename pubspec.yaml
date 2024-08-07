@@ -7,7 +7,7 @@ repository: https://github.com/onepub-dev/onepub
 environment:
   sdk: '>=3.4.0 <4.0.0'
 dependencies:
-  _fe_analyzer_shared: ^68.0.0
+  # _fe_analyzer_shared: ^68.0.0
   
   archive: ^3.6.0
   args: ^2.5.0
@@ -20,15 +20,15 @@ dependencies:
   circular_buffer: 0.11.0
   cli_util: 0.4.1
   clock: 1.1.1
-  collection: 1.18.0
+  collection: ^1.19.0
   convert: 3.1.1
   coverage: ^1.8.0
   crypto: 3.0.3
   csv: ^6.0.0
   dart_console: ^4.1.0
-  dcli_core: ^4.0.0
-  dcli_input: ^4.0.0
-  dcli_terminal: ^4.0.0
+  dcli_core: ^5.0.0
+  dcli_input: ^5.0.0
+  dcli_terminal: ^5.0.0
   equatable: 2.0.5
   ffi: ^2.1.2
   file: 7.0.0
@@ -38,7 +38,7 @@ dependencies:
   globbing: 1.0.0
   http: ^1.2.1
   http_multi_server: 3.2.1
-  http_parser: 4.0.2
+  http_parser: ^4.1.0
   ini: 2.1.0
   intl: ^0.19.0
   io: 1.0.4
@@ -61,17 +61,17 @@ dependencies:
   pubspec_manager: ^1.0.0
   quiver: 3.2.1
   random_string: 2.3.1
-  scope: 4.1.0
+  scope: ^4.1.1
   settings_yaml: ^8.1.0
-  shelf: 1.4.1
+  shelf: ^1.4.2
   source_map_stack_trace: 2.1.1
   source_maps: 0.10.12
   source_span: 1.10.0
   stack_trace: 1.11.1
   stacktrace_impl: 2.3.0
   stream_channel: 2.1.2
-  string_scanner: 1.2.0
-  strings: 3.1.1
+  string_scanner: ^1.3.0
+  strings: ^3.1.2
   sum_types: 0.3.5
   system_info2: 4.0.0
   term_glyph: 1.2.1
@@ -89,8 +89,8 @@ dependencies:
   yaml_edit: ^2.2.1
 dev_dependencies:
   analyzer: ^6.5.0
-  dcli: ^4.0.1
-  lint_hard: 4.0.0
+  dcli: ^5.0.0
+  lint_hard: ^5.0.0
   lints: ^4.0.0
   matcher: 0.12.16+1
   shelf_packages_handler: 3.0.2

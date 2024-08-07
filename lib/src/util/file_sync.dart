@@ -82,7 +82,7 @@ class FileSync {
       line.write(char);
       priorChar = char;
     }
-    final endOfFile = line.isEmpty && foundDelimiter == false;
+    final endOfFile = line.isEmpty && !foundDelimiter;
     return endOfFile ? null : line.toString();
   }
 

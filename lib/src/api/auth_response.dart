@@ -6,7 +6,7 @@ class AuthResponse {
 
   factory AuthResponse.parse(EndpointResponse response) {
     final auth = AuthResponse._internal();
-    if (response.success == true) {
+    if (response.success) {
       auth.status = parseStatus(response.data['status'] as String? ??
           AwaitLoginStatus.authFailed.toString());
 
@@ -19,10 +19,8 @@ class AuthResponse {
             ..organisationName = response.data['organisationName']! as String
             ..obfuscatedOrganisationId =
                 response.data['obfuscatedOrganisationId']! as String;
-          break;
         case AwaitLoginStatus.retry:
           auth.pollInterval = response.data['pollInterval'] as int? ?? 3;
-          break;
         case AwaitLoginStatus.authFailed:
           throw ExitException(exitCode: 1, message: 'Authentication failed');
         case AwaitLoginStatus.timeout:
