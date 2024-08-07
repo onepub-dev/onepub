@@ -8,7 +8,7 @@ environment:
   sdk: '>=3.5.0 <4.0.0'
 dependencies:
   # _fe_analyzer_shared: ^68.0.0
-  
+  analyzer: ^6.5.0
   archive: ^3.6.0
   args: ^2.5.0
   async: 2.11.0
@@ -88,7 +88,6 @@ dependencies:
   yaml: 3.1.2
   yaml_edit: ^2.2.1
 dev_dependencies:
-  analyzer: ^6.5.0
   dcli: ^5.0.0
   lint_hard: ^5.0.0
   lints: ^4.0.0
