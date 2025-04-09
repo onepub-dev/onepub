@@ -219,9 +219,6 @@ R withOpenFile<R>(
 /// To enable developer mode see:
 /// https://dcli.onepub.dev/getting-started/installing-on-windows
 ///
-/// To check if your script is running as an administrator use:
-///
-/// [Shell.current.isPrivileged]
 ///
 /// See:
 ///  * [deleteSymlink]
@@ -243,9 +240,6 @@ void symlink(
 /// To enable developer mode see:
 /// https://dcli.onepub.dev/getting-started/installing-on-windows
 ///
-/// To check if your script is running as an administrator use:
-///
-/// [Shell.current.isPrivileged]
 ///
 void deleteSymlink(String linkPath) {
   verbose(() => 'deleteSymlink linkPath: $linkPath');
