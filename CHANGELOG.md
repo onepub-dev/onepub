@@ -15,7 +15,7 @@
 
 # 3.1.0-beta.1
 - moved some dependencies into the dev_dependencies section to help
-with Dart 3.x compatability.
+with Dart 3.x compatibility.
 
 # 3.0.3
 - Upgraded to pub_semver 2.1.2 to resolve a dart 2.19 incompatibility issue.
@@ -35,7 +35,7 @@ An upgrade of the CLI tooling to 3.x is required.
 # 2.0.5
 - removed the fvm dependency as we don't need to use it.
 - Fixes: #193 a bug in doctor when the users path includes a blank path. Thanks to @ahmendnfwela for reporting the issue.
-- run dcli lock to fix all versions to a specific versions (including transiant dependencies) to ensure our code is stable in the face of a dependency being upgraded in a way that breaks onepub on the customer system.
+- run dcli lock to fix all versions to a specific versions (including transient dependencies) to ensure our code is stable in the face of a dependency being upgraded in a way that breaks onepub on the customer system.
 - Fixed the user agent so the onepub commands always present as being at least dart 2.15.0 so the server won't reject our requests.
 - Modified the user-agent we pass as it must always contain a version of at least 2.15.0 otherwise the server will reject the request.
 - Added a fix for io runProcessSync as the publish command was passing down an empty string for the working directory when they really meant null to indicate the cwd.  We now detect an empty string and substitute null. This fixes the 'git' file not found error (which was that the working directory couldn't be found).
@@ -57,7 +57,7 @@ An upgrade of the CLI tooling to 3.x is required.
 - update dcli
 
 # 2.0.1
-- Added logging of data recieved in both hex and ascii.
+- Added logging of data received in both hex and ascii.
 - added locale to onepub doctor.
 
 # 2.0.0
@@ -154,7 +154,7 @@ An upgrade of the CLI tooling to 3.x is required.
 - improved the completion message when adding a private dependency.
 - Found a combo dependencies that works from 2.12 to 2.17. Change dependencies with care.
 - change resolveWebEndPoint to use the correct slash when running on windows.
-- Fixed bug on windows caused by settgins.yaml trying move the file whilst it was still open.
+- Fixed bug on windows caused by settings.yaml trying move the file whilst it was still open.
 
 # 1.1.7
 - Merge branch 'main' of github.com:onepub-dev/onepub

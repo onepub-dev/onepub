@@ -41,7 +41,7 @@ onepub pub private
 dart pub publish
 ```
 
-# Add a private dependeny
+# Add a private dependency
 
 To add a dependency on a private package to your project
 
@@ -52,7 +52,7 @@ onepub pub add <my first project>
 
 # opub
 With Google deprecating the pub command in favour of using `flutter pub` or `dart pub`
-we have created a replacement `opub` command for the lazy ones amoungst us (like me).
+we have created a replacement `opub` command for the lazy ones amongst us (like me).
 
 You will also need to use opub to publish to OnePub if you are using a version of Dart pre 2.12.
 

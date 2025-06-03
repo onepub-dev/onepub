@@ -15,7 +15,7 @@ We expect triage to take 2-3 business days subject to the complexity of the issu
 
 Our objective is to fix critical bugs within 24 hours of the triage completion.
 
-Timeline for other bugs will be based on the percieved risk to our customers.
+Timeline for other bugs will be based on the perceived risk to our customers.
 
 When reporting a bug please provide as much information as possible to help
 us reproduce the problem.
