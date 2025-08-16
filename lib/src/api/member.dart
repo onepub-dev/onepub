@@ -4,6 +4,20 @@ import '../util/role_enum.dart';
 import 'api.dart';
 
 class Member {
+  String email;
+
+  String firstname;
+
+  String lastname;
+
+  Set<RoleEnum> roles;
+
+  String organisationName;
+
+  String obfuscatedOrganisationId;
+
+  String onepubToken;
+
   Member({
     required this.email,
     required this.firstname,
@@ -13,14 +27,6 @@ class Member {
     required this.organisationName,
     required this.obfuscatedOrganisationId,
   });
-
-  String email;
-  String firstname;
-  String lastname;
-  Set<RoleEnum> roles;
-  String organisationName;
-  String obfuscatedOrganisationId;
-  String onepubToken;
 
   /// Returns true if the currently logged in and active user is a system
   /// administrator

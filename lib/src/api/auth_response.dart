@@ -2,6 +2,20 @@ import '../exceptions.dart';
 import '../util/send_command.dart';
 
 class AuthResponse {
+  late final AwaitLoginStatus status;
+
+  late final int pollInterval;
+
+  late final String onepubToken;
+
+  late final bool firstLogin;
+
+  late final String operatorEmail;
+
+  late final String organisationName;
+
+  late final String obfuscatedOrganisationId;
+
   AuthResponse._internal();
 
   factory AuthResponse.parse(EndpointResponse response) {
@@ -40,15 +54,6 @@ class AuthResponse {
       throw ExitException(exitCode: 1, message: 'Login failed: $show');
     }
   }
-
-  late final AwaitLoginStatus status;
-  late final int pollInterval;
-
-  late final String onepubToken;
-  late final bool firstLogin;
-  late final String operatorEmail;
-  late final String organisationName;
-  late final String obfuscatedOrganisationId;
 }
 
 enum AwaitLoginStatus {

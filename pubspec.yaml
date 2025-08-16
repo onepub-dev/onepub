@@ -1,5 +1,5 @@
 name: onepub
-version: 5.0.0
+version: 6.0.0
 homepage: https://onepub.dev
 documentation: https://docs.onepub.dev
 description: Command line tools for the OnePub private Dart/Flutter repository.
@@ -8,97 +8,97 @@ environment:
   sdk: '>=3.5.0 <4.0.0'
 dependencies:
   # _fe_analyzer_shared: ^68.0.0
-  analyzer: ^6.5.0
-  archive: ^3.6.0
+  analyzer: ^7.6.0
+  archive: ^4.0.7
   args: ^2.5.0
-  async: 2.11.0
-  basic_utils: 5.7.0
-  boolean_selector: 2.1.1
-  characters: 1.3.0
-  charcode: 1.3.1
+  async: ^2.13.0
+  basic_utils: ^5.8.2
+  boolean_selector: ^2.1.2
+  characters: ^1.4.1
+  charcode: ^1.4.0
   chunked_stream: 1.4.2
-  circular_buffer: 0.11.0
-  cli_util: 0.4.1
-  clock: 1.1.1
+  circular_buffer: ^0.12.0
+  cli_util: ^0.4.2
+  clock: ^1.1.2
   collection: ^1.19.0
-  convert: 3.1.1
+  convert: ^3.1.2
   coverage: ^1.8.0
-  crypto: 3.0.3
+  crypto: ^3.0.6
   csv: ^6.0.0
   dart_console: ^4.1.0
-  dcli_core: ^5.0.0
-  dcli_input: ^5.0.0
-  dcli_terminal: ^5.0.0
-  equatable: 2.0.5
+  dcli_core: ^7.0.3
+  dcli_input: ^7.0.2
+  dcli_terminal: ^7.0.3
+  equatable: ^2.0.7
   ffi: ^2.1.2
-  file: 7.0.0
+  file: ^7.0.1
   frontend_server_client: ^4.0.0
   functional_data: ^1.2.0
-  glob: 2.1.2
+  glob: ^2.1.3
   globbing: 1.0.0
   http: ^1.2.1
-  http_multi_server: 3.2.1
+  http_multi_server: ^3.2.2
   http_parser: ^4.1.0
   ini: 2.1.0
-  intl: ^0.19.0
-  io: 1.0.4
-  js: 0.7.1
+  intl: ^0.20.2
+  io: ^1.0.5
+  js: ^0.7.2
   json2yaml: 3.0.1
   json_annotation: ^4.9.0
   lists: 1.0.1
-  logging: 1.2.0
+  logging: ^1.3.0
   meta: ^1.15.0
-  mime: 1.0.5
+  mime: ^2.0.0
   node_preamble: 2.0.2
-  oauth2: 2.0.2
-  package_config: 2.1.0
-  path: 1.9.0
-  pointycastle: ^3.9.1
+  oauth2: ^2.0.3
+  package_config: ^2.2.0
+  path: ^1.9.1
+  pointycastle: ^4.0.0
   pool: 1.5.1
-  posix: 6.0.1
-  pub_semver: 2.1.4
+  posix: ^6.0.3
+  pub_semver: ^2.2.0
   pubspec_lock: 3.0.2
   pubspec_manager: ^1.0.0
-  quiver: 3.2.1
+  quiver: ^3.2.2
   random_string: 2.3.1
-  scope: ^4.1.1
+  scope: ^5.1.0
   settings_yaml: ^8.1.0
   shelf: ^1.4.2
-  source_map_stack_trace: 2.1.1
-  source_maps: 0.10.12
-  source_span: 1.10.0
-  stack_trace: 1.11.1
+  source_map_stack_trace: ^2.1.2
+  source_maps: ^0.10.13
+  source_span: ^1.10.1
+  stack_trace: ^1.12.1
   stacktrace_impl: 2.3.0
-  stream_channel: 2.1.2
+  stream_channel: ^2.1.4
   string_scanner: ^1.3.0
-  strings: ^3.1.2
+  strings: ^4.0.1
   sum_types: 0.3.5
   system_info2: 4.0.0
-  term_glyph: 1.2.1
-  typed_data: 1.3.2
+  term_glyph: ^1.2.2
+  typed_data: ^1.4.0
   uri: 1.0.0
   url_builder: 2.0.0
   usage: 4.1.1
   uuid: ^4.4.0
   validators2: 5.0.0
-  watcher: 1.1.0
+  watcher: ^1.1.2
   web_socket_channel: ^3.0.0
   webkit_inspection_protocol: 1.2.1
   win32: ^5.3.0
-  yaml: 3.1.2
+  yaml: ^3.1.3
   yaml_edit: ^2.2.1
 dev_dependencies:
-  dcli: ^5.0.0
-  lint_hard: ^5.0.0
-  lints: ^4.0.0
-  matcher: 0.12.16+1
+  dcli: ^7.0.5
+  lint_hard: ^6.2.1
+  lints: ^6.0.0
+  matcher: ^0.12.17
   shelf_packages_handler: 3.0.2
-  shelf_static: 1.1.2
-  shelf_web_socket: ^2.0.0
+  shelf_static: ^1.1.3
+  shelf_web_socket: ^3.0.0
   test: ^1.25.5
   test_api: ^0.7.1
   test_core: ^0.6.2
-  vm_service: ^14.2.2
+  vm_service: ^15.0.2
 executables:
   onepub:
   opub:

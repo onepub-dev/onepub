@@ -16,10 +16,10 @@ import 'exceptions.dart';
 
 /// Stores and manages authentication credentials.
 class TokenStore {
-  TokenStore(this.configDir);
-
   /// Cache directory.
   final String? configDir;
+
+  TokenStore(this.configDir);
 
   /// List of saved authentication tokens.
   ///
@@ -73,9 +73,11 @@ class TokenStore {
                   'Invalid or not supported credential');
             }
           } on FormatException catch (e) {
+            // it's json
             // ignore: avoid_dynamic_calls
             if (element['url'] is String) {
               logwarn(
+                // it's json
                 // ignore: avoid_dynamic_calls
                 'Failed to load credentials for ${element['url']}: '
                 '${e.message}',

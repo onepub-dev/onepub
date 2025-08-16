@@ -6,10 +6,10 @@
 import 'dart:io';
 
 class ExitException extends OnePubCliException {
+  int exitCode;
+
   ExitException({required this.exitCode, required String message})
       : super(message);
-
-  int exitCode;
 }
 
 class CredentialsException extends OnePubCliException {
@@ -21,9 +21,10 @@ class UnexpectedHttpResponseException extends OnePubCliException {
 }
 
 class OnePubCliException implements Exception {
+  String message;
+
   OnePubCliException(this.message);
 
-  String message;
   @override
   String toString() => message;
 }
@@ -41,6 +42,10 @@ class SettingsException extends OnePubCliException {
 }
 
 class FetchException extends OnePubCliException {
+  /// If this [FetchException] occured due to an [OSError] then
+  /// this contains the underlying error.
+  int? errorCode;
+
   /// ctor
   FetchException(super.message) : errorCode = OSError.noErrorCode;
 
@@ -53,8 +58,4 @@ class FetchException extends OnePubCliException {
   /// HTTP error.
   FetchException.fromHttpError(this.errorCode, String reasonPhrase)
       : super(reasonPhrase);
-
-  /// If this [FetchException] occured due to an [OSError] then
-  /// this contains the underlying error.
-  int? errorCode;
 }

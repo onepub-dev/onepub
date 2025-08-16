@@ -123,6 +123,7 @@ Future<Member> fetchTestUser({required String userEmailAddress}) async {
 }
 
 class ImpersonationException implements Exception {
-  ImpersonationException(this.message);
   String message;
+
+  ImpersonationException(this.message);
 }

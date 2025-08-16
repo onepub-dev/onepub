@@ -4,6 +4,16 @@ import 'package:onepub/src/exceptions.dart';
 import 'package:onepub/src/util/role_enum.dart';
 
 class TestUsers {
+  static final _self = TestUsers._internal();
+
+  static var initialised = false;
+
+  late final Member administrator;
+
+  late final Member teamLeader;
+
+  late final Member basicMember;
+
   factory TestUsers({bool init = false}) {
     if (!init && !initialised) {
       throw NotInitialisedException('call TestUsers.init() first');
@@ -13,13 +23,6 @@ class TestUsers {
   }
 
   TestUsers._internal();
-
-  static final TestUsers _self = TestUsers._internal();
-
-  static bool initialised = false;
-  late final Member administrator;
-  late final Member teamLeader;
-  late final Member basicMember;
 
   /// creates and caches a set of users with different roles.
   Future<void> init() async {
@@ -39,24 +42,17 @@ class TestUsers {
       lastname: 'Administrator',
       role: RoleEnum.Administrator);
 
-  Future<Member> createTeamLeader(String emailAddress) async => _fetchOrCreate(
+  Future<Member> createTeamLeader(String emailAddress)  => _fetchOrCreate(
       emailAddress: emailAddress,
       firstname: 'One',
       lastname: 'TeamLeader',
       role: RoleEnum.TeamLeader);
 
-  Future<Member> createBasicMember(String emailAddress) async => _fetchOrCreate(
+  Future<Member> createBasicMember(String emailAddress)  => _fetchOrCreate(
       emailAddress: emailAddress,
       firstname: 'One',
       lastname: 'Member',
       role: RoleEnum.Collaborator);
-
-  //   Future<Member> createCICDMember(String emailAddress) async
-  //    => _fetchOrCreate(
-  // emailAddress: emailAddress,
-  // firstname: 'One',
-  // lastname: 'Member',
-  // role: RoleEnum.);
 
   Future<Member> _fetchOrCreate(
       {required String emailAddress,

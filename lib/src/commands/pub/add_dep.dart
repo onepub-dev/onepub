@@ -5,14 +5,14 @@
 // BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
+import 'dart:io';
 
-
+import 'package:args/command_runner.dart';
 import 'package:dcli_terminal/dcli_terminal.dart';
 
 import '../../api/api.dart';
 import '../../exceptions.dart';
 import '../../onepub_settings.dart';
-import '../../pub/command/add.dart';
 import '../../util/one_pub_token_store.dart';
 
 /// Handles the `add` pub command. Adds a dependency to `pubspec.yaml` and gets
@@ -23,39 +23,48 @@ import '../../util/one_pub_token_store.dart';
 /// bound in a ^x.y.z constraint.
 ///
 /// Currently supports only adding one dependency at a time.
-class AddPrivateDependencyCommand extends AddCommand {
+class AddPrivateDependencyCommand extends Command<int> {
   AddPrivateDependencyCommand();
+
   @override
   String get name => 'add';
-  @override
-  String get description => blue('Add private dependencies to pubspec.yaml.');
-  @override
-  String get argumentsDescription =>
-      '<package>[:<constraint>] [<package2>[:<constraint2>]...] [options]';
-  @override
-  String get docUrl => 'https://dart.dev/tools/pub/cmd/pub-add';
 
   @override
-  String hostedUrl(String? argsHostedUrl) {
-    final url = OnePubSettings.use().onepubApiUrlAsString;
-    print(url);
-    return url;
+  String get description => blue('''
+Add a private dependencies to `pubspec.yaml`.''');
+
+// Invoking `onepub pub add foo` will add `foo` to `pubspec.yaml`
+// with a default constraint derived from latest compatible version.
+
+// Add to dev_dependencies by prefixing with "dev:".
+
+// Make dependency overrides by prefixing with "override:".
+
+// Add packages with specific constraints or other sources by giving a descriptor
+// after a colon.
+
+  @override
+  Future<int> run() async {
+    // cache.setDefault
+    await API().checkVersion();
+    return add();
   }
 
-  @override
-  bool get isOffline => false;
-
-  @override
-  Future<void> runProtected() async {
-    if (!await OnePubTokenStore().isLoggedIn(OnePubSettings.use().onepubApiUrl)) {
+  Future<int> add() async {
+    if (!await OnePubTokenStore()
+        .isLoggedIn(OnePubSettings.use().onepubApiUrl)) {
       throw ExitException(exitCode: 1, message: '''
 You must be logged in to run this command.
 run: onepub login
   ''');
     }
 
-    // cache.setDefault
-    await API().checkVersion();
-    await super.runProtected();
+    final onePubUrl = OnePubSettings.use().onepubApiUrlAsString;
+
+    final r = await Process.run('dart',
+        ['pub', 'add', '--hosted-url', onePubUrl, ...(argResults!.rest)]);
+    stdout.write(r.stdout);
+    stderr.write(r.stderr);
+    return r.exitCode;
   }
 }

@@ -3,31 +3,17 @@ import 'package:path/path.dart';
 import 'package:settings_yaml/settings_yaml.dart';
 
 class TestSettings {
+  late final SettingsYaml _settings;
+
   TestSettings() {
     _settings = SettingsYaml.load(pathToSettings: pathToTestSettings);
   }
 
-  late final SettingsYaml _settings;
-
-  // String get member => _settings.asString('member');
-  // set member(String email) => _settings['member'] = email;
-  // String get cicdMember => _settings.asString('cicd_member');
-
-  // String get onepubToken => _settings.asString('onepub_token');
-  // set onepubToken(String token) => _settings['onepub_token'] = token;
-
   String get onepubUrl => _settings.asString('onepubUrl');
+
   set onepubUrl(String url) => _settings['onepubUrl'] = url;
 
-  // String get organisationName => _settings.asString('organisationName');
-
-  // set organisationName(String name) => _settings['organisationName'] = name;
-
-  // String get organisationId => _settings.asString('organisationId');
-  // set organisationId(String obsfucatedId) =>
-  //     _settings['organisationId'] = obsfucatedId;
-
-  Future<void> save() async => _settings.save();
+  Future<void> save()  => _settings.save();
 
   String get pathToTestSettings {
     final pathToTest = dcli.DartProject.self.pathToTestDir;

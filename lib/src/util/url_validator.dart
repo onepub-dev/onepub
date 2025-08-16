@@ -6,7 +6,7 @@ import 'package:validators2/validators2.dart';
 
 class UrlValidator extends AskValidator {
   @override
-  Future<String> validate(String line) async {
+  Future<String> validate(String line, {String? customErrorMessage}) async {
     final finalLine = line.trim().toLowerCase();
 
     if (!line.startsWith('https://')) {
@@ -22,9 +22,10 @@ class UrlValidator extends AskValidator {
 
 ///
 class RulesException implements Exception {
+  String message;
+
   ///
   RulesException(this.message);
-  String message;
 
   @override
   String toString() => message;

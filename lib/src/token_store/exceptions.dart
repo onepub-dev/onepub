@@ -9,9 +9,9 @@ import 'package:stack_trace/stack_trace.dart';
 /// These exceptions won't have any debugging information printed when they're
 /// thrown.
 class ApplicationException implements Exception {
-  ApplicationException(this.message);
-
   final String message;
+
+  ApplicationException(this.message);
 
   @override
   String toString() => message;
@@ -34,12 +34,13 @@ class DataException extends ApplicationException {
 /// An exception class for exceptions that are intended to be seen by the user
 /// and are associated with a problem in a file at some path.
 class FileException implements ApplicationException {
-  FileException(this.message, this.path);
   @override
   final String message;
 
   /// The path to the file that was missing or erroneous.
   final String path;
+
+  FileException(this.message, this.path);
 
   @override
   String toString() => message;
@@ -51,6 +52,11 @@ class FileException implements ApplicationException {
 /// that other code in pub can use this to show a more detailed explanation of
 /// why the package was being requested.
 class PackageNotFoundException extends WrappedException {
+  /// A hint indicating an action the user could take to resolve this problem.
+  ///
+  /// This will be printed after the package resolution conflict.
+  final String? hint;
+
   PackageNotFoundException(
     String message, {
     Object? innerError,
@@ -58,10 +64,6 @@ class PackageNotFoundException extends WrappedException {
     this.hint,
   }) : super(message, innerError, innerTrace);
 
-  /// A hint indicating an action the user could take to resolve this problem.
-  ///
-  /// This will be printed after the package resolution conflict.
-  final String? hint;
   @override
   String toString() => 'Package not available ($message).';
 }
@@ -74,14 +76,14 @@ class RunProcessException extends ApplicationException {
 
 /// A class for exceptions that wrap other exceptions.
 class WrappedException extends ApplicationException {
-  WrappedException(super.message, this.innerError, [StackTrace? innerTrace])
-      : innerChain = innerTrace == null ? null : Chain.forTrace(innerTrace);
-
   /// The underlying exception that this is wrapping, if any.
   final Object? innerError;
 
   /// The stack chain for [innerError] if it exists.
   final Chain? innerChain;
+
+  WrappedException(super.message, this.innerError, [StackTrace? innerTrace])
+      : innerChain = innerTrace == null ? null : Chain.forTrace(innerTrace);
 }
 
 // /// Returns whether [error] is a user-facing error object.

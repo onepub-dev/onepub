@@ -3,6 +3,26 @@ import 'dart:io';
 import '../util/send_command.dart';
 
 class Versions {
+  late final bool _success;
+
+  late final String name;
+
+  late final bool isDiscontinued;
+
+  late final String replacedBy;
+
+  late final JsonVersion latest;
+
+  late final List<JsonVersion> versions;
+
+  /// If success is false then you can check this field
+  /// to see if it failed because the organisation wasn't found
+  /// if this is false then a more serious error occured
+  var notFound = false;
+
+  /// if [success] is false this will contain the error message.
+  late final String? errorMessage;
+
   Versions(EndpointResponse response) {
     _success = response.success;
 
@@ -20,25 +40,16 @@ class Versions {
     }
   }
 
-  late final bool _success;
-  late final String name;
-  late final bool isDiscontinued;
-  late final String replacedBy;
-  late final JsonVersion latest;
-  late final List<JsonVersion> versions;
-
   bool get success => _success;
-
-  /// If success is false then you can check this field
-  /// to see if it failed because the organisation wasn't found
-  /// if this is false then a more serious error occured
-  bool notFound = false;
-
-  /// if [success] is false this will contain the error message.
-  late final String? errorMessage;
 }
 
 class JsonVersion {
+  late final String version;
+
+  late final bool retracted;
+
+  late final String archiveUrl;
+
   JsonVersion(Map<String, dynamic>? data) {
     if (data != null) {
       version = data['version'] as String? ?? '';
@@ -46,8 +57,4 @@ class JsonVersion {
       archiveUrl = data['archive_url'] as String? ?? '';
     }
   }
-
-  late final String version;
-  late final bool retracted;
-  late final String archiveUrl;
 }

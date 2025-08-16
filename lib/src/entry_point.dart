@@ -19,8 +19,7 @@ import 'version/version.g.dart';
  */
 
 /// Used by unit tests to alter the working directory a command runs in.
-ScopeKey<String> unitTestWorkingDirectoryKey =
-    ScopeKey<String>('WorkingDirectory');
+var unitTestWorkingDirectoryKey = const ScopeKey<String>('WorkingDirectory');
 
 /// The [args] list should contain the command to be run
 /// followed by the arguments to be passed to the command.
@@ -28,11 +27,10 @@ ScopeKey<String> unitTestWorkingDirectoryKey =
 /// The [executableName] is used when displaying help.
 Future<void> entrypoint(
   List<String> args,
-  CommandSet commandSet,
   String executableName,
 ) async {
   try {
-    final runner = MyRunner(args, executableName, _description, commandSet);
+    final runner = MyRunner(args, executableName, _description);
     try {
       printPreamble();
       await runner.init();
@@ -54,6 +52,7 @@ Future<void> entrypoint(
     // printerr('');
     // printerr(rest);
     exit(e.exitCode);
+    // we need to capture everything.
     // ignore: avoid_catches_without_on_clauses
   } catch (e, s) {
     ulog.logerr('$e\n$s');

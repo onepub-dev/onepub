@@ -14,7 +14,7 @@ import 'package:url_builder/url_builder.dart';
 import 'package:yaml/yaml.dart';
 
 import 'exceptions.dart';
-import 'pub/source/hosted.dart';
+import 'util/hosted.dart';
 import 'util/log.dart';
 import 'util/string_extension.dart';
 import 'util/url_validator.dart';
@@ -22,6 +22,41 @@ import 'version/version.g.dart';
 
 /// The ~/onepub/onepub.yaml
 class OnePubSettings {
+  ///////////////
+  ///
+  ///Fields
+  ///
+  /////////////////////
+
+  /// Path to the onepub settings file
+  late final String pathToSettings;
+
+  late final SettingsYaml _settings;
+
+  static const scopeKey = ScopeKey<OnePubSettings>('OnePubSettings');
+
+  static const onepubServerUrlKey = 'onepubUrl';
+
+  static const defaultOnePubUrl = 'https://onepub.dev';
+
+  static const _defaultApiBasePath = 'api';
+
+  ///static const String defaultWebBasePath = 'ui';
+  static const _defaultWebBasePath = '';
+
+  // Key of environment var used to alter the
+  // path to looking for the settings.
+  static const onepubPathEnvKey = 'ONEPUB_PATH';
+
+  /// allowBadCertificates
+  /// During dev if we are using self signed cert we need to set this
+  static const allowBadCertificatesKey = 'allowBadCertificates';
+
+  /// The url to the currently logged in organisation
+  static var reportedNonStandard = false;
+
+  final testingFlagPath = join(HOME, '.onepubtesting');
+
   OnePubSettings({String? pathToSettings}) {
     this.pathToSettings = pathToSettings ?? defaultPathToSettings;
 
@@ -66,31 +101,6 @@ class OnePubSettings {
   factory OnePubSettings.use() => Scope.use(scopeKey,
       withDefault: () => OnePubSettings._load(create: false));
 
-  ///////////////
-  ///
-  ///Fields
-  ///
-  /////////////////////
-
-  /// Path to the onepub settings file
-  late final String pathToSettings;
-  late final SettingsYaml _settings;
-
-  static final scopeKey = ScopeKey<OnePubSettings>('OnePubSettings');
-
-  static const onepubServerUrlKey = 'onepubUrl';
-
-  static const String defaultOnePubUrl = 'https://onepub.dev';
-
-  static const String _defaultApiBasePath = 'api';
-
-  ///static const String defaultWebBasePath = 'ui';
-  static const String _defaultWebBasePath = '';
-
-  // Key of environment var used to alter the
-  // path to looking for the settings.
-  static const onepubPathEnvKey = 'ONEPUB_PATH';
-
   /// Creates the onepub.yaml file at [defaultPathToSettingsDir] but does not
   /// initialise nor load it.
   static void _create({required String pathToDir}) {
@@ -127,13 +137,13 @@ class OnePubSettings {
   /// in the directory [pathToSettingsDir]
   /// into a new scope.
   static Future<T> withPathTo<T>(
-      String pathToSettingsDir, Future<T> Function() action) async {
+      String pathToSettingsDir, Future<T> Function() action) {
     final innerSettings = OnePubSettings._loadFromPath(
         pathToDir: pathToSettingsDir, create: true);
 
     final scope = Scope()..value(scopeKey, innerSettings);
 
-    return scope.run<T>(() async => action());
+    return scope.run<T>(() => action());
   }
 
   /// Path to the .onepub settings directory
@@ -149,9 +159,6 @@ class OnePubSettings {
   static String get defaultPathToSettings =>
       join(defaultPathToSettingsDir, defaultSettingsFilename);
 
-  /// allowBadCertificates
-  /// During dev if we are using self signed cert we need to set this
-  static const String allowBadCertificatesKey = 'allowBadCertificates';
   bool get allowBadCertificates =>
       _settings.asBool(allowBadCertificatesKey, defaultValue: false);
 
@@ -161,9 +168,6 @@ class OnePubSettings {
   String get _buildBaseApiUrl => urlJoin(
       _settings.asString(onepubServerUrlKey, defaultValue: defaultOnePubUrl),
       _defaultApiBasePath);
-
-  /// The url to the currently logged in organisation
-  static bool reportedNonStandard = false;
 
   /// Return the onepub url to the api endpoint
   Uri get onepubApiUrl => validateAndNormalizeHostedUrl(onepubApiUrlAsString);
@@ -183,16 +187,19 @@ class OnePubSettings {
 
   // onepub url
   set onepubUrl(String? url) => _settings[onepubServerUrlKey] = url;
+
   String? get onepubUrl => _settings[onepubServerUrlKey] as String?;
 
   // obfuscated id
   set obfuscatedOrganisationId(String obfuscatedOrganisationId) =>
       _settings['organisationId'] = obfuscatedOrganisationId;
+
   String get obfuscatedOrganisationId => _settings.asString('organisationId',
       defaultValue: 'OrganisationId_not_set');
 
   // organisationName
   String get organisationName => _settings.asString('organisationName');
+
   set organisationName(String organisationName) {
     _settings['organisationName'] = organisationName;
   }
@@ -200,14 +207,13 @@ class OnePubSettings {
   // operatorEmail
   set operatorEmail(String operatorEmail) =>
       _settings['operatorEmail'] = operatorEmail;
+
   String get operatorEmail => _settings.asString('operatorEmail');
 
-  // ignore: discarded_futures
-  Future<void> save() async => _settings.save();
+  Future<void> save() => _settings.save();
 
   Future<void> saveTo(String tempSettingsDir) async {
     _settings.filePath = join(tempSettingsDir, defaultSettingsFilename);
-    // ignore: discarded_futures
     await _settings.save();
   }
 
@@ -228,21 +234,6 @@ class OnePubSettings {
     }
     return endpoint;
   }
-
-  // /// Injects a OnePubSettings into the scope.
-  // /// If [create] is true then an empy settings file will
-  // /// be created.
-  // /// if [create] is false then it expects to find a OnePubSettings
-  // /// file at ONEPUB_PATH.
-  // Future<void> withSettings(Future<void> Function() action,
-  //     {bool create = false}) async {
-  //   final scope = Scope()
-  //     ..value<OnePubSettings>(
-  //         OnePubSettings.scopeKey, OnePubSettings._load(create: create));
-  //   await scope.run(() async {
-  //     await action();
-  //   });
-  // }
 
   static Future<void> install({required bool dev}) async {
     final create = !exists(defaultPathToSettings);
@@ -276,8 +267,6 @@ class OnePubSettings {
 
     await promptForConfig(dev: dev);
   }
-
-  final testingFlagPath = join(HOME, '.onepubtesting');
 
   Future<void> promptForConfig({required bool dev}) async {
     var url = OnePubSettings.defaultOnePubUrl;

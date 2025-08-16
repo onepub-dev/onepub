@@ -21,6 +21,21 @@ import 'hosted.dart';
 /// }
 /// ```
 class Credential {
+  /// Server url which this token authenticates.
+  final Uri url;
+
+  /// Authentication token value
+  final String? token;
+
+  /// Environment variable name that stores token value
+  final String? env;
+
+  /// Unknown fields found in pub-tokens.json. The fields might be created
+  /// by the
+  /// future version of pub tool. We don't want to override them when using the
+  /// old SDK.
+  final Map<String, dynamic> unknownFields;
+
   /// Internal constructor that's only used by fromJson.
   Credential._internal({
     required this.url,
@@ -75,21 +90,6 @@ class Credential {
     }
     return null;
   }
-
-  /// Server url which this token authenticates.
-  final Uri url;
-
-  /// Authentication token value
-  final String? token;
-
-  /// Environment variable name that stores token value
-  final String? env;
-
-  /// Unknown fields found in pub-tokens.json. The fields might be created
-  /// by the
-  /// future version of pub tool. We don't want to override them when using the
-  /// old SDK.
-  final Map<String, dynamic> unknownFields;
 
   /// Serializes [Credential] into json format.
   Map<String, dynamic> toJson() => <String, dynamic>{

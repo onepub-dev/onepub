@@ -10,7 +10,7 @@ import 'package:dcli_terminal/dcli_terminal.dart';
 import '../../api/api.dart';
 import '../../exceptions.dart';
 
-/// onepub Package create  <Package>
+/// onepub Package create  `<Package>`
 class PackageCreateCommand extends Command<int> {
   ///
   PackageCreateCommand();

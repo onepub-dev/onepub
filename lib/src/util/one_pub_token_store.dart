@@ -42,7 +42,7 @@ class OnePubTokenStore {
     return credentials.token!;
   }
 
-  Future<Iterable<Credential>> get credentials async => tokenStore.credentials;
+  Future<Iterable<Credential>> get credentials => tokenStore.credentials;
 
   /// Removes any onepub token from the pub token store
   /// for the given Url
@@ -54,7 +54,7 @@ class OnePubTokenStore {
 
   // Used to inject an alternate location for the token store
   //
-  static final scopeKey = ScopeKey<String>('PathToTokenStore');
+  static const scopeKey = ScopeKey<String>('PathToTokenStore');
 
   /// If no path has been injected we fall back to the default
   /// [dartConfigDir]

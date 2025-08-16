@@ -107,7 +107,7 @@ Future<EndpointResponse> _processData(
   HttpClient client,
   HttpClientResponse response,
   CommandType commandType,
-) async {
+) {
   final completer = Completer<EndpointResponse>();
 
   final body = StringBuffer();
@@ -130,7 +130,7 @@ Future<EndpointResponse> _processData(
 
   late StreamSubscription<List<int>> subscription;
   subscription = response.listen(
-    (newBytes) async {
+    (newBytes) {
       /// if we don't pause we get overlapping calls from listen
       /// which causes the [write] to fail as you can't
       /// do overlapping io.
@@ -154,7 +154,6 @@ Future<EndpointResponse> _processData(
       completer
           .complete(EndpointResponse(response.statusCode, body, commandType));
     },
-    // ignore: avoid_types_on_closure_parameters
     onError: (Object e, StackTrace st) async {
       // something went wrong.
       await subscription.cancel();
@@ -176,17 +175,20 @@ enum CommandType {
 }
 
 class EndpointResponse {
+  CommandType commandType;
+
+  int status;
+
+  final String _body;
+
+  late final bool? _success;
+
+  late final Map<String, Object?> _data;
+
   EndpointResponse(this.status, StringBuffer body, this.commandType)
       : _body = body.toString() {
     _parse();
   }
-
-  CommandType commandType;
-  int status;
-  final String _body;
-
-  late final bool? _success;
-  late final Map<String, Object?> _data;
 
   /// the result json data as a map.
   Map<String, Object?> get data => _data;

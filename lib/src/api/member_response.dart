@@ -5,6 +5,30 @@ import '../util/send_command.dart';
 import 'member.dart';
 
 class MemberResponse {
+  late final bool _success;
+
+  final String onepubToken;
+
+  late final String email;
+
+  late final String firstname;
+
+  late final String lastname;
+
+  late final Set<String> roles;
+
+  late final String organisationName;
+
+  late final String obfuscatedOrganisationId;
+
+  /// If success is false then you can check this field
+  /// to see if it failed because the organisation wasn't found
+  /// if this is false then a more serious error occured
+  var notFound = false;
+
+  /// if [success] is false this will contain the error message.
+  late final String? _errorMessage;
+
   MemberResponse(EndpointResponse response, this.onepubToken) {
     _success = response.success;
 
@@ -43,25 +67,7 @@ class MemberResponse {
     return list;
   }
 
-  late final bool _success;
-
-  final String onepubToken;
-  late final String email;
-  late final String firstname;
-  late final String lastname;
-  late final Set<String> roles;
-  late final String organisationName;
-  late final String obfuscatedOrganisationId;
-
   bool get success => _success;
-
-  /// If success is false then you can check this field
-  /// to see if it failed because the organisation wasn't found
-  /// if this is false then a more serious error occured
-  bool notFound = false;
-
-  /// if [success] is false this will contain the error message.
-  late final String? _errorMessage;
 
   String get errorMessage => _errorMessage ?? '';
 

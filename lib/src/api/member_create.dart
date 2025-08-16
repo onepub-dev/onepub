@@ -4,6 +4,28 @@ import '../exceptions.dart';
 import '../util/send_command.dart';
 
 class MemberCreate {
+  late final bool _success;
+
+  late final String email;
+
+  late final String firstname;
+
+  late final String lastname;
+
+  late final String role;
+
+  late final String organisationName;
+
+  late final String obfuscateOrganisationId;
+
+  /// If success is false then you can check this field
+  /// to see if it failed because the organisation wasn't found
+  /// if this is false then a more serious error occured
+  var forbidden = false;
+
+  /// if [success] is false this will contain the error message.
+  late final String? errorMessage;
+
   MemberCreate(EndpointResponse response) {
     _success = response.success;
 
@@ -38,22 +60,5 @@ class MemberCreate {
     return value;
   }
 
-  late final bool _success;
-
-  late final String email;
-  late final String firstname;
-  late final String lastname;
-  late final String role;
-  late final String organisationName;
-  late final String obfuscateOrganisationId;
-
   bool get success => _success;
-
-  /// If success is false then you can check this field
-  /// to see if it failed because the organisation wasn't found
-  /// if this is false then a more serious error occured
-  bool forbidden = false;
-
-  /// if [success] is false this will contain the error message.
-  late final String? errorMessage;
 }

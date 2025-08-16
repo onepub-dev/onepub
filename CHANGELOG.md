@@ -1,3 +1,8 @@
+# 6.0.0
+- removed support for opub as dart 2.15 is long gone. If you still
+ need opub then install a 4.x version.
+- fixed a compatibility issue with dart 3.9.0
+
 # 5.0.0
 - Upgraded package deps to support dart 3.5
 - replaced deprecated call to  UnmodifiableUnit8ListView

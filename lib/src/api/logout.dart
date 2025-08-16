@@ -1,6 +1,14 @@
 import '../util/send_command.dart';
 
 class Logout {
+  late final bool success;
+
+  /// If the call failed this contains the error message.
+  late final String errorMessage;
+
+  /// If the user was already logged out when we called logout.
+  late final bool wasAlreadyLoggedOut;
+
   Logout(EndpointResponse response) {
     var success = response.success;
 
@@ -22,12 +30,4 @@ class Logout {
     }
     this.success = success;
   }
-
-  late final bool success;
-
-  /// If the call failed this contains the error message.
-  late final String errorMessage;
-
-  /// If the user was already logged out when we called logout.
-  late final bool wasAlreadyLoggedOut;
 }

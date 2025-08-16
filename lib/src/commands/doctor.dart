@@ -88,7 +88,7 @@ class DoctorCommand extends Command<int> {
     print(blue('Shell Settings'));
     _colprint([r'$SHELL:', env['SHELL'] ?? '']);
 
-    // TODO(bsutton): restore once dcli resolves waitfor issue.
+    //  restore once dcli resolves waitfor issue.
     // final shell = Shell.current;
     // _colprint(['Detected:', shell.name]);
     // if (shell.hasStartScript) {

@@ -12,7 +12,7 @@ import '../exceptions.dart';
 import '../onepub_settings.dart';
 import '../util/one_pub_token_store.dart';
 
-/// onepub Logout <email>
+/// onepub Logout `<email>`
 ///     - if the user doesn't exists sends them an Logout.
 class OnePubLogoutCommand extends Command<int> {
   ///

@@ -11,6 +11,14 @@ import 'log.dart';
 
 /// Used to export the onepub credentials as a yaml file.
 class TokenExportFile {
+  static var onepubTokenKey = 'onepubToken';
+
+  static const exportFilename = 'onepub.token.yaml';
+
+  late final String pathToExportFile;
+
+  late final SettingsYaml settings;
+
   TokenExportFile(this.pathToExportFile) {
     settings = SettingsYaml.load(pathToSettings: pathToExportFile);
   }
@@ -26,15 +34,11 @@ class TokenExportFile {
     }
   }
 
-  static String onepubTokenKey = 'onepubToken';
-  static const exportFilename = 'onepub.token.yaml';
-
-  late final String pathToExportFile;
-  late final SettingsYaml settings;
-
-  Future<void> save() async => settings.save();
+  Future<void> save() => settings.save();
 
   bool get hasToken => settings.validString(onepubTokenKey);
+
   String get onepubToken => settings.asString(onepubTokenKey);
+
   set onepubToken(String token) => settings[onepubTokenKey] = token;
 }

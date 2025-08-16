@@ -173,9 +173,9 @@
             "args": [
                 "pub",
                 "add",
-                "dcli"
+                "monitor"
             ],
-            "cwd": "/home/bsutton/git/issues/token",
+            // "cwd": "/home/bsutton/git/issues/token",
             "console": "terminal"
         },
     ]

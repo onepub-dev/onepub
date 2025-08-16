@@ -5,8 +5,7 @@
  * Written by Brett Sutton <bsutton@onepub.dev>, Jan 2022
  */
 import 'package:onepub/src/entry_point.dart';
-import 'package:onepub/src/my_runner.dart';
 
 Future<void> main(List<String> arguments) async {
-  await entrypoint(arguments, CommandSet.onepub, 'onepub');
+  await entrypoint(arguments, 'onepub');
 }

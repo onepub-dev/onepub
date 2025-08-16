@@ -140,7 +140,7 @@ Found: ${argResults!.rest.join(',')}''');
     return env[onepubSecretEnvKey]!;
   }
 
-  Future<String> fromUser() async => ask('ONEPUB_TOKEN:',
+  Future<String> fromUser()  => ask('ONEPUB_TOKEN:',
       validator: Ask.all([
         Ask.regExp('[a-zA-Z0-9-=]*',
             error: 'The secret contains invalid characters.'),

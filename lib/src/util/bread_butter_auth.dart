@@ -19,7 +19,7 @@ class BreadButter {
   late final Completer<EndpointResponse?> completer;
 
   /// Return the auth token or null if the auth failed.
-  Future<AuthResponse> auth() async {
+  Future<AuthResponse> auth() {
     final settings = OnePubSettings.use();
 
     final authToken = Uuid().generateV4();

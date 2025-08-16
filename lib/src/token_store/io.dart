@@ -35,6 +35,7 @@ final bool runningFromTest =
 final bool _assertionsEnabled = () {
   try {
     assert(false, 'Check if asserts enabled');
+    // we need to explityly catch this.
     // ignore: avoid_catching_errors
   } on AssertionError {
     return true;

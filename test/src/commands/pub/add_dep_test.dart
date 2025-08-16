@@ -6,7 +6,6 @@
 import 'package:dcli/dcli.dart';
 import 'package:onepub/src/api/api.dart';
 import 'package:onepub/src/entry_point.dart';
-import 'package:onepub/src/my_runner.dart';
 import 'package:path/path.dart' hide equals;
 import 'package:pub_semver/pub_semver.dart' as ps;
 import 'package:pubspec_manager/pubspec_manager.dart';
@@ -93,8 +92,7 @@ void main() {
               ..value(
                   unitTestWorkingDirectoryKey, dartProject.pathToProjectRoot);
             await scope.run(() async {
-              await entrypoint(
-                  ['pub', 'add', 'test_packag_2'], CommandSet.onepub, 'onepub');
+              await entrypoint(['pub', 'add', 'test_packag_2'], 'onepub');
             });
             expect(stat(dartProject.pathToPubSpec).size, greaterThan(size));
           });

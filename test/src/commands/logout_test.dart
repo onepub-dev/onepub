@@ -4,12 +4,11 @@
  */
 
 import 'package:onepub/src/entry_point.dart';
-import 'package:onepub/src/my_runner.dart';
 import 'package:test/test.dart';
 
 void main() {
   test('logout ...', () async {
-    await entrypoint(['logout'], CommandSet.onepub, 'onepub');
+    await entrypoint(['logout'], 'onepub');
     // });
   }, tags: ['manual']);
 }
