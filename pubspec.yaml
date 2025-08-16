@@ -1,5 +1,5 @@
 name: onepub
-version: 6.0.0
+version: 6.0.1
 homepage: https://onepub.dev
 documentation: https://docs.onepub.dev
 description: Command line tools for the OnePub private Dart/Flutter repository.

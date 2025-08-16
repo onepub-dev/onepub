@@ -1,3 +1,6 @@
+# 6.0.1
+- removed the opub executable from pubspec.yaml as it is no longer used.
+
 # 6.0.0
 - removed support for opub as dart 2.15 is long gone. If you still
  need opub then install a 4.x version.
