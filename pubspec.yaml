@@ -101,7 +101,6 @@ dev_dependencies:
   vm_service: ^15.0.2
 executables:
   onepub:
-  opub:
 platforms:
   linux:
   macos:
