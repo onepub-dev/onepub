@@ -54,11 +54,11 @@ dependencies:
   package_config: ^2.2.0
   path: ^1.9.1
   pointycastle: ^4.0.0
-  pool: 1.5.1
+  pool: ^1.5.2
   posix: ^6.0.3
   pub_semver: ^2.2.0
   pubspec_lock: 3.0.2
-  pubspec_manager: ^2.0.0
+  pubspec_manager: ^2.0.1
   quiver: ^3.2.2
   random_string: 2.3.1
   scope: ^5.1.0
@@ -88,7 +88,7 @@ dependencies:
   yaml: ^3.1.3
   yaml_edit: ^2.2.1
 dev_dependencies:
-  dcli: ^7.0.5
+  dcli: ^7.1.0
   lint_hard: ^6.2.1
   lints: ^6.0.0
   matcher: ^0.12.17
@@ -108,5 +108,8 @@ platforms:
 false_secrets:
   - lib/src/pub/validator/leak_detection.dart
   - lib/src/pub/oauth2.dart
+
+
+
 
 publish_to: https://onepub.dev/api/jbbxpsdavu/
