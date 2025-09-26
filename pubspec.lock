@@ -556,10 +556,9 @@ packages:
   pubspec_manager:
     dependency: "direct main"
     description:
-      name: pubspec_manager
-      sha256: "416609635f6c53ab759223ae66e71282e61a863c13ec47d60381e4b8046c2a71"
-      url: "https://pub.dev"
-    source: hosted
+      path: "../../pubspec_manager"
+      relative: true
+    source: path
     version: "1.0.3"
   pubspec_parse:
     dependency: transitive

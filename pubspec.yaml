@@ -58,7 +58,7 @@ dependencies:
   posix: ^6.0.3
   pub_semver: ^2.2.0
   pubspec_lock: 3.0.2
-  pubspec_manager: ^1.0.0
+  pubspec_manager: ^2.0.0
   quiver: ^3.2.2
   random_string: 2.3.1
   scope: ^5.1.0
@@ -109,3 +109,4 @@ false_secrets:
   - lib/src/pub/validator/leak_detection.dart
   - lib/src/pub/oauth2.dart
 
+publish_to: https://onepub.dev/api/jbbxpsdavu/
