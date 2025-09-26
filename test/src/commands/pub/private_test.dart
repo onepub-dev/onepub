@@ -10,7 +10,6 @@ import 'package:onepub/src/version/version.g.dart';
 import 'package:pubspec_manager/pubspec_manager.dart';
 import 'package:scope/scope.dart';
 import 'package:test/test.dart';
-import 'package:url_builder/url_builder.dart';
 
 import '../../../impersonate_user.dart';
 import '../../../test_users.dart';
@@ -51,8 +50,10 @@ void main() {
                 clean.contains(
                     "Run 'dart/flutter pub publish' to publish $packageName to OnePub"),
                 isTrue);
-            final url = OnePubSettings.use().onepubWebUrl;
-            expect(clean.contains('See ${urlJoin(url, 'publish')}'), isTrue);
+            expect(
+                clean.contains(
+                    'See ${OnePubSettings.use().guidePublishOnePubUrl}'),
+                isTrue);
 
             final pubSpec = PubSpec.loadFromPath(dartProject.pathToPubSpec);
             expect(pubSpec.publishTo.toString(),

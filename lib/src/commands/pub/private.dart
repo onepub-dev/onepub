@@ -10,7 +10,6 @@ import 'package:dcli_terminal/dcli_terminal.dart';
 import 'package:path/path.dart';
 import 'package:pubspec_manager/pubspec_manager.dart';
 import 'package:scope/scope.dart';
-import 'package:url_builder/url_builder.dart';
 
 import '../../api/api.dart';
 import '../../api/organisation.dart';
@@ -33,7 +32,7 @@ class PrivateCommand extends Command<int> {
 ${blue('Marks the current package as a private package.')}
 
 Private packages are published to your OnePub private repository.
-See ${urlJoin(OnePubSettings.use().onepubWebUrl, 'publish')}''';
+See ${OnePubSettings.use().guidePublishOnePubUrl}''';
 
   @override
   String get name => 'private';
@@ -70,8 +69,9 @@ run: onepub login
     final url = settings.onepubApiUrlAsString;
 
     final pubspec = PubSpec.load(directory: pathToProject);
-    if (pubspec.publishTo.toString() == url) {
-      print(orange('${pubspec.name.value} is already a private package.'));
+    if (pubspec.publishTo.value == url) {
+      print(orange(
+          '${pubspec.name.value} is already a private package of $currentOrganisationName.'));
       return;
     }
 
@@ -98,7 +98,7 @@ ${pubspec.name.value} has been marked as a private package for the organisation 
 
 Run 'dart/flutter pub publish' to publish ${pubspec.name.value} to OnePub
 
-See ${urlJoin(settings.onepubWebUrl, 'publish')}
+See ${settings.guidePublishOnePubUrl}
 ''');
   }
 
