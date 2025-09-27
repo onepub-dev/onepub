@@ -109,7 +109,3 @@ false_secrets:
   - lib/src/pub/validator/leak_detection.dart
   - lib/src/pub/oauth2.dart
 
-
-
-
-publish_to: https://onepub.dev/api/jbbxpsdavu/
