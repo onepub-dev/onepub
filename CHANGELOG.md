@@ -1,4 +1,4 @@
-# 6.1.0-beta.1
+# 6.1.0
 - improvements to the onepub pub private command with respect to the messages we output. Better handling of the 'none' publish_to value and fixed the url to the publish doco.
 - updated the publish url to the actual documentation on publishing a package.
 - upgraded to pubspec_manager 2.0.0
