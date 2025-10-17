@@ -1,3 +1,13 @@
+# 6.1.1
+
+- Fix issue with `dcli_core: 7.2.0`.
+
+- dcli: ^7.2.0
+- dcli_core: ^7.2.0
+- dcli_input: ^7.2.0
+- dcli_terminal: ^7.2.0
+- watcher: ^1.1.4
+
 # 6.1.0
 - improvements to the onepub pub private command with respect to the messages we output. Better handling of the 'none' publish_to value and fixed the url to the publish doco.
 - updated the publish url to the actual documentation on publishing a package.
