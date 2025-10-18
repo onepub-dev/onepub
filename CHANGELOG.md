@@ -1,3 +1,14 @@
+# 6.3.0
+- We now lock down the versions of direct dependencies to avoid upstream
+ packages causing issues activating the onepub command.
+- upgraded to dcli 8.x 
+- moved from using usage/uuid to directly using the uuid package for token generation when doing bb auth. 
+- removed unused dependencies.
+
+# 6.2.0
+- released to over come the flawed released of a dependency which stopped
+ onepub from being activated.
+
 # 6.1.0
 - improvements to the onepub pub private command with respect to the messages we output. Better handling of the 'none' publish_to value and fixed the url to the publish doco.
 - updated the publish url to the actual documentation on publishing a package.

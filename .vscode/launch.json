@@ -94,12 +94,13 @@
             "name": "onepub pub private",
             "type": "dart",
             "request": "launch",
-            "program": "bin/onepub.dart",
+            "program": "/home/bsutton/git/onepub/onepub/bin/onepub.dart",
             "args": [
                 "pub",
                 "private"
             ],
-            "console": "terminal"
+            "console": "terminal",
+            "cwd": "/home/bsutton/git/big_pkg_test"
         },
         {
             "name": "opub login",
