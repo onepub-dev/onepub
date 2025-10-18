@@ -48,7 +48,8 @@ Pass in a filename or leave blank to use the default filename.''')
     final file = argResults!['file'] as bool;
     final user = argResults!['user'] as String?;
 
-    if (!await OnePubTokenStore().isLoggedIn(OnePubSettings.use().onepubApiUrl)) {
+    if (!await OnePubTokenStore()
+        .isLoggedIn(OnePubSettings.use().onepubApiUrl)) {
       throw ExitException(exitCode: 1, message: '''
 You must be logged in to run this command.
 run: onepub login

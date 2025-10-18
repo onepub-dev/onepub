@@ -7,6 +7,3 @@ analyzer:
 linter:
   rules:
     avoid_print : false  
-    # Exclude rules to match pub.dev code.
-    lines_longer_than_80_chars: false  
-    cascade_invocations: false

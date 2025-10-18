@@ -38,7 +38,8 @@ class ActivateCommand extends Command<int> {
 
   // @override
 //   Future<void> runProtected() async {
-//     if (!await OnePubTokenStore().isLoggedIn(OnePubSettings.use().onepubApiUrl)) {
+//     if (!await OnePubTokenStore()
+//        .isLoggedIn(OnePubSettings.use().onepubApiUrl)) {
 //       throw ExitException(exitCode: 1, message: '''
 // You must be logged in to run this command.
 // run: onepub login

@@ -40,8 +40,8 @@ Add a private dependencies to `pubspec.yaml`.''');
 
 // Make dependency overrides by prefixing with "override:".
 
-// Add packages with specific constraints or other sources by giving a descriptor
-// after a colon.
+// Add packages with specific constraints or other
+// sources by giving a descriptor after a colon.
 
   @override
   Future<int> run() async {

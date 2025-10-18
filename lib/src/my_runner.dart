@@ -39,7 +39,7 @@ class MyRunner extends CommandRunner<int> {
 
     results = argParser.parse(args);
 
-    await Settings().setVerbose(enabled: results['debug'] as bool);
+    Settings().setVerbose(enabled: results['debug'] as bool);
 
     final version = results['version'] as bool;
     if (version) {

@@ -93,7 +93,8 @@ class DoctorCommand extends Command<int> {
     // _colprint(['Detected:', shell.name]);
     // if (shell.hasStartScript) {
     //   final startScriptPath = shell.pathToStartScript;
-    //   _colprint(['Start script:', privatePath(startScriptPath ?? 'not found')]);
+    //   _colprint(['Start script:'
+    //      , privatePath(startScriptPath ?? 'not found')]);
     // } else {
     //   _colprint(['Start script:', 'not supported by shell']);
     // }

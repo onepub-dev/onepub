@@ -71,12 +71,12 @@ run: onepub login
 
     await API().checkVersion();
 
-  /// we need to deal with a number of scenarios
-  /// 1. publish_to is missing
-  /// 2. publish_to exists but is empty.
-  /// 3. publish_to is set to none
-  /// 4. publish_to is set to another org
-  /// 5. publish_to is already set to this org
+    /// we need to deal with a number of scenarios
+    /// 1. publish_to is missing
+    /// 2. publish_to exists but is empty.
+    /// 3. publish_to is set to none
+    /// 4. publish_to is set to another org
+    /// 5. publish_to is already set to this org
     var publish = await _checkForNone(
         pubspec: pubspec, currentOrganisationName: currentOrganisationName);
     publish = publish &&
@@ -121,8 +121,8 @@ See ${settings.guidePublishOnePubUrl}
       required String currentOrganisationName}) async {
     /// If it is set to none confirm that they want to publish the package.
     if (pubspec.publishTo.isNone()) {
-      print(red(
-          '${pubspec.name.value} is currently marked as NOT for publishing.\n'));
+      print(red('''
+${pubspec.name.value} is currently marked as NOT for publishing.\n'''));
       if (!await confirm('Do you still wish to continue?')) {
         print(red('Action cancelled'));
         return false;
@@ -139,8 +139,8 @@ See ${settings.guidePublishOnePubUrl}
     if (!pubspec.publishTo.missing && !pubspec.publishTo.isNone()) {
       // publish_to is set to a url
       if (pubspec.publishTo.value == newOrgUrl) {
-        print(orange(
-            '${pubspec.name.value} is already a private package of $currentOrganisationName.'));
+        print(orange('''
+${pubspec.name.value} is already a private package of $currentOrganisationName.'''));
         return false;
       }
     }
@@ -151,7 +151,9 @@ See ${settings.guidePublishOnePubUrl}
       {required PubSpec pubspec,
       required String currentOrganisationName,
       required String newOrgUrl}) async {
-    if (!pubspec.publishTo.missing && !pubspec.publishTo.isPubDev() && !pubspec.publishTo.isNone()) {
+    if (!pubspec.publishTo.missing &&
+        !pubspec.publishTo.isPubDev() &&
+        !pubspec.publishTo.isNone()) {
       // publish_to is set to a url
       if (pubspec.publishTo.value != newOrgUrl) {
         print(orange('${pubspec.name.value} is already a private package '

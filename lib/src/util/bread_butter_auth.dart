@@ -7,7 +7,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:dcli_terminal/dcli_terminal.dart';
-import 'package:usage/uuid/uuid.dart';
+import 'package:uuid/uuid.dart';
 
 import '../api/api.dart';
 import '../api/auth_response.dart';
@@ -22,7 +22,7 @@ class BreadButter {
   Future<AuthResponse> auth() {
     final settings = OnePubSettings.use();
 
-    final authToken = Uuid().generateV4();
+    final authToken = const Uuid().v4();
 
     final authUrl = settings.resolveWebEndPoint('clilogin/$authToken');
 
