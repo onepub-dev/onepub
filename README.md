@@ -11,6 +11,7 @@ OnePub aims to provide the same experience as pub.dev but for your own private p
 * Watch public and private packages and receive update notices.
 * Hosted API documentation for your private packages
 * Search both pub.dev and your private packages from one search page.
+* Secure your supply chain by vendoring*1 each of you dependencies
 
 OnePub lets you use the existing Dart tooling (dart pub publish | flutter pub publish) to publish packages to your own private repository.
 
@@ -50,35 +51,37 @@ cd <my second project>
 onepub pub add <my first project>
 ```
 
-# opub
-With Google deprecating the pub command in favour of using `flutter pub` or `dart pub`
-we have created a replacement `opub` command for the lazy ones amongst us (like me).
+# Staging test suite
 
-You will also need to use opub to publish to OnePub if you are using a version of Dart pre 2.12.
-
-Our opub command is a very thin wrapper for `flutter pub` and `dart pub` and simply
-passes any command line arguments through to `flutter pub` or `dart pub`.
-
-
-The opub command detects if your project is a flutter (checks your pubspec.yaml)
-if found runs:
-
-`flutter pub <args>`
-
-If you have a non-flutter project then we run
-
-`dart pub <args>`
-
-
-So to use opub command:
+To run the staging server smoke/load checks (doctor, publish/get, metadata, archive, auth tests, rate-limit burst/recovery):
 
 ```bash
-dart pub global activate onepub
-opub get
-or
-opub upgrade --major-version
-or
-any other pub subcommands and arguments
+dart test test/src/staging/staging_test.dart
 ```
 
-Enjoy.
+Optional environment overrides:
+
+```bash
+ONEPUB_STAGING_URL=https://staging.onepub.dev
+ONEPUB_TEAM=MyTeam
+ONEPUB_INVALID_TEAM=not-a-team
+ONEPUB_RATE_ROUTE=organisation/details
+ONEPUB_RATE_REQUESTS=75
+ONEPUB_SKIP_PACKAGE_CREATE=true
+ONEPUB_SKIP_CLEANUP=true
+ONEPUB_SKIP_PUBLISH=true
+ONEPUB_SKIP_PUB_GET=true
+ONEPUB_SKIP_RATE_LIMIT=true
+ONEPUB_SKIP_RATE_LIMIT_RECOVERY=true
+ONEPUB_SKIP_UNAUTHORIZED_TEST=true
+ONEPUB_SKIP_INVALID_TOKEN_TEST=true
+ONEPUB_SKIP_METADATA_TEST=true
+ONEPUB_SKIP_ARCHIVE_TEST=true
+ONEPUB_SKIP_TEAM_NEGATIVE=true
+ONEPUB_SKIP_TOKEN_INVALIDATION=true
+```
+
+
+*1 Vendoring is the process of storing your own copy of a third party package
+within the your onepub private repository.  This lets you review and control
+how third party packages are used by your app.
