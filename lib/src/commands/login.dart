@@ -77,7 +77,7 @@ class OnePubLoginCommand extends Command<int> {
   }
 
   void showError(EndpointResponse endPointResponse) {
-    final error = endPointResponse.data['message']! as String;
+    final error = endPointResponse.errorMessage;
 
     print(red(error));
   }

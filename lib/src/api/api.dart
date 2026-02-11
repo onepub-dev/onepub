@@ -7,6 +7,7 @@ import '../util/role_enum.dart';
 import '../util/send_command.dart';
 import '../version/version.g.dart';
 import 'auth_response.dart';
+import 'cli_models.dart';
 import 'logout.dart';
 import 'member_create.dart';
 import 'member_response.dart';
@@ -36,8 +37,13 @@ dart pub global activate onepub
       final response = await sendCommand(
           command: endpoint, authorised: false, commandType: CommandType.cli);
 
-      return Status(response.status, response.data['message']! as String,
-          response.data['version'] as String?);
+      final envelope = response.parseCli(CliStatusBody.fromJson);
+      final body = envelope.body;
+      return Status(
+        response.status,
+        body?.message ?? '',
+        body?.version,
+      );
     } on IOException {
       return Status(500, 'Connection failed', null);
     }
@@ -111,7 +117,6 @@ dart pub global activate onepub
 
     /// we push the id into the map so we can share a common
     /// constructor with [fetchOrganisation]
-    response.data['obfuscatedId'] = obfuscatedId;
     return Organisation(response);
   }
 

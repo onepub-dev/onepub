@@ -2,6 +2,7 @@ import 'dart:io';
 
 import '../util/role_enum.dart';
 import '../util/send_command.dart';
+import 'cli_models.dart';
 import 'member.dart';
 
 class MemberResponse {
@@ -37,34 +38,17 @@ class MemberResponse {
     }
 
     if (!response.success) {
-      _errorMessage = response.data['message']! as String;
+      _errorMessage = response.errorMessage;
     } else {
-      email = response.data['email'] as String? ?? '';
-      firstname = response.data['firstname'] as String? ?? '';
-      lastname = response.data['lastname'] as String? ?? '';
-      roles = jsonToSet(response.data['roles']);
-      organisationName = response.data['organisationName'] as String? ?? '';
-      obfuscatedOrganisationId =
-          response.data['obfuscateOrganisationId'] as String? ?? '';
+      final envelope = response.parseCli(CliMemberBody.fromJson);
+      final body = envelope.body;
+      email = body?.email ?? '';
+      firstname = body?.firstname ?? '';
+      lastname = body?.lastname ?? '';
+      roles = body?.roles ?? <String>{};
+      organisationName = body?.organisationName ?? '';
+      obfuscatedOrganisationId = body?.obfuscateOrganisationId ?? '';
     }
-  }
-
-  Set<T> jsonToSet<T>(Object? responseData) {
-    final temp = responseData as List? ?? <dynamic>[];
-    final set = <T>{};
-    for (final tmp in temp) {
-      set.add(tmp as T);
-    }
-    return set;
-  }
-
-  List<T> jsonToList<T>(Object? responseData) {
-    final temp = responseData as List? ?? <dynamic>[];
-    final list = <T>[];
-    for (final tmp in temp) {
-      list.add(tmp as T);
-    }
-    return list;
   }
 
   bool get success => _success;

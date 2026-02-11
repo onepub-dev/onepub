@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import '../util/send_command.dart';
+import 'cli_models.dart';
 
 class Organisation {
   late final bool _success;
@@ -24,11 +25,12 @@ class Organisation {
       notFound = true;
     }
 
-    if (!response.success) {
-      errorMessage = response.data['message']! as String;
+    if (response.success) {
+      final envelope = response.parseCli(CliOrganisationBody.fromJson);
+      name = envelope.body?.organisationName ?? '';
+      obfuscatedId = envelope.body?.obfuscatedId ?? '';
     } else {
-      name = response.data['organisationName'] as String? ?? '';
-      obfuscatedId = response.data['obfuscatedId']! as String? ?? '';
+      errorMessage = response.errorMessage;
     }
   }
 

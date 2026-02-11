@@ -2,6 +2,7 @@ import 'dart:io';
 
 import '../exceptions.dart';
 import '../util/send_command.dart';
+import 'cli_models.dart';
 
 class MemberCreate {
   late final bool _success;
@@ -34,30 +35,20 @@ class MemberCreate {
     }
 
     if (!response.success) {
-      errorMessage = response.data['message']! as String;
+      errorMessage = response.errorMessage;
     } else {
-      email = extractField(response, 'email');
-      firstname = extractField(response, 'firstname');
-      lastname = extractField(response, 'lastname');
-      role = extractField(response, 'lastname');
-      organisationName = extractField(response, 'organisationName');
-      obfuscateOrganisationId =
-          extractField(response, 'obfuscateOrganisationId');
+      final envelope = response.parseCli(CliMemberBody.fromJson);
+      final body = envelope.body;
+      if (body == null) {
+        throw APIException('Missing response body');
+      }
+      email = body.email;
+      firstname = body.firstname;
+      lastname = body.lastname;
+      role = body.lastname;
+      organisationName = body.organisationName;
+      obfuscateOrganisationId = body.obfuscateOrganisationId;
     }
-  }
-
-  String extractField(EndpointResponse response, String field) {
-    final value = response.data[field];
-    if (value == null) {
-      throw APIException("Missing field '$field");
-    }
-
-    if (value is! String) {
-      throw APIException("Invalid type for '$field', expected a String, "
-          'received a ${value.runtimeType}');
-    }
-
-    return value;
   }
 
   bool get success => _success;

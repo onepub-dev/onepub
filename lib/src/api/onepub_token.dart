@@ -1,4 +1,5 @@
 import '../util/send_command.dart';
+import 'cli_models.dart';
 
 class OnePubToken {
   String? token;
@@ -7,11 +8,12 @@ class OnePubToken {
 
   OnePubToken(EndpointResponse response) {
     if (response.success) {
-      token = response.data['onepubToken'] as String?;
+      final envelope = response.parseCli(CliExportTokenBody.fromJson);
+      token = envelope.body?.onepubToken;
     }
 
     if (token == null) {
-      errorMessage = response.data['message']! as String;
+      errorMessage = response.errorMessage;
     }
   }
 
