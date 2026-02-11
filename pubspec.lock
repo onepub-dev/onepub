@@ -501,10 +501,10 @@ packages:
     dependency: "direct main"
     description:
       name: pubspec_manager
-      sha256: "48f425bb06cb38bb8bda84e70794cb373416033519668bcf481efbda1c10d9a1"
+      sha256: "48b0ac5a3bf791d2faceb1f00977c396d77e57878b544d21aad0c3d38986ec79"
       url: "https://pub.dev"
     source: hosted
-    version: "3.0.1"
+    version: "3.2.1"
   pubspec_parse:
     dependency: transitive
     description:

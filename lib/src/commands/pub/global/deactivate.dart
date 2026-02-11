@@ -70,13 +70,11 @@ run: onepub login
   ''');
     }
 
-
-    final r = await Process.run('dart', [
-      'pub',
-      'global',
-      'deactivate',
-      ...(argResults!.rest)
-    ]);
+    // we always run the 'dart' command as deactivate
+    // can be run outside a package so we don't have to worry about
+    // flutter vs dart here
+    final r = await Process.run(
+        'dart', ['pub', 'global', 'deactivate', ...(argResults!.rest)]);
     stdout.write(r.stdout);
     stderr.write(r.stderr);
     return r.exitCode;

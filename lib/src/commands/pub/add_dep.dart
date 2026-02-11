@@ -9,6 +9,7 @@ import 'dart:io';
 
 import 'package:args/command_runner.dart';
 import 'package:dcli_terminal/dcli_terminal.dart';
+import 'package:pubspec_manager/pubspec_manager.dart';
 
 import '../../api/api.dart';
 import '../../exceptions.dart';
@@ -61,7 +62,17 @@ run: onepub login
 
     final onePubUrl = OnePubSettings.use().onepubApiUrlAsString;
 
-    final r = await Process.run('dart',
+    final pubspec = PubSpec.load();
+
+    final String command;
+
+    if (pubspec.environment.isFlutterPackage) {
+      command = 'flutter';
+    } else {
+      command = 'dart';
+    }
+
+    final r = await Process.run(command,
         ['pub', 'add', '--hosted-url', onePubUrl, ...(argResults!.rest)]);
     stdout.write(r.stdout);
     stderr.write(r.stderr);

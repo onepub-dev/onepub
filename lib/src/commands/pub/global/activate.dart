@@ -104,6 +104,9 @@ run: onepub login
 
     final onePubUrl = OnePubSettings.use().onepubApiUrlAsString;
 
+    // we always run the 'dart' command as activate
+    // can be run outside a package so we don't have to worry about
+    // flutter vs dart here
     final r = await Process.run('dart', [
       'pub',
       'global',
