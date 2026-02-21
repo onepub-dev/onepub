@@ -1,3 +1,5 @@
+@Tags(['onepub_command', 'integration'])
+library;
 /* Copyright (C) OnePub IP Pty Ltd - All Rights Reserved
  * licensed under the GPL v2.
  * Written by Brett Sutton <bsutton@onepub.dev>, Jan 2022
@@ -12,8 +14,8 @@ import 'package:pubspec_manager/pubspec_manager.dart';
 import 'package:scope/scope.dart';
 import 'package:test/test.dart';
 
-import '../../../impersonate_user.dart';
-import '../../../test_users.dart';
+import '../../../../impersonate_user.dart';
+import '../../../../test_users.dart';
 import '../test_utils.dart';
 
 void main() {
@@ -92,7 +94,9 @@ void main() {
               ..value(
                   unitTestWorkingDirectoryKey, dartProject.pathToProjectRoot);
             await scope.run(() async {
-              await entrypoint(['pub', 'add', 'test_packag_2'], 'onepub');
+              await entrypoint(
+                  args: ['pub', 'add', 'test_packag_2'],
+                  executableName: 'onepub');
             });
             expect(stat(dartProject.pathToPubSpec).size, greaterThan(size));
           });

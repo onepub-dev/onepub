@@ -1,3 +1,5 @@
+@Tags(['onepub_command'])
+library;
 /* Copyright (C) OnePub IP Pty Ltd - All Rights Reserved
  * licensed under the GPL v2.
  * Written by Brett Sutton <bsutton@onepub.dev>, Jan 2022
@@ -13,12 +15,10 @@ void main() {
   test('login clean', () async {
     await withTempDirAsync((tempDir) async {
       await withEnvironment(() async {
-        await entrypoint(['login'], 'onepub');
+        await entrypoint(args: ['login'], executableName: 'onepub');
       }, environment: {OnePubSettings.onepubPathEnvKey: tempDir});
     });
-  }
-      // , tags: ['manual']
-      );
+  }, tags: ['manual', 'integration']);
 
   test('welcome', () {
     showWelcome(

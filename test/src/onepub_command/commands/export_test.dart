@@ -1,3 +1,5 @@
+@Tags(['onepub_command', 'integration'])
+library;
 /* Copyright (C) OnePub IP Pty Ltd - All Rights Reserved
  * licensed under the GPL v2.
  * Written by Brett Sutton <bsutton@onepub.dev>, Jan 2022
@@ -9,8 +11,8 @@ import 'package:onepub/src/version/version.g.dart';
 import 'package:strings/strings.dart';
 import 'package:test/test.dart';
 
-import '../../impersonate_user.dart';
-import '../../test_users.dart';
+import '../../../impersonate_user.dart';
+import '../../../test_users.dart';
 import 'test_utils.dart';
 
 void main() {
