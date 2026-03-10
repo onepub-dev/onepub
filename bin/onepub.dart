@@ -7,5 +7,5 @@
 import 'package:onepub/src/entry_point.dart';
 
 Future<void> main(List<String> arguments) async {
-  await entrypoint(arguments, 'onepub');
+  await entrypoint(args: arguments, executableName: 'onepub');
 }

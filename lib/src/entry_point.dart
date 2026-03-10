@@ -25,10 +25,10 @@ var unitTestWorkingDirectoryKey = const ScopeKey<String>('WorkingDirectory');
 /// followed by the arguments to be passed to the command.
 ///
 /// The [executableName] is used when displaying help.
-Future<void> entrypoint(
-  List<String> args,
-  String executableName,
-) async {
+Future<void> entrypoint({
+  required List<String> args,
+  required String executableName,
+}) async {
   try {
     final runner = MyRunner(args, executableName, _description);
     try {
