@@ -21,7 +21,7 @@ const capturePrinterrKey = 'printerr';
 /// CLI applications should, by convention, write error messages
 /// out to stderr and expected output to stdout.
 ///
-/// [line] the line to write to stderr.
+/// [object] the line to write to stderr.
 void printerr(Object? object) {
   final line = '$object';
 
