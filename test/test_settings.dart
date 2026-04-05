@@ -1,6 +1,19 @@
 import 'package:dcli/dcli.dart' as dcli;
+import 'package:dcli_core/dcli_core.dart' as core;
+import 'package:onepub/src/onepub_settings.dart';
+import 'package:onepub/src/util/one_pub_token_store.dart';
 import 'package:path/path.dart';
 import 'package:settings_yaml/settings_yaml.dart';
+
+const _explicitSafeOnePubTestHosts = <String>{
+  'beta.onepub.dev',
+  'staging.onepub.dev',
+  'squarephone.biz',
+  'localhost',
+  '127.0.0.1',
+  '::1',
+  'host.docker.internal',
+};
 
 class TestSettings {
   late final SettingsYaml _settings;
@@ -13,13 +26,136 @@ class TestSettings {
 
   set onepubUrl(String url) => _settings['onepubUrl'] = url;
 
-  Future<void> save()  => _settings.save();
+  Future<void> save() => _settings.save();
+
+  String get organisationId => _settings.asString('organisationId');
+
+  String get organisationName => _settings.asString('organisationName');
+
+  String get member => _settings.asString('member');
+
+  String get onepubToken {
+    final envToken = dcli.env['ONEPUB_TOKEN'];
+    if (envToken != null && envToken.isNotEmpty) {
+      return envToken;
+    }
+    return _settings.asString('onepub_token');
+  }
 
   String get pathToTestSettings {
     final pathToTest = dcli.DartProject.self.pathToTestDir;
 
     return join(pathToTest, 'test_settings.yaml');
   }
+
+  static String resolveOnePubUrl({String? override}) {
+    final envUrl = dcli.env['ONEPUB_STAGING_URL'];
+    final resolved = (() {
+      if (override != null && override.isNotEmpty) {
+        return override;
+      }
+      if (envUrl != null && envUrl.isNotEmpty) {
+        return envUrl;
+      }
+      return TestSettings().onepubUrl;
+    })();
+
+    return assertSafeOnePubTestUrl(
+      resolved,
+      source: 'TestSettings.resolveOnePubUrl',
+    );
+  }
+}
+
+String assertSafeOnePubTestUrl(String url, {String source = 'test settings'}) {
+  late final Uri uri;
+  try {
+    uri = Uri.parse(url);
+  } on FormatException catch (e) {
+    throw StateError('Invalid OnePub test URL from $source: $url ($e)');
+  }
+
+  final host = uri.host.toLowerCase();
+  final scheme = uri.scheme.toLowerCase();
+  if (host.isEmpty || (scheme != 'http' && scheme != 'https')) {
+    throw StateError(
+      'Invalid OnePub test URL from $source: $url. '
+      'Expected an absolute http(s) URL.',
+    );
+  }
+
+  if (!_isSafeOnePubTestHost(host)) {
+    throw StateError(
+      'OnePub integration tests must never run against production '
+      'https://onepub.dev. $source resolved to $url.',
+    );
+  }
+
+  return url;
+}
+
+bool _isSafeOnePubTestHost(String host) {
+  if (_explicitSafeOnePubTestHosts.contains(host)) {
+    return true;
+  }
+  if (host.endsWith('.local')) {
+    return true;
+  }
+  return _isPrivateIpv4Host(host);
+}
+
+bool _isPrivateIpv4Host(String host) {
+  final parts = host.split('.');
+  if (parts.length != 4) {
+    return false;
+  }
+  final octets = <int>[];
+  for (final part in parts) {
+    final value = int.tryParse(part);
+    if (value == null || value < 0 || value > 255) {
+      return false;
+    }
+    octets.add(value);
+  }
+
+  if (octets[0] == 10) {
+    return true;
+  }
+  if (octets[0] == 192 && octets[1] == 168) {
+    return true;
+  }
+  if (octets[0] == 172 && octets[1] >= 16 && octets[1] <= 31) {
+    return true;
+  }
+  return false;
+}
+
+Future<T> withTestServer<T>(Future<T> Function() action,
+    {String? onepubUrlOverride}) {
+  final testSettings = TestSettings();
+  return core.withTempDirAsync(
+      (tempSettingsDir) => OnePubSettings.withPathTo(tempSettingsDir, () async {
+            final settings = OnePubSettings.use()
+              ..operatorEmail = testSettings.member
+              ..organisationName = testSettings.organisationName
+              ..obfuscatedOrganisationId = testSettings.organisationId
+              ..onepubUrl = TestSettings.resolveOnePubUrl(
+                override: onepubUrlOverride,
+              );
+            await settings.save();
+
+            late T result;
+            await OnePubTokenStore.withPathTo(tempSettingsDir, () async {
+              await OnePubTokenStore().addToken(
+                onepubApiUrl: settings.onepubApiUrlAsString,
+                onepubToken: testSettings.onepubToken,
+              );
+              result = await action();
+            });
+
+            return result;
+          }));
+}
 
 //   /// Updates the inscope OnePubSettings by overriding the current
 //   /// settings with the details form this.
@@ -70,4 +206,3 @@ class TestSettings {
 //       });
 //     });
 //   });
-}

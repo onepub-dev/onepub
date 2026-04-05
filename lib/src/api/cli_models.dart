@@ -24,6 +24,31 @@ class CliOrganisationBody {
       );
 }
 
+class CliTestOrganisationBody {
+  final String organisationName;
+  final String obfuscatedId;
+  final String operatorEmail;
+  final String plan;
+  final String onepubToken;
+
+  CliTestOrganisationBody({
+    required this.organisationName,
+    required this.obfuscatedId,
+    required this.operatorEmail,
+    required this.plan,
+    required this.onepubToken,
+  });
+
+  factory CliTestOrganisationBody.fromJson(Map<String, dynamic> json) =>
+      CliTestOrganisationBody(
+        organisationName: json['organisationName'] as String? ?? '',
+        obfuscatedId: json['obfuscatedId'] as String? ?? '',
+        operatorEmail: json['operatorEmail'] as String? ?? '',
+        plan: json['plan'] as String? ?? '',
+        onepubToken: json['onepubToken'] as String? ?? '',
+      );
+}
+
 class CliMemberBody {
   final String email;
   final String firstname;

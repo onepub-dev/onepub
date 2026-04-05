@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:pub_semver/pub_semver.dart';
 
+import '../commands/import.dart';
 import '../exceptions.dart';
 import '../util/role_enum.dart';
 import '../util/send_command.dart';
@@ -39,10 +41,12 @@ dart pub global activate onepub
 
       final envelope = response.parseCli(CliStatusBody.fromJson);
       final body = envelope.body;
+      final message = body?.message ?? envelope.success?.message ?? '';
+      final version = body?.version;
       return Status(
         response.status,
-        body?.message ?? '',
-        body?.version,
+        message,
+        version == null || version.isEmpty ? null : version,
       );
     } on IOException {
       return Status(500, 'Connection failed', null);
@@ -71,7 +75,7 @@ dart pub global activate onepub
   /// address is [memberEmail].
   /// Only an Administrator can export another person token.
   Future<OnePubToken> exportMemberToken(String memberEmail) async {
-    final endpoint = 'member/exportToken/$memberEmail';
+    final endpoint = 'member/exportToken/${Uri.encodeComponent(memberEmail)}';
     final response =
         await sendCommand(command: endpoint, commandType: CommandType.cli);
 
@@ -102,7 +106,8 @@ dart pub global activate onepub
   Future<MemberResponse> fetchMember(
     String onepubTokenOfTargetMember,
   ) async {
-    final endpoint = '/member/details/$onepubTokenOfTargetMember';
+    final endpoint =
+        '/member/details/${Uri.encodeComponent(onepubTokenOfTargetMember)}';
 
     final response =
         await sendCommand(command: endpoint, commandType: CommandType.cli);
@@ -111,13 +116,74 @@ dart pub global activate onepub
   }
 
   Future<Organisation> fetchOrganisationById(String obfuscatedId) async {
-    final endpoint = 'organisation/details/$obfuscatedId';
+    final endpoint =
+        'organisation/details/${Uri.encodeComponent(obfuscatedId)}';
     final response =
         await sendCommand(command: endpoint, commandType: CommandType.cli);
 
-    /// we push the id into the map so we can share a common
-    /// constructor with [fetchOrganisation]
-    return Organisation(response);
+    final organisation = Organisation(response);
+    return organisation;
+  }
+
+  /// Records a successful `onepub import` against CLI logs.
+  Future<void> logTokenImport({
+    /// OnePub token used to authorize the audit log request.
+    required String onepubToken,
+
+    /// Where the imported token was sourced from.
+    required TokenSource tokenSource,
+
+    /// True when the import appears to be running under any CI environment.
+    required bool ci,
+
+    /// Existing logged-in OnePub token that initiated this import, if any.
+    String? initiatorOnepubToken,
+
+    /// Normalized CI provider identifier, for example `github_actions`.
+    String? ciProvider,
+
+    /// Host or machine name reported by the client environment.
+    String? host,
+
+    /// Username reported by the client environment.
+    String? user,
+
+    /// Operating system identifier reported by the Dart runtime.
+    String? os,
+
+    /// Active shell reported by the client environment.
+    String? shell,
+  }) async {
+    const endpoint = '/member/importToken';
+    final payload = <String, String>{
+      'tokenSource': tokenSource.name,
+      'ci': '$ci',
+      'ciProvider': ciProvider ?? '',
+      'host': host ?? '',
+      'user': user ?? '',
+      'os': os ?? '',
+      'shell': shell ?? '',
+    };
+
+    final headers = <String, String>{
+      'content-type': 'application/json',
+      'authorization': onepubToken,
+    };
+    if (initiatorOnepubToken != null && initiatorOnepubToken.isNotEmpty) {
+      headers['x-onepub-initiator-token'] = initiatorOnepubToken;
+    }
+
+    final response = await sendCommand(
+      command: endpoint,
+      commandType: CommandType.cli,
+      authorised: false,
+      method: Method.post,
+      headers: headers,
+      body: jsonEncode(payload),
+    );
+    if (!response.success) {
+      throw APIException(response.errorMessage);
+    }
   }
 
   /// Creates a (empty) package owned by [team]
@@ -134,8 +200,11 @@ dart pub global activate onepub
       required String firstname,
       required String lastname,
       required RoleEnum role}) async {
-    final endpoint =
-        'member/create?email=$userEmail&firstname=$firstname&lastname=$lastname&role=${role.name}';
+    final endpoint = 'member/create'
+        '?email=${Uri.encodeQueryComponent(userEmail)}'
+        '&firstname=${Uri.encodeQueryComponent(firstname)}'
+        '&lastname=${Uri.encodeQueryComponent(lastname)}'
+        '&role=${Uri.encodeQueryComponent(role.name)}';
     final response =
         await sendCommand(command: endpoint, commandType: CommandType.cli);
 

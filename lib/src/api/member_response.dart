@@ -5,21 +5,32 @@ import '../util/send_command.dart';
 import 'cli_models.dart';
 import 'member.dart';
 
+/// Parsed response for a member lookup from the OnePub API.
+///
+/// On failure, scalar fields are set to empty values and [errorMessage]
+/// describes the failure.
 class MemberResponse {
   late final bool _success;
 
+  /// OnePub token for the member that was requested.
   final String onepubToken;
 
+  /// Member email address when the request succeeds.
   late final String email;
 
+  /// Member first name when the request succeeds.
   late final String firstname;
 
+  /// Member last name when the request succeeds.
   late final String lastname;
 
+  /// Raw role names returned by the API when the request succeeds.
   late final Set<String> roles;
 
+  /// Organisation name associated with the member.
   late final String organisationName;
 
+  /// Obfuscated organisation identifier associated with the member.
   late final String obfuscatedOrganisationId;
 
   /// If success is false then you can check this field
@@ -30,6 +41,7 @@ class MemberResponse {
   /// if [success] is false this will contain the error message.
   late final String? _errorMessage;
 
+  /// Builds a [MemberResponse] from a raw API [response].
   MemberResponse(EndpointResponse response, this.onepubToken) {
     _success = response.success;
 
@@ -39,6 +51,12 @@ class MemberResponse {
 
     if (!response.success) {
       _errorMessage = response.errorMessage;
+      email = '';
+      firstname = '';
+      lastname = '';
+      roles = <String>{};
+      organisationName = '';
+      obfuscatedOrganisationId = '';
     } else {
       final envelope = response.parseCli(CliMemberBody.fromJson);
       final body = envelope.body;
@@ -51,10 +69,13 @@ class MemberResponse {
     }
   }
 
+  /// True when the API request completed successfully.
   bool get success => _success;
 
+  /// Error message returned by the API, or an empty string on success.
   String get errorMessage => _errorMessage ?? '';
 
+  /// Converts this response into a domain [Member].
   Member toMember() {
     final enumRoles = <RoleEnum>{};
 

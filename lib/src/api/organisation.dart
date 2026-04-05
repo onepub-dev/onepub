@@ -4,11 +4,16 @@ import '../util/send_command.dart';
 import 'cli_models.dart';
 
 class Organisation {
-  late final bool _success;
+  // This field is true if the API call to get the organisation was successful.
+  final bool _success;
 
-  late final String name;
+  // The name of the organisation. This will be null if the API call
+  // was not successful.
+  final String? name;
 
-  late final String obfuscatedId;
+  // The obfuscated id of the organisation. This will be null if the
+  // API call was not successful.
+  final String? obfuscatedId;
 
   /// If success is false then you can check this field
   /// to see if it failed because the organisation wasn't found
@@ -18,21 +23,40 @@ class Organisation {
   /// if [success] is false this will contain the error message.
   late final String? errorMessage;
 
-  Organisation(EndpointResponse response) {
-    _success = response.success;
-
+  factory Organisation(EndpointResponse response) {
     if (response.status == HttpStatus.notFound) {
-      notFound = true;
+      return Organisation._notFound();
     }
 
     if (response.success) {
       final envelope = response.parseCli(CliOrganisationBody.fromJson);
-      name = envelope.body?.organisationName ?? '';
-      obfuscatedId = envelope.body?.obfuscatedId ?? '';
+      final name = envelope.body?.organisationName ?? '';
+      final obfuscatedId = envelope.body?.obfuscatedId ?? '';
+      return Organisation.success(name: name, obfuscatedId: obfuscatedId);
     } else {
-      errorMessage = response.errorMessage;
+      return Organisation._error(response.errorMessage);
     }
   }
+
+  Organisation.success({
+    required this.name,
+    required this.obfuscatedId,
+  })  : _success = true,
+        notFound = false,
+        errorMessage = null;
+
+  Organisation._error(this.errorMessage)
+      : _success = false,
+        name = null,
+        obfuscatedId = null,
+        notFound = false;
+
+  Organisation._notFound()
+      : notFound = true,
+        _success = false,
+        name = null,
+        obfuscatedId = null,
+        errorMessage = null;
 
   bool get success => _success;
 }

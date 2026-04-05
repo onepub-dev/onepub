@@ -56,7 +56,13 @@ onepub pub add <my first project>
 To run the staging server smoke/load checks (doctor, publish/get, metadata, archive, auth tests, rate-limit burst/recovery):
 
 ```bash
-dart test test/src/staging/staging_test.dart
+dart test test/src/onepub_command/staging
+```
+
+Or run a specific load suite:
+
+```bash
+dart run tool/run_system_tests.dart --system local --suite download-pub-flow-stress
 ```
 
 Optional environment overrides:
@@ -72,6 +78,7 @@ ONEPUB_SKIP_CLEANUP=true
 ONEPUB_SKIP_PUBLISH=true
 ONEPUB_SKIP_PUB_GET=true
 ONEPUB_SKIP_RATE_LIMIT=true
+ONEPUB_SKIP_DOWNLOAD_STRESS=true
 ONEPUB_SKIP_RATE_LIMIT_RECOVERY=true
 ONEPUB_SKIP_UNAUTHORIZED_TEST=true
 ONEPUB_SKIP_INVALID_TOKEN_TEST=true
@@ -79,6 +86,9 @@ ONEPUB_SKIP_METADATA_TEST=true
 ONEPUB_SKIP_ARCHIVE_TEST=true
 ONEPUB_SKIP_TEAM_NEGATIVE=true
 ONEPUB_SKIP_TOKEN_INVALIDATION=true
+ONEPUB_DOWNLOAD_STRESS_REQUESTS=50
+ONEPUB_DOWNLOAD_STRESS_CONCURRENCY=20
+ONEPUB_DOWNLOAD_STRESS_PACKAGE_SIZE_MB=0
 ```
 
 

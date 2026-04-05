@@ -179,5 +179,28 @@
             // "cwd": "/home/bsutton/git/issues/token",
             "console": "terminal"
         },
+
+         {
+        "name": "invalid token",
+        "type": "dart",
+        "request": "launch",
+        "program": "test/src/staging/invalid_token_test.dart",
+        "env": {
+          "ONEPUB_STAGING_URL": "https://squarephone.biz",
+          "ONEPUB_TEAM": "everyone"
+        }
+      },
+
+    {
+      "name": "All Tests",
+      "type": "dart",
+      "request": "launch",
+      "program": "test",
+      "env": {
+        "ONEPUB_STAGING_URL": "https://squarephone.biz",
+        "ONEPUB_TEAM": "everyone",
+        "ONEPUB_SKIP_CLEANUP": "true"
+      }
+    }
     ]
 }

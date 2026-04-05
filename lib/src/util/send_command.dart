@@ -351,16 +351,28 @@ class EndpointResponse {
 /// Takes the body, assumes its a json string and
 /// converts it to a map.
 Map<String, dynamic> _bodyAsJsonMap(String body) {
+  final trimmed = body.trim();
+  if (trimmed.isEmpty) {
+    return <String, dynamic>{};
+  }
+
   try {
-    return jsonDecode(body) as Map<String, dynamic>;
+    final decoded = jsonDecode(trimmed);
+    if (decoded is Map<String, dynamic>) {
+      return decoded;
+    }
+    if (decoded is Map) {
+      return Map<String, dynamic>.from(decoded);
+    }
   } on Exception {
     print('Server response follows...');
     print('');
     print(body);
     print(red('Bad response from server, please try again later.'));
-
-    rethrow;
   }
+  return <String, dynamic>{
+    'error': <String, dynamic>{'message': trimmed}
+  };
 }
 
 Map<String, dynamic> _mapFromJson(Object? value) {

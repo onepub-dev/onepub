@@ -37,4 +37,3 @@ dev_dependencies:
   win32: ^5.5.3
   yaml: ^3.1.0
   yaml_edit: ^2.0.2
-publish_to: https://onepub.dev/api/jbbxpsdavu/

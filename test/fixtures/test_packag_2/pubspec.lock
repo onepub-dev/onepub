@@ -13,17 +13,17 @@ packages:
     dependency: transitive
     description:
       name: meta
-      sha256: bdb68674043280c3428e9ec998512fb681678676b3c54e773629ffe74419f8c7
+      sha256: "9f29b9bcc8ee287b1a31e0d01be0eae99a930dbffdaecf04b3f3d82a969f296f"
       url: "https://pub.dev"
     source: hosted
-    version: "1.15.0"
+    version: "1.18.1"
   scope:
     dependency: "direct dev"
     description:
       name: scope
-      sha256: d4ee4dacb133196db274c202d507622a619b01aa7d2354c42ce5cdc4b267ead6
+      sha256: "0b056e5b64ca16a2db9e1eb35cf7fd05a9e99a6b15140f82bfa651d081e4819b"
       url: "https://pub.dev"
     source: hosted
-    version: "5.0.0"
+    version: "5.1.0"
 sdks:
   dart: ">=3.5.0 <4.0.0"

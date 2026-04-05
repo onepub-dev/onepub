@@ -25,7 +25,7 @@ class AuthResponse {
       final envelope = response.parseCli(CliAuthBody.fromJson);
       final body = envelope.body;
       auth.status =
-          parseStatus(body?.status ?? AwaitLoginStatus.authFailed.toString());
+          parseStatus(body?.status ?? AwaitLoginStatus.authFailed.name);
 
       switch (auth.status) {
         case AwaitLoginStatus.authSucceeded:
@@ -63,5 +63,5 @@ enum AwaitLoginStatus {
   timeout
 }
 
-AwaitLoginStatus parseStatus(String name) => AwaitLoginStatus.values
-    .firstWhere((e) => e.toString() == 'AwaitLoginStatus.$name');
+AwaitLoginStatus parseStatus(String name) => AwaitLoginStatus.values.firstWhere(
+    (e) => e.toString() == 'AwaitLoginStatus.${name.split('.').last}');

@@ -15,6 +15,28 @@ import '../../../impersonate_user.dart';
 import '../../../test_users.dart';
 import 'test_utils.dart';
 
+bool _hasProvisionedRoleCoverage() {
+  if (!TestUsers.initialised) {
+    return false;
+  }
+  final users = TestUsers();
+  final adminEmail = users.administrator.email;
+  return users.teamLeader.email != adminEmail &&
+      users.basicMember.email != adminEmail;
+}
+
+void _expectPermissionDeniedOutput(List<String> lines) {
+  final lowered = lines.map((line) => line.toLowerCase()).toList();
+  expect(
+    lowered.any((line) =>
+        line.contains('forbidden') ||
+        line.contains('permission') ||
+        line.contains('unauthorized')),
+    isTrue,
+  );
+  expect(lines.any((line) => line.startsWith('ONEPUB_TOKEN=')), isFalse);
+}
+
 void main() {
   setUpAll(() async {
     await TestUsers(init: true).init();
@@ -79,6 +101,37 @@ void main() {
 
           validateToken(last);
         });
+  });
+
+  test('onepub export CI/CD denied for non-admin members', () async {
+    if (!_hasProvisionedRoleCoverage()) {
+      return;
+    }
+
+    final users = TestUsers();
+    final targetEmail = users.administrator.email;
+    final restrictedMembers = <({String roleLabel, String email})>[
+      (roleLabel: 'team leader', email: users.teamLeader.email),
+      (roleLabel: 'collaborator', email: users.basicMember.email),
+    ];
+
+    for (final restricted in restrictedMembers) {
+      await impersonateMember(
+          member: restricted.email == users.teamLeader.email
+              ? users.teamLeader
+              : users.basicMember,
+          action: () async {
+            final result = runCmdResult('export --user $targetEmail');
+
+            expect(
+              result.exitCode,
+              isNonZero,
+              reason:
+                  '${restricted.roleLabel} unexpectedly exported $targetEmail',
+            );
+            _expectPermissionDeniedOutput(result.lines);
+          });
+    }
   });
 }
 

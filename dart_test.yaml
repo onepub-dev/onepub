@@ -1,1 +1,23 @@
-exclude_tags: manual
+exclude_tags: "manual"
+
+tags:
+  onepub_command:
+  unit:
+  integration:
+  staging:
+  manual:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

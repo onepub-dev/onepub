@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dcli_core/dcli_core.dart' as core;
 import 'package:dcli_input/dcli_input.dart';
 import 'package:dcli_terminal/dcli_terminal.dart';
@@ -16,26 +18,28 @@ Future<void> impersonateMemberByEmail({
   required String userEmailAddress,
   required Future<void> Function() action,
 }) async {
-  var onepubTokenResponse = await API().exportMemberToken(userEmailAddress);
-  if (!onepubTokenResponse.success) {
-    // member doesn't exists so lets create them.
-    await API().createMember(
-        userEmail: userEmailAddress,
-        firstname: 'Test',
-        lastname: 'User',
-        role: RoleEnum.Collaborator);
-    onepubTokenResponse = await API().exportMemberToken(userEmailAddress);
-  }
+  await withTestServer(() async {
+    var onepubTokenResponse = await API().exportMemberToken(userEmailAddress);
+    if (!onepubTokenResponse.success) {
+      // member doesn't exists so lets create them.
+      await API().createMember(
+          userEmail: userEmailAddress,
+          firstname: 'Test',
+          lastname: 'User',
+          role: RoleEnum.Collaborator);
+      onepubTokenResponse = await API().exportMemberToken(userEmailAddress);
+    }
 
-  if (!onepubTokenResponse.success) {
-    throw OnePubCliException(
-        'Unable to fetch user: ${onepubTokenResponse.errorMessage}');
-  }
-  final onepubToken = onepubTokenResponse.token!;
+    if (!onepubTokenResponse.success) {
+      throw OnePubCliException(
+          'Unable to fetch user: ${onepubTokenResponse.errorMessage}');
+    }
+    final onepubToken = onepubTokenResponse.token!;
 
-  final response = await API().fetchMember(onepubToken);
+    final response = await API().fetchMember(onepubToken);
 
-  await impersonateMember(member: response.toMember(), action: action);
+    await impersonateMember(member: response.toMember(), action: action);
+  });
 }
 
 /// to call this the host system must be logged into OnePub with
@@ -43,6 +47,7 @@ Future<void> impersonateMemberByEmail({
 Future<void> impersonateMember({
   required Member member,
   required Future<void> Function() action,
+  String? onepubUrlOverride,
 }) async {
   await core.withTempDirAsync((tempSettingsDir) async {
     // control the location of the onepub settings file.
@@ -56,10 +61,16 @@ Future<void> impersonateMember({
       //   ..onepubUrl = testSettings.onepubUrl
       //   ..save();
 
-      final testSettings = TestSettings();
+      final envUrl = Platform.environment['ONEPUB_STAGING_URL'];
+      final resolvedUrl = assertSafeOnePubTestUrl(
+        onepubUrlOverride ??
+            (envUrl?.isNotEmpty ?? false ? envUrl : null) ??
+            TestSettings().onepubUrl,
+        source: 'impersonateMember',
+      );
       final settings = OnePubSettings.use()
         ..operatorEmail = member.email
-        ..onepubUrl = testSettings.onepubUrl
+        ..onepubUrl = resolvedUrl
         ..organisationName = member.organisationName
         ..obfuscatedOrganisationId = member.obfuscatedOrganisationId;
       await settings.save();
@@ -82,45 +93,48 @@ Future<void> withTestZone({
   required String userEmailAddress,
   required Future<void> Function() action,
 }) async {
-  var onepubTokenResponse = await API().exportMemberToken(userEmailAddress);
-  if (!onepubTokenResponse.success) {
-    await API().createMember(
-        userEmail: userEmailAddress,
-        firstname: 'Test',
-        lastname: 'User',
-        role: RoleEnum.Collaborator);
-    onepubTokenResponse = await API().exportMemberToken(userEmailAddress);
-  }
+  await withTestServer(() async {
+    var onepubTokenResponse = await API().exportMemberToken(userEmailAddress);
+    if (!onepubTokenResponse.success) {
+      await API().createMember(
+          userEmail: userEmailAddress,
+          firstname: 'Test',
+          lastname: 'User',
+          role: RoleEnum.Collaborator);
+      onepubTokenResponse = await API().exportMemberToken(userEmailAddress);
+    }
 
-  if (!onepubTokenResponse.success) {
-    throw OnePubCliException(
-        'Unable to fetch user: ${onepubTokenResponse.errorMessage}');
-  }
-  final onepubToken = onepubTokenResponse.token!;
+    if (!onepubTokenResponse.success) {
+      throw OnePubCliException(
+          'Unable to fetch user: ${onepubTokenResponse.errorMessage}');
+    }
+    final onepubToken = onepubTokenResponse.token!;
 
-  final response = await API().fetchMember(onepubToken);
-  await impersonateMember(member: response.toMember(), action: action);
+    final response = await API().fetchMember(onepubToken);
+    await impersonateMember(member: response.toMember(), action: action);
+  });
 }
 
-Future<Member> fetchTestUser({required String userEmailAddress}) async {
-  final testSettings = TestSettings();
+Future<Member> fetchTestUser({required String userEmailAddress}) =>
+    withTestServer(() async {
+      final testSettings = TestSettings();
 
-  print('''
+      print('''
   ${magenta('When prompted, provide a temp token from the Member | Organisation Tab')}
   ${testSettings.onepubUrl}
   Note: this token expires in an hour.
   ''');
 
-  final onepubTokenOfTargetMember = await ask('Temp Token:', hidden: true);
+      final onepubTokenOfTargetMember = await ask('Temp Token:', hidden: true);
 
-  final response = await API().fetchMember(onepubTokenOfTargetMember);
-  if (!response.success) {
-    throw ImpersonationException(
-        'Unable to fetch Member: ${response.errorMessage}');
-  }
+      final response = await API().fetchMember(onepubTokenOfTargetMember);
+      if (!response.success) {
+        throw ImpersonationException(
+            'Unable to fetch Member: ${response.errorMessage}');
+      }
 
-  return response.toMember();
-}
+      return response.toMember();
+    });
 
 class ImpersonationException implements Exception {
   String message;

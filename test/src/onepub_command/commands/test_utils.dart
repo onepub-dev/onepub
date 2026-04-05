@@ -9,9 +9,23 @@ import 'package:dcli_core/dcli_core.dart';
 import 'package:onepub/src/util/printerr.dart';
 import 'package:path/path.dart';
 
+class CommandResult {
+  CommandResult({
+    required this.lines,
+    required this.exitCode,
+  });
+
+  final List<String> lines;
+  final int exitCode;
+}
+
 /// Runs a onepub command on the cli and returns the output
 /// stripped of any ansi chars.
-List<String> runCmd(String command, {String? workingDirectory}) {
+List<String> runCmd(String command, {String? workingDirectory}) =>
+    runCmdResult(command, workingDirectory: workingDirectory).lines;
+
+/// Runs a onepub command on the cli and returns output plus exit status.
+CommandResult runCmdResult(String command, {String? workingDirectory}) {
   workingDirectory ??= pwd;
   final pathToRoot = DartProject.self.pathToProjectRoot;
   final pathToOnePub = join(pathToRoot, 'bin', 'onepub.dart');
@@ -31,7 +45,7 @@ List<String> runCmd(String command, {String? workingDirectory}) {
     clean.add(Ansi.strip(result));
   }
 
-  return clean;
+  return CommandResult(lines: clean, exitCode: progress.exitCode ?? -1);
 }
 
 /// Creates a dart project in a temp directory from one of the
