@@ -74,9 +74,10 @@ class OnePubSettings {
   OnePubSettings._load({required bool create}) {
     if (create) {
       if (!exists(defaultPathToSettings)) {
-        _create(pathToDir: defaultPathToSettings);
+        _create(pathToDir: defaultPathToSettingsDir);
       }
     }
+    pathToSettings = defaultPathToSettings;
     _settings = _loadYaml(pathToDir: defaultPathToSettingsDir);
   }
 
@@ -92,6 +93,7 @@ class OnePubSettings {
         _create(pathToDir: pathToDir);
       }
     }
+    pathToSettings = join(pathToDir, defaultSettingsFilename);
     _settings = _loadYaml(pathToDir: pathToDir);
   }
 
@@ -104,16 +106,15 @@ class OnePubSettings {
   /// Creates the onepub.yaml file at [defaultPathToSettingsDir] but does not
   /// initialise nor load it.
   static void _create({required String pathToDir}) {
-    final pathToSettingsFile =
-        join(defaultPathToSettingsDir, defaultSettingsFilename);
+    final pathToSettingsFile = join(pathToDir, defaultSettingsFilename);
     if (exists(pathToSettingsFile)) {
       final message =
           'The OnePubSettings file at $pathToSettingsFile alread exists.';
       logerr(red(message));
       throw ExitException(exitCode: 1, message: message);
     }
-    if (!exists(defaultPathToSettingsDir)) {
-      createDir(defaultPathToSettingsDir, recursive: true);
+    if (!exists(pathToDir)) {
+      createDir(pathToDir, recursive: true);
     }
     touch(pathToSettingsFile, create: true);
   }
