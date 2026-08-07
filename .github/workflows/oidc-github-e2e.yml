@@ -1,0 +1,88 @@
+name: GitHub OIDC E2E
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: github-oidc-e2e
+  cancel-in-progress: false
+
+jobs:
+  login:
+    name: Exchange a real GitHub identity
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: oidc-e2e
+    env:
+      ONEPUB_E2E_URL: ${{ vars.ONEPUB_OIDC_E2E_URL }}
+      ONEPUB_E2E_AUDIENCE: ${{ vars.ONEPUB_OIDC_E2E_AUDIENCE }}
+      ONEPUB_PATH: ${{ runner.temp }}/onepub-oidc-e2e
+      PUB_CACHE: ${{ runner.temp }}/pub-cache
+
+    steps:
+      - name: Validate the isolated test target
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const target = process.env.ONEPUB_E2E_URL;
+          const audience = process.env.ONEPUB_E2E_AUDIENCE;
+          if (!target || !audience) {
+            throw new Error(
+              'Set ONEPUB_OIDC_E2E_URL and ONEPUB_OIDC_E2E_AUDIENCE ' +
+              'on the oidc-e2e GitHub Environment.'
+            );
+          }
+
+          const url = new URL(target);
+          const host = url.hostname.toLowerCase();
+          if (url.protocol !== 'https:') {
+            throw new Error('The OIDC E2E target must use HTTPS.');
+          }
+          if (url.username || url.password || url.search || url.hash) {
+            throw new Error('The OIDC E2E target must be a plain base URL.');
+          }
+          if (host === 'onepub.dev' || host === 'www.onepub.dev' ||
+              host === 'beta.onepub.dev') {
+            throw new Error('OIDC E2E must never access production or beta.');
+          }
+          NODE
+
+      - uses: actions/checkout@v4
+
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Install CLI dependencies
+        run: dart pub get
+
+      - name: Configure the isolated OnePub endpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$ONEPUB_PATH"
+          printf 'version: 1\nonepubUrl: "%s"\n' "$ONEPUB_E2E_URL" \
+            > "$ONEPUB_PATH/onepub.yaml"
+
+      - name: Login using GitHub OIDC
+        shell: bash
+        run: |
+          set -euo pipefail
+          dart run bin/onepub.dart login oidc \
+            --audience "$ONEPUB_E2E_AUDIENCE"
+
+      - name: Verify Dart received a hosted-repository token
+        shell: bash
+        run: |
+          set -euo pipefail
+          token_list="$(dart pub token list)"
+          if [[ "$token_list" != *"$ONEPUB_E2E_URL"* ]]; then
+            echo 'The OnePub hosted repository is absent from the Dart token store.' >&2
+            exit 1
+          fi
+
