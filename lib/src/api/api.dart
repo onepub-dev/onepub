@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:pub_semver/pub_semver.dart';
 
-import '../commands/import.dart';
+import '../auth/token_source.dart';
 import '../exceptions.dart';
 import '../util/role_enum.dart';
 import '../util/send_command.dart';
