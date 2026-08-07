@@ -25,13 +25,24 @@ class MyRunner extends CommandRunner<int> {
 
   late ArgResults results;
 
-  MyRunner(this.args, String executableName, String description)
-      : super(executableName, description) {
+  MyRunner(List<String> args, super.executableName, super.description)
+      : args = normalizeArgs(args) {
     try {
       onepubCommands();
     } on FormatException catch (e) {
       throw ExitException(exitCode: 1, message: e.message);
     }
+  }
+
+  /// Keeps the historical `onepub login` spelling while `login` also owns
+  /// explicit authentication-method subcommands.
+  static List<String> normalizeArgs(Iterable<String> arguments) {
+    final normalized = List<String>.of(arguments);
+    final loginIndex = normalized.indexOf('login');
+    if (loginIndex != -1 && loginIndex == normalized.length - 1) {
+      normalized.add('browser');
+    }
+    return normalized;
   }
 
   Future<void> init() async {
