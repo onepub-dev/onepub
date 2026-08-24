@@ -323,7 +323,7 @@ Future<ProvisionedTestOrganisation> createProvisionedTestOrganisation(
     final response = await sendCommand(
       command:
           'test/organisation/create/${Uri.encodeComponent(organisationName)}'
-          '?plan=${Uri.encodeQueryComponent(plan)}',
+          '?plan=${Uri.encodeQueryComponent(plan)}&dedicatedOwner=true',
       commandType: CommandType.cli,
     );
     if (!response.success) {

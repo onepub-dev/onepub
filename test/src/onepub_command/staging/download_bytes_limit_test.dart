@@ -227,10 +227,19 @@ recoverable429=$recoverable429Count
       limited = true;
       stopAll();
     } else if (type == 'error') {
-      final statusCode = data['statusCode'] as int?;
+      final statusCodeValue = data['statusCode'];
+      final statusCode = statusCodeValue is int ? statusCodeValue : null;
+      final workerErrorValue = data['error'];
+      final workerError = workerErrorValue is String ? workerErrorValue : null;
+      final malformedStatus = statusCodeValue == null || statusCode != null
+          ? ''
+          : ' Invalid worker status value: $statusCodeValue.';
+      final workerMessage = workerError == null
+          ? 'Download worker failed.$malformedStatus'
+          : 'Download worker failed: $workerError$malformedStatus';
       firstError ??= StateError(
         statusCode == null
-            ? 'Download worker failed.'
+            ? workerMessage
             : 'Download bytes test failed with status $statusCode.',
       );
       stopAll();
@@ -338,10 +347,10 @@ Future<void> _downloadWorkerEntry(Map<String, Object> args) async {
       localRecoverable429 = 0;
       // }
     }
-  } catch (_) {
+  } catch (error, stackTrace) {
     sendPort.send(<String, Object>{
       'type': 'error',
-      'statusCode': Null,
+      'error': '$error\n$stackTrace',
     });
   } finally {
     if (localDownloads > 0 || localBytes > 0 || localRecoverable429 > 0) {
