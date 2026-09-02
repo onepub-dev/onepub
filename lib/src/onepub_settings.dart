@@ -64,7 +64,7 @@ class OnePubSettings {
       createDir(dirname(this.pathToSettings), recursive: true);
     }
 
-    _settings = SettingsYaml.load(pathToSettings: this.pathToSettings);
+    _settings = _loadSettingsFile(this.pathToSettings);
   }
 
   ///
@@ -121,18 +121,30 @@ class OnePubSettings {
 
   static SettingsYaml _loadYaml({required String pathToDir}) {
     final pathToFile = join(pathToDir, defaultSettingsFilename);
+    return _loadSettingsFile(pathToFile);
+  }
+
+  static SettingsYaml _loadSettingsFile(String pathToFile) {
     try {
       return SettingsYaml.load(pathToSettings: pathToFile);
     } on YamlException catch (e) {
-      logerr(red('Failed to load rules from $pathToFile'));
-      logerr(red(e.toString()));
-      rethrow;
+      throw _settingsLoadException(pathToFile, e);
     } on RulesException catch (e) {
-      logerr(red('Failed to load rules from $pathToFile'));
-      logerr(red(e.message));
-      rethrow;
+      throw _settingsLoadException(pathToFile, e);
+    } on FormatException catch (e) {
+      throw _settingsLoadException(pathToFile, e);
     }
   }
+
+  static ExitException _settingsLoadException(
+          String pathToFile, Object error) =>
+      ExitException(exitCode: 1, message: '''
+Unable to read the OnePub settings file:
+  $pathToFile
+
+$error
+
+Fix the YAML syntax, or move the file aside and rerun OnePub to recreate it.''');
 
   /// Loads a [OnePubSettings] file located
   /// in the directory [pathToSettingsDir]
