@@ -67,6 +67,91 @@ void main() {
     });
   });
 
+  test('publish-only exchanges and installs without changing login settings',
+      () async {
+    final temp = Directory.systemTemp.createTempSync('onepub-oidc-publish-');
+    addTearDown(() => temp.deleteSync(recursive: true));
+    final acquirer = _FakeAcquirer(assertion);
+    final exchange = _FakeExchangeApi();
+    final api = _FakeApi();
+    final tokenStore = _FakeTokenStore();
+    final command = OidcLoginCommand(
+      environment: {'GITHUB_ACTIONS': 'true'},
+      acquirer: acquirer,
+      exchangeApi: exchange,
+      api: api,
+      tokenStore: tokenStore,
+    );
+    final runner = CommandRunner<int>('onepub-test', 'test')
+      ..addCommand(command);
+
+    await OnePubSettings.withPathTo<void>(temp.path, () async {
+      final settings = OnePubSettings.use()
+        ..onepubUrl = 'http://localhost:8080'
+        ..operatorEmail = 'existing@example.test'
+        ..obfuscatedOrganisationId = 'existing-organisation'
+        ..organisationName = 'Existing Organisation';
+      await settings.save();
+
+      expect(await runner.run(['oidc', '--publish-only']), 0);
+
+      expect(acquirer.provider, CiProvider.githubActions);
+      expect(acquirer.audience, 'http://localhost:8080');
+      expect(exchange.assertion, assertion);
+      expect(exchange.audience, isNull);
+      expect(api.checkedVersion, isTrue);
+      expect(api.fetchedWith, isNull);
+      expect(tokenStore.url, 'https://packages.example/api/organisation/');
+      expect(tokenStore.token, 'short-lived-onepub-token');
+      expect(settings.operatorEmail, 'existing@example.test');
+      expect(settings.obfuscatedOrganisationId, 'existing-organisation');
+      expect(settings.organisationName, 'Existing Organisation');
+      expect(settings.onepubUrl, 'http://localhost:8080');
+    });
+  });
+
+  test('publish-only acquires all package publisher providers', () async {
+    for (final provider in [
+      CiProvider.githubActions,
+      CiProvider.gitlabCi,
+      CiProvider.azurePipelines,
+      CiProvider.bitbucketPipelines,
+      CiProvider.circleCi,
+    ]) {
+      final temp = Directory.systemTemp.createTempSync('onepub-oidc-provider-');
+      addTearDown(() => temp.deleteSync(recursive: true));
+      final acquirer = _FakeAcquirer(assertion);
+      final api = _FakeApi();
+      final runner = CommandRunner<int>('onepub-test', 'test')
+        ..addCommand(OidcLoginCommand(
+          environment: const {},
+          acquirer: acquirer,
+          exchangeApi: _FakeExchangeApi(),
+          api: api,
+          tokenStore: _FakeTokenStore(),
+        ));
+
+      await OnePubSettings.withPathTo<void>(temp.path, () async {
+        final settings = OnePubSettings.use()
+          ..onepubUrl = 'http://localhost:8080';
+        await settings.save();
+
+        expect(
+            await runner.run([
+              'oidc',
+              '--publish-only',
+              '--provider',
+              provider.id,
+            ]),
+            0);
+      });
+
+      expect(acquirer.provider, provider);
+      expect(acquirer.audience, 'http://localhost:8080');
+      expect(api.fetchedWith, isNull);
+    }
+  });
+
   test('uses a generic JWT from ONEPUB_OIDC_TOKEN without CI detection',
       () async {
     final temp = Directory.systemTemp.createTempSync('onepub-oidc-generic-');

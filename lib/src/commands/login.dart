@@ -71,7 +71,7 @@ class OnePubLoginCommand extends Command<int> {
           firstLogin: auth.firstLogin,
           organisationName: auth.organisationName,
           operator: auth.operatorEmail);
-    } on FetchException catch (e, _) {
+    } on FetchException catch (e) {
       printerr(red('Unable to connect to '
           '${OnePubSettings.use().onepubApiUrlAsString}. '
           'Error: $e '

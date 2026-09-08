@@ -1,3 +1,7 @@
+# 6.4.0
+- added `onepub login oidc --publish-only` to install a short-lived package
+  publishing token without changing the saved organisation settings.
+
 # 6.3.0
 - We now lock down the versions of direct dependencies to avoid upstream
  packages causing issues activating the onepub command.
