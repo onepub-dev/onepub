@@ -1,5 +1,8 @@
 include: package:lint_hard/all.yaml
 analyzer:
+  exclude:
+    # Downloaded CI runner actions and nested workflow checkouts.
+    - actions-runner/**
   errors:
     avoid_classes_with_only_static_members: ignore
     avoid_catches_without_on_clauses: ignore

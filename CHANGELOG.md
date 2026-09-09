@@ -1,4 +1,5 @@
 # Unreleased
+- Fix trusted publishing tests when Dart setup has already added a pub.dev credential, and keep test downloads in a temporary cache.
 - Added a GitLab trusted-publishing test pipeline and updated the shared test script to use the current login command.
 - Gate builds on real GitHub trusted publishing, with an isolated local stack
   and a self-hosted runner.

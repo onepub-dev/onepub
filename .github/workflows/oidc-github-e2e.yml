@@ -79,6 +79,11 @@ jobs:
         with:
           sdk: stable
 
+      # setup-dart exports its default cache, overriding our isolated path.
+      - name: Restore isolated package cache
+        shell: bash
+        run: echo "PUB_CACHE=$RUNNER_TEMP/onepub-e2e-$GITHUB_RUN_ID/pub-cache" >> "$GITHUB_ENV"
+
       - name: Install CLI dependencies
         run: dart pub get --enforce-lockfile
 

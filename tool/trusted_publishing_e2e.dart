@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:onepub/src/api/api.dart';
 import 'package:onepub/src/onepub_settings.dart';
+import 'package:onepub/src/token_store/credential.dart';
 import 'package:onepub/src/util/one_pub_token_store.dart';
 import 'package:path/path.dart' as p;
 
@@ -47,6 +48,7 @@ Future<void> main() async {
         throw StateError(
             'Expected server $expectedVersion; got ${status.version}.');
       }
+      final beforeLogin = (await OnePubTokenStore().credentials).toList();
       await runDart([
         cli,
         'login',
@@ -57,10 +59,8 @@ Future<void> main() async {
         audience
       ]);
       final credentials = (await OnePubTokenStore().credentials).toList();
-      if (credentials.length != 1) {
-        throw StateError('Expected one newly installed publishing credential.');
-      }
-      final hosted = credentials.single.url.toString();
+      final credential = newlyInstalledCredential(beforeLogin, credentials);
+      final hosted = credential.url.toString();
       assertSafeOnePubTestUrl(hosted, source: 'trusted exchange hosted URL');
       if (Uri.parse(hosted).origin != Uri.parse(target).origin) {
         throw StateError('Exchange returned a different server origin.');
@@ -109,4 +109,34 @@ Future<void> runDart(List<String> args, {String? workingDirectory}) async {
     process.kill();
     rethrow;
   }
+}
+
+/// Ignore pre-existing provider credentials while requiring login to add
+/// exactly one credential and preserve all existing entries. Never include
+/// token values in failure messages.
+Credential newlyInstalledCredential(
+    List<Credential> before, List<Credential> after) {
+  final previous = {
+    for (final credential in before) credential.url: credential
+  };
+  final current = {
+    for (final credential in after) credential.url: credential,
+  };
+  if (previous.length != before.length || current.length != after.length) {
+    throw StateError('Duplicate publishing credentials found.');
+  }
+  for (final entry in previous.entries) {
+    final credential = current[entry.key];
+    if (credential == null ||
+        jsonEncode(credential.toJson()) != jsonEncode(entry.value.toJson())) {
+      throw StateError('Trusted login changed an existing credential.');
+    }
+  }
+  final added = after
+      .where((credential) => !previous.containsKey(credential.url))
+      .toList();
+  if (added.length != 1 || added.single.token == null) {
+    throw StateError('Expected one newly installed publishing credential.');
+  }
+  return added.single;
 }
