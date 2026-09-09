@@ -47,23 +47,32 @@ Future<DownloadLimitResult> simulatePubGetApiFlow({
       .firstWhere((v) => v.version == published.version)
       .archiveUrl;
 
-  for (var i = 0; i < requests; i++) {
+  final results = await Future.wait(List.generate(requests, (_) async {
     final metadata = await sendCommand(
       command: packagePath,
       commandType: CommandType.pub,
     );
-    metadataStatuses[metadata.status] =
-        (metadataStatuses[metadata.status] ?? 0) + 1;
 
     final version = await sendCommand(
       command: versionPath,
       commandType: CommandType.pub,
     );
-    versionStatuses[version.status] =
-        (versionStatuses[version.status] ?? 0) + 1;
 
     final archiveStatus = await _downloadArchiveStatus(archiveUrl, token);
-    archiveStatuses[archiveStatus] = (archiveStatuses[archiveStatus] ?? 0) + 1;
+    return (
+      metadataStatus: metadata.status,
+      versionStatus: version.status,
+      archiveStatus: archiveStatus,
+    );
+  }));
+
+  for (final result in results) {
+    metadataStatuses[result.metadataStatus] =
+        (metadataStatuses[result.metadataStatus] ?? 0) + 1;
+    versionStatuses[result.versionStatus] =
+        (versionStatuses[result.versionStatus] ?? 0) + 1;
+    archiveStatuses[result.archiveStatus] =
+        (archiveStatuses[result.archiveStatus] ?? 0) + 1;
   }
 
   stdout

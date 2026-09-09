@@ -16,6 +16,7 @@ import '../util/bread_butter_auth.dart';
 import '../util/one_pub_token_store.dart';
 import '../util/printerr.dart';
 import '../util/send_command.dart';
+import 'login/trusted.dart';
 
 /// onepub login
 /// We trigger oauth by showing url
@@ -33,7 +34,10 @@ import '../util/send_command.dart';
 // A manager can invalidate the token from the web site.
 class OnePubLoginCommand extends Command<int> {
   ///
-  OnePubLoginCommand();
+  OnePubLoginCommand() {
+    addSubcommand(_BrowserLoginCommand());
+    addSubcommand(TrustedLoginCommand());
+  }
 
   @override
   String get description => blue('Log in to OnePub.');
@@ -67,7 +71,7 @@ class OnePubLoginCommand extends Command<int> {
           firstLogin: auth.firstLogin,
           organisationName: auth.organisationName,
           operator: auth.operatorEmail);
-    } on FetchException catch (e, _) {
+    } on FetchException catch (e) {
       printerr(red('Unable to connect to '
           '${OnePubSettings.use().onepubApiUrlAsString}. '
           'Error: $e '
@@ -97,6 +101,17 @@ class OnePubLoginCommand extends Command<int> {
   // removed as I think this is set if a user
   //runs ssa-agent to start the ssh-agent on their local machine.
   // Env().exists('SSH_AGENT_PID');
+}
+
+class _BrowserLoginCommand extends Command<int> {
+  @override
+  String get description => 'Log in interactively using a web browser.';
+
+  @override
+  String get name => 'browser';
+
+  @override
+  Future<int> run() => OnePubLoginCommand().run();
 }
 
 void showWelcome(

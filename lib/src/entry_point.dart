@@ -33,7 +33,7 @@ Future<void> entrypoint({
     try {
       printPreamble();
       await runner.init();
-      await runner.run(args);
+      await runner.run(runner.args);
     } on FormatException catch (e) {
       printerr(e.message);
       // this is an Exception (generally from the server, not a usage problem)

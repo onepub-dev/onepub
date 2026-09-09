@@ -46,16 +46,27 @@ void main() {
           .archiveUrl;
       final token = await OnePubTokenStore().load();
 
-      final summary = await _runStressWorkers(
-        workerCount: config.downloadStressConcurrency < 1
-            ? 1
-            : config.downloadStressConcurrency,
-        requestsPerWorker: config.downloadStressRequests < 1
-            ? 1
-            : config.downloadStressRequests,
-        archiveUrl: archiveUrl,
-        token: token,
-      );
+      late final _StressSummary summary;
+      try {
+        summary = await _runStressWorkers(
+          workerCount: config.downloadStressConcurrency < 1
+              ? 1
+              : config.downloadStressConcurrency,
+          requestsPerWorker: config.downloadStressRequests < 1
+              ? 1
+              : config.downloadStressRequests,
+          archiveUrl: archiveUrl,
+          token: token,
+        );
+      } finally {
+        // This test deliberately exhausts the download limiter. Do not leak
+        // that state into the next test file in a serial system-test run.
+        await _waitForArchiveRecovery(
+          archiveUrl: archiveUrl,
+          token: token,
+        );
+        await waitForCliRateLimitRecovery();
+      }
 
       stdout.writeln('''
 Download stress workers=${summary.workers}
@@ -174,6 +185,10 @@ Future<void> _waitForArchiveRecovery({
       }
       await sleepAsync(1);
     }
+    throw StateError(
+      'Archive download rate limit did not recover within '
+      '${timeout.inSeconds} seconds.',
+    );
   } finally {
     if (probeDir.existsSync()) {
       await probeDir.delete(recursive: true);

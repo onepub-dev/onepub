@@ -8,8 +8,7 @@ class OnePubToken {
 
   OnePubToken(EndpointResponse response) {
     if (response.success) {
-      final envelope = response.parseCli(CliExportTokenBody.fromJson);
-      token = envelope.body?.onepubToken;
+      token = response.requireCliBody(CliExportTokenBody.fromJson).onepubToken;
     }
 
     if (token == null) {

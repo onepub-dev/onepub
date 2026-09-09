@@ -5,6 +5,7 @@ import 'dart:math';
 import 'package:dcli/dcli.dart';
 import 'package:dcli_core/dcli_core.dart' as core;
 import 'package:onepub/src/api/cli_models.dart';
+import 'package:onepub/src/util/one_pub_token_store.dart';
 import 'package:onepub/src/util/send_command.dart';
 import 'package:path/path.dart';
 
@@ -73,17 +74,63 @@ Copyright (c) 2025 OnePub
           'Created native asset $assetPath ($largeNativeAssetBytes bytes).');
     }
 
+    final publishToken = await OnePubTokenStore().load();
+    const publishTokenEnv = 'ONEPUB_PUBLISH_TOKEN';
+    final pubHomeDir = join(tempDir, '.dart_tool', 'pub_home');
+    final pubConfigRoot = join(tempDir, '.dart_tool', 'pub_config');
+    createDir(pubHomeDir, recursive: true);
+    createDir(pubConfigRoot, recursive: true);
+    final publishEnv = {
+      publishTokenEnv: publishToken,
+      'HOME': pubHomeDir,
+      'XDG_CONFIG_HOME': pubConfigRoot,
+    };
+
+    final tokenProgress = Progress.capture();
+    await core.withEnvironmentAsync(
+      () async {
+        '${Platform.resolvedExecutable} pub token add $apiUrl '
+                '--env-var $publishTokenEnv'
+            .start(
+          workingDirectory: tempDir,
+          progress: tokenProgress,
+          nothrow: true,
+        );
+      },
+      environment: publishEnv,
+    );
+    if (tokenProgress.exitCode != 0) {
+      throw StateError('''
+dart pub token add failed for $apiUrl (exit code ${tokenProgress.exitCode})
+raw output:
+${tokenProgress.toParagraph()}''');
+    }
+
     final progress = Progress.capture();
-    'dart pub publish --force'
-        .start(workingDirectory: tempDir, progress: progress, nothrow: true);
-    stdout.writeln(progress.toParagraph());
+    await core.withEnvironmentAsync(
+      () async {
+        '${Platform.resolvedExecutable} pub publish --force'.start(
+          workingDirectory: tempDir,
+          progress: progress,
+          nothrow: true,
+        );
+      },
+      environment: publishEnv,
+    );
+    final publishOutput = progress.toParagraph();
+    stdout.writeln(publishOutput);
     if (progress.exitCode != 0) {
-      final output = progress.toParagraph();
-      if (output.contains('must create the package first')) {
+      if (publishOutput.contains('must create the package first')) {
         stderr.writeln('''
 Publish failed because the package is not assigned to a team. 
 Create the package in the OnePub UI and assign it to a team, then retry.''');
       }
+      stderr.writeln('''
+dart pub publish failed for $packageName (exit code ${progress.exitCode})
+publish_to: $apiUrl
+team: ${team ?? '<none>'}
+raw output:
+$publishOutput''');
       throw StateError(
           'dart pub publish failed with exit code ${progress.exitCode}');
     }
@@ -135,8 +182,8 @@ Future<void> _ensurePackageCreated(String packageName, String? team) async {
         attempt < maxAttempts) {
       final backoffMs = 500 * attempt;
       stderr.writeln('''
-Warning: package create rate-limited (HTTP 429), retrying in ${backoffMs}ms
-attempt $attempt/$maxAttempts for package "$packageName"...''');
+Warning: package create hit HTTP 429 on attempt $attempt of $maxAttempts for
+package "$packageName"; retrying with attempt ${attempt + 1} in ${backoffMs}ms...''');
       await Future<void>.delayed(Duration(milliseconds: backoffMs));
       continue;
     }
@@ -154,7 +201,8 @@ attempt $attempt/$maxAttempts for package "$packageName"...''');
       throw StateError(
           'Package create failed (HTTP 403): you are not permitted to create '
           'a package for team "$teamName". Ensure this token is a member of '
-          'that team (or set ONEPUB_TEAM to a team the token belongs to).');
+          'that team (or set ONEPUB_TEAM to a team the token belongs to). '
+          'Server message: $message');
     }
     if (response.status == HttpStatus.badRequest && message.isNotEmpty) {
       throw StateError('Package create failed (HTTP 400): $message '

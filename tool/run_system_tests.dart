@@ -1,5 +1,6 @@
 #!/usr/bin/env dcli
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:args/args.dart';
@@ -185,9 +186,13 @@ Future<String> _ensurePrimaryTokenForTests({
   );
 
   final store = OnePubTokenStore();
-  final envToken = (Platform.environment['ONEPUB_TOKEN'] ?? '').trim();
-  final settingsToken = _loadTestSettingsToken();
+  final settingsToken = await _resolveConfiguredTestToken(
+    targetUrl: targetUrl,
+    orgId: orgHint,
+  );
   final storedToken = (await store.getToken(hintedApiUrl) ?? '').trim();
+  final bootstrapToken =
+      (Platform.environment['ONEPUB_BOOTSTRAP_TEST_TOKEN'] ?? '').trim();
   var token = '';
   var lastProbeFailure = '';
 
@@ -204,7 +209,7 @@ Future<String> _ensurePrimaryTokenForTests({
   }
 
   final candidates = <String>[
-    envToken,
+    bootstrapToken,
     settingsToken,
     storedToken,
   ];
@@ -259,16 +264,76 @@ Future<String> _ensurePrimaryTokenForTests({
     await settings.save();
     print(yellow('Using organisationId $realOrgId for this test run.'));
   }
+  final testSettings = TestSettings();
+  if (testSettings.organisationId != realOrgId) {
+    testSettings.organisationId = realOrgId;
+    await testSettings.save();
+  }
   await store.addToken(onepubApiUrl: realApiUrl, onepubToken: token);
   await _ensureDartPubToken(apiUrl: realApiUrl, token: token);
   return token;
 }
 
-String _loadTestSettingsToken() {
+Future<String> _resolveConfiguredTestToken({
+  required String targetUrl,
+  required String orgId,
+}) async {
   try {
-    return TestSettings().onepubToken.trim();
+    final testSettings = TestSettings();
+    final token = testSettings.onepubToken.trim();
+    if (token.isEmpty) {
+      return '';
+    }
+    final organisation = await _resolveOrganisationFromToken(token);
+    if (organisation.obfuscatedId == orgId) {
+      return token;
+    }
+    return await _exportTestMemberToken(
+      targetUrl: targetUrl,
+      orgId: orgId,
+      memberEmail: testSettings.member,
+      systemToken: token,
+    );
   } catch (_) {
     return '';
+  }
+}
+
+Future<String> _exportTestMemberToken({
+  required String targetUrl,
+  required String orgId,
+  required String memberEmail,
+  required String systemToken,
+}) async {
+  final tempDir = await Directory.systemTemp.createTemp('onepub_test_token_');
+  try {
+    return await OnePubSettings.withPathTo(tempDir.path, () async {
+      final settings = OnePubSettings.use()
+        ..onepubUrl = targetUrl
+        ..obfuscatedOrganisationId = orgId;
+      await settings.save();
+
+      final response = await sendCommand(
+        command: 'test/member/exportToken/$orgId/'
+            '${Uri.encodeComponent(memberEmail)}',
+        commandType: CommandType.cli,
+        authorised: false,
+        headers: {'authorization': systemToken},
+      );
+      if (!response.success) {
+        throw StateError(response.errorMessage);
+      }
+      final envelope = response.parseCli(CliExportTokenBody.fromJson);
+      final token = envelope.body?.onepubToken ?? '';
+      if (token.isEmpty) {
+        throw StateError('test/member/exportToken returned no token.');
+      }
+      return token;
+    });
+  } finally {
+    if (tempDir.existsSync()) {
+      tempDir.deleteSync(recursive: true);
+    }
   }
 }
 
@@ -534,7 +599,7 @@ List<String> _buildDartTestCommand({
   String? nameFilter,
   List<String> extra = const [],
 }) {
-  final args = <String>['test'];
+  final args = <String>['test', '-r', 'compact'];
   final excludeTags = _excludeTagsForSuite(suite);
 
   if (excludeTags.isNotEmpty) {
@@ -627,9 +692,8 @@ Future<int> _runDartTestCommand({
 }) async {
   final overrideExcludeTags = _excludeTagsForSuite(suite);
   final dartTestConfig = '$_onepubRepoRoot/$_dartTestConfigPath';
-  final originalConfig = exists(dartTestConfig)
-      ? File(dartTestConfig).readAsStringSync()
-      : null;
+  final originalConfig =
+      exists(dartTestConfig) ? File(dartTestConfig).readAsStringSync() : null;
 
   if (originalConfig != null) {
     final updated = _rewriteExcludeTags(
@@ -646,14 +710,79 @@ Future<int> _runDartTestCommand({
       workingDirectory: _onepubRepoRoot,
       runInShell: true,
       environment: env,
-      mode: ProcessStartMode.inheritStdio,
     );
-    return await process.exitCode;
+    final stdoutFuture = process.stdout.transform(utf8.decoder).join();
+    final stderrFuture = process.stderr.transform(utf8.decoder).join();
+    final exitCode = await process.exitCode;
+    final stdoutOutput = await stdoutFuture;
+    final stderrOutput = await stderrFuture;
+
+    if (exitCode == 0) {
+      _printSuccessfulTestSummary(stdoutOutput, stderrOutput);
+      _printDownloadStressSummary(stdoutOutput, stderrOutput);
+    } else {
+      if (stdoutOutput.trim().isNotEmpty) {
+        stdout.write(stdoutOutput);
+        if (!stdoutOutput.endsWith('\n')) {
+          stdout.writeln();
+        }
+      }
+      if (stderrOutput.trim().isNotEmpty) {
+        stderr.write(stderrOutput);
+        if (!stderrOutput.endsWith('\n')) {
+          stderr.writeln();
+        }
+      }
+    }
+
+    return exitCode;
   } finally {
     if (originalConfig != null) {
       dartTestConfig.write(originalConfig);
     }
   }
+}
+
+void _printDownloadStressSummary(String stdoutOutput, String stderrOutput) {
+  final output = '$stdoutOutput\n$stderrOutput';
+  final match = RegExp(
+    r'Download pub flow stress workers=.*?flowLatencyMaxMs=[^\r\n]*',
+    dotAll: true,
+  ).firstMatch(output);
+  if (match != null) {
+    print(match.group(0));
+  }
+}
+
+void _printSuccessfulTestSummary(String stdoutOutput, String stderrOutput) {
+  final output = '$stdoutOutput\n$stderrOutput';
+  final summary = _parseSuccessfulTestSummary(output);
+  if (summary == null) {
+    print(green('All system tests passed.'));
+    return;
+  }
+
+  final skipped = summary.skipped == 0 ? '' : ', ${summary.skipped} skipped';
+  print(green('All system tests passed: ${summary.passed} passed$skipped.'));
+}
+
+({int passed, int skipped})? _parseSuccessfulTestSummary(String output) {
+  final clean = output.replaceAll(
+    RegExp(r'\x1B\[[0-?]*[ -/]*[@-~]'),
+    '',
+  );
+  final matches = RegExp(r'\+(\d+)(?:\s+~(\d+))?:\s+All tests passed!')
+      .allMatches(clean)
+      .toList();
+  if (matches.isEmpty) {
+    return null;
+  }
+
+  final match = matches.last;
+  return (
+    passed: int.parse(match.group(1)!),
+    skipped: int.tryParse(match.group(2) ?? '') ?? 0,
+  );
 }
 
 String _rewriteExcludeTags(String yaml, String excludeTags) {
@@ -681,7 +810,7 @@ Map<String, String> _localSuiteEnvOverrides({
   required String targetUrl,
   required TestSuite suite,
 }) {
-  if (targetUrl != _localUrl) {
+  if (!_isLocalTarget(targetUrl)) {
     return const <String, String>{};
   }
 
@@ -717,11 +846,29 @@ bool _shouldRunSerial({required TestSuite suite, required String targetUrl}) {
     case TestSuite.all:
       return true;
     case TestSuite.onepubCommand:
-    case TestSuite.integration:
     case TestSuite.unit:
     case TestSuite.manual:
       return false;
+    case TestSuite.integration:
+      return _isLocalTarget(targetUrl);
   }
+}
+
+bool _isLocalTarget(String targetUrl) {
+  if (targetUrl == _localUrl) {
+    return true;
+  }
+  final host = Uri.tryParse(targetUrl)?.host.toLowerCase();
+  if (host == null || host.isEmpty) {
+    return false;
+  }
+  if (host == 'localhost' || host == '::1') {
+    return true;
+  }
+  final octets = host.split('.').map(int.tryParse).toList();
+  return octets.length == 4 &&
+      octets.every((octet) => octet != null && octet >= 0 && octet <= 255) &&
+      octets.first == 127;
 }
 
 void _printUsage(ArgParser parser) {

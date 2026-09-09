@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:dcli/dcli.dart';
 import 'package:onepub/src/api/api.dart';
 import 'package:onepub/src/api/member.dart';
+import 'package:onepub/src/api/member_create.dart';
+import 'package:onepub/src/api/member_response.dart';
 import 'package:onepub/src/api/onepub_token.dart';
 import 'package:onepub/src/exceptions.dart';
 import 'package:onepub/src/util/one_pub_token_store.dart';
@@ -16,6 +18,7 @@ class TestUsers {
 
   static var initialised = false;
   static String? _emailNamespace;
+  static var _loggedReducedCoverageWarning = false;
 
   late final Member administrator;
 
@@ -54,8 +57,7 @@ class TestUsers {
                 'TestUsers requires a system admin login. Run: onepub login');
           }
           final member = await _currentMember();
-          stderr.writeln('''
-TestUsers: using current member ${member.email} for all roles (no admin permissions).''');
+          _logReducedCoverageWarning(member.email);
           administrator = member;
           teamLeader = member;
           basicMember = member;
@@ -96,17 +98,35 @@ TestUsers: using current member ${member.email} for all roles (no admin permissi
       required String lastname,
       required RoleEnum role}) async {
     final tokenResponse = await _exportMemberTokenWithRetry(emailAddress);
+    stderr.writeln(
+      'TestUsers: resolving user "$emailAddress" for role ${role.name} '
+      '(export success: ${tokenResponse.success}).',
+    );
     if (tokenResponse.success) {
       // member already exists.
-      final memberResponse = await API().fetchMember(tokenResponse.token!);
+      final memberResponse = await _fetchMemberWithRetry(tokenResponse.token!);
       if (memberResponse.success) {
         return memberResponse.toMember();
-      } else {
+      }
+      if (_isRetryableApiFailure(memberResponse.errorMessage)) {
         throw APIException(memberResponse.errorMessage);
       }
+      final fallbackEmail = _uniqueEmail(emailAddress);
+      final fallbackMember = await _createFreshMemberWithRetries(
+        seedEmailAddress: fallbackEmail,
+        firstname: firstname,
+        lastname: lastname,
+        role: role,
+      );
+      if (fallbackMember != null) {
+        stderr.writeln('''
+TestUsers: existing member lookup for $emailAddress returned "${memberResponse.errorMessage}". Created fresh fallback user ${fallbackMember.email}.''');
+        return fallbackMember;
+      }
+      throw APIException(memberResponse.errorMessage);
     } else {
       // create new member
-      final createResponse = await API().createMember(
+      final createResponse = await _createMemberWithRetry(
         userEmail: emailAddress,
         firstname: firstname,
         lastname: lastname,
@@ -114,7 +134,10 @@ TestUsers: using current member ${member.email} for all roles (no admin permissi
       );
 
       if (createResponse.success) {
-        final onepubToken = await _exportMemberTokenWithRetry(emailAddress);
+        final onepubToken = await _exportMemberTokenWithRetry(
+          emailAddress,
+          obfuscatedOrganisationId: createResponse.obfuscateOrganisationId,
+        );
         if (!onepubToken.success) {
           throw APIException(
               'Unable to fetch the OnePubToken for $emailAddress ');
@@ -133,18 +156,40 @@ TestUsers: using current member ${member.email} for all roles (no admin permissi
       if (errorMessage.toLowerCase().contains('already exists')) {
         final existingToken = await _exportMemberTokenWithRetry(emailAddress);
         if (existingToken.success) {
-          final memberResponse = await API().fetchMember(existingToken.token!);
+          final memberResponse =
+              await _fetchMemberWithRetry(existingToken.token!);
           if (memberResponse.success) {
             return memberResponse.toMember();
+          }
+          if (_isRetryableApiFailure(memberResponse.errorMessage)) {
+            throw APIException(memberResponse.errorMessage);
+          }
+          final fallbackEmail = _uniqueEmail(emailAddress);
+          final fallbackMember = await _createFreshMemberWithRetries(
+            seedEmailAddress: fallbackEmail,
+            firstname: firstname,
+            lastname: lastname,
+            role: role,
+          );
+          if (fallbackMember != null) {
+            stderr.writeln('''
+TestUsers: member "$emailAddress" already existed but lookup returned "${memberResponse.errorMessage}". Created fresh fallback user ${fallbackMember.email}.''');
+            return fallbackMember;
           }
           throw APIException(memberResponse.errorMessage);
         }
         final fallbackEmail = _uniqueEmail(emailAddress);
-        final fallbackMember = await _createFreshMember(
-            emailAddress: fallbackEmail,
-            firstname: firstname,
-            lastname: lastname,
-            role: role);
+        if (_isRetryableApiFailure(existingToken.errorMessage)) {
+          throw APIException(
+            existingToken.errorMessage ?? 'Unable to export member token.',
+          );
+        }
+        final fallbackMember = await _createFreshMemberWithRetries(
+          seedEmailAddress: fallbackEmail,
+          firstname: firstname,
+          lastname: lastname,
+          role: role,
+        );
         if (fallbackMember != null) {
           return fallbackMember;
         }
@@ -156,20 +201,106 @@ TestUsers: using current member ${member.email} for all roles (no admin permissi
     }
   }
 
-  Future<OnePubToken> _exportMemberTokenWithRetry(String emailAddress,
-      {int attempts = 3}) async {
+  Future<OnePubToken> _exportMemberTokenWithRetry(
+    String emailAddress, {
+    String? obfuscatedOrganisationId,
+    int attempts = 5,
+  }) async {
     for (var attempt = 0; attempt < attempts; attempt++) {
-      final response = await API().exportMemberToken(emailAddress);
+      final response = await _exportMemberToken(
+        emailAddress,
+        obfuscatedOrganisationId: obfuscatedOrganisationId,
+      );
       if (response.success) {
         return response;
       }
+      stderr.writeln(
+        'TestUsers: exportMemberToken attempt ${attempt + 1}/$attempts for '
+        '"$emailAddress" failed: ${response.errorMessage}.',
+      );
       if (attempt < attempts - 1) {
-        await sleepAsync(500 * (attempt + 1), interval: Interval.milliseconds);
+        await sleepAsync(
+          _retryDelayMs(attempt),
+          interval: Interval.milliseconds,
+        );
       } else {
         return response;
       }
     }
-    return API().exportMemberToken(emailAddress);
+    return _exportMemberToken(
+      emailAddress,
+      obfuscatedOrganisationId: obfuscatedOrganisationId,
+    );
+  }
+
+  Future<OnePubToken> _exportMemberToken(
+    String emailAddress, {
+    String? obfuscatedOrganisationId,
+  }) =>
+      API().exportTestMemberToken(
+        obfuscatedOrganisationId:
+            obfuscatedOrganisationId ?? TestSettings().organisationId,
+        memberEmail: emailAddress,
+      );
+
+  Future<MemberResponse> _fetchMemberWithRetry(
+    String onepubToken, {
+    int attempts = 5,
+  }) async {
+    late MemberResponse response;
+    for (var attempt = 0; attempt < attempts; attempt++) {
+      response = await API().fetchMember(onepubToken);
+      if (response.success || !_isRetryableApiFailure(response.errorMessage)) {
+        return response;
+      }
+      stderr.writeln(
+        'TestUsers: fetchMember attempt ${attempt + 1}/$attempts failed with '
+        '"${response.errorMessage}". Retrying...',
+      );
+      if (attempt < attempts - 1) {
+        await sleepAsync(
+          _retryDelayMs(attempt),
+          interval: Interval.milliseconds,
+        );
+      }
+    }
+    return response;
+  }
+
+  Future<MemberCreate> _createMemberWithRetry({
+    required String userEmail,
+    required String firstname,
+    required String lastname,
+    required RoleEnum role,
+    int attempts = 5,
+  }) async {
+    late MemberCreate response;
+    for (var attempt = 0; attempt < attempts; attempt++) {
+      response = await API().createMember(
+        userEmail: userEmail,
+        firstname: firstname,
+        lastname: lastname,
+        role: role,
+      );
+      if (response.success) {
+        return response;
+      }
+      final errorMessage = response.errorMessage ?? '';
+      if (!_isRetryableApiFailure(errorMessage)) {
+        return response;
+      }
+      stderr.writeln(
+        'TestUsers: createMember attempt ${attempt + 1}/$attempts for '
+        '"$userEmail" failed with "$errorMessage". Retrying...',
+      );
+      if (attempt < attempts - 1) {
+        await sleepAsync(
+          _retryDelayMs(attempt),
+          interval: Interval.milliseconds,
+        );
+      }
+    }
+    return response;
   }
 
   Future<Member?> _createFreshMember(
@@ -177,17 +308,32 @@ TestUsers: using current member ${member.email} for all roles (no admin permissi
       required String firstname,
       required String lastname,
       required RoleEnum role}) async {
-    final createResponse = await API().createMember(
+    stderr.writeln(
+      'TestUsers: creating fresh fallback user "$emailAddress" for '
+      'role ${role.name}.',
+    );
+    final createResponse = await _createMemberWithRetry(
       userEmail: emailAddress,
       firstname: firstname,
       lastname: lastname,
       role: role,
     );
     if (!createResponse.success) {
+      stderr.writeln(
+        'TestUsers: createMember failed for "$emailAddress": '
+        '${createResponse.errorMessage}.',
+      );
       return null;
     }
-    final onepubToken = await _exportMemberTokenWithRetry(emailAddress);
+    final onepubToken = await _exportMemberTokenWithRetry(
+      emailAddress,
+      obfuscatedOrganisationId: createResponse.obfuscateOrganisationId,
+    );
     if (!onepubToken.success) {
+      stderr.writeln(
+        'TestUsers: exportMemberToken failed for "$emailAddress": '
+        '${onepubToken.errorMessage}.',
+      );
       return null;
     }
     return Member(
@@ -198,6 +344,47 @@ TestUsers: using current member ${member.email} for all roles (no admin permissi
         organisationName: createResponse.organisationName,
         obfuscatedOrganisationId: createResponse.obfuscateOrganisationId,
         onepubToken: onepubToken.token!);
+  }
+
+  bool _isRetryableApiFailure(String? message) {
+    final normalized = (message ?? '').trim().toLowerCase();
+    return normalized.isEmpty ||
+        normalized == 'empty response' ||
+        normalized.contains('too many cli requests') ||
+        normalized.contains('too many requests') ||
+        normalized.contains('rate limit');
+  }
+
+  int _retryDelayMs(int attempt) => 1500 * (attempt + 1);
+
+  Future<Member?> _createFreshMemberWithRetries({
+    required String seedEmailAddress,
+    required String firstname,
+    required String lastname,
+    required RoleEnum role,
+    int attempts = 3,
+  }) async {
+    var candidate = seedEmailAddress;
+    for (var attempt = 0; attempt < attempts; attempt++) {
+      stderr.writeln(
+        'TestUsers: fallback create attempt ${attempt + 1}/$attempts '
+        'using "$candidate".',
+      );
+      final member = await _createFreshMember(
+        emailAddress: candidate,
+        firstname: firstname,
+        lastname: lastname,
+        role: role,
+      );
+      if (member != null) {
+        return member;
+      }
+      candidate = _uniqueEmail(seedEmailAddress);
+    }
+    stderr.writeln(
+      'TestUsers: exhausted fallback create attempts for "$seedEmailAddress".',
+    );
+    return null;
   }
 
   String _uniqueEmail(String emailAddress) {
@@ -275,5 +462,15 @@ TestUsers: using current member ${member.email} for all roles (no admin permissi
       throw APIException(effective);
     }
     return response.toMember();
+  }
+
+  void _logReducedCoverageWarning(String email) {
+    if (_loggedReducedCoverageWarning) {
+      return;
+    }
+    _loggedReducedCoverageWarning = true;
+    stderr.writeln('''
+TestUsers: reduced-coverage mode. Current member $email will be reused for Administrator, TeamLeader, and Collaborator test roles because the active token is not a System Administrator.
+TestUsers: dedicated role-based test users will not be provisioned, so role-separation coverage is reduced for this run.''');
   }
 }

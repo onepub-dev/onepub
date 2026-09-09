@@ -1,3 +1,5 @@
+import '../exceptions.dart';
+
 class CliStatusBody {
   final String message;
   final String version;
@@ -5,8 +7,8 @@ class CliStatusBody {
   CliStatusBody({required this.message, required this.version});
 
   factory CliStatusBody.fromJson(Map<String, dynamic> json) => CliStatusBody(
-        message: json['message'] as String? ?? '',
-        version: json['version'] as String? ?? '',
+        message: requiredResponseString(json, 'message'),
+        version: requiredResponseString(json, 'version'),
       );
 }
 
@@ -19,8 +21,8 @@ class CliOrganisationBody {
 
   factory CliOrganisationBody.fromJson(Map<String, dynamic> json) =>
       CliOrganisationBody(
-        organisationName: json['organisationName'] as String? ?? '',
-        obfuscatedId: json['obfuscatedId'] as String? ?? '',
+        organisationName: requiredResponseString(json, 'organisationName'),
+        obfuscatedId: requiredResponseString(json, 'obfuscatedId'),
       );
 }
 
@@ -84,7 +86,7 @@ class CliExportTokenBody {
 
   factory CliExportTokenBody.fromJson(Map<String, dynamic> json) =>
       CliExportTokenBody(
-        onepubToken: json['onepubToken'] as String? ?? '',
+        onepubToken: requiredResponseString(json, 'onepubToken'),
       );
 }
 
@@ -111,7 +113,7 @@ class CliAuthBody {
 
   factory CliAuthBody.fromJson(Map<String, dynamic> json) => CliAuthBody(
         status: json['status'] as String? ?? '',
-        pollInterval: json['pollInterval'] as int? ?? 0,
+        pollInterval: json['pollInterval'] as int? ?? 3,
         message: json['message'] as String? ?? '',
         onePubToken: json['onePubToken'] as String? ?? '',
         firstLogin: json['firstLogin'] as bool? ?? false,
@@ -204,4 +206,12 @@ List<CliTeamInfo> _teamList(Object? value) {
     }
   }
   return teams;
+}
+
+String requiredResponseString(Map<String, dynamic> json, String field) {
+  final value = json[field];
+  if (value is! String || value.trim().isEmpty) {
+    throw APIException('Missing or invalid response field "$field"');
+  }
+  return value;
 }

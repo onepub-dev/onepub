@@ -7,27 +7,46 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:onepub/src/util/one_pub_token_store.dart';
+import 'package:onepub/src/util/send_command.dart';
 import 'package:test/test.dart';
 
 import 'staging_common.dart';
 
 const _downloadLimitMessage = 'Monthly download limit exceeded for your plan. '
     'Please upgrade your plan to download more packages.';
+const _defaultRemainingDownloadsBeforeLimit = 8;
 
 class _DownloadLimitTarget {
   final String plan;
+  final int packageSizeMb;
 
   const _DownloadLimitTarget({
     required this.plan,
+    required this.packageSizeMb,
   });
 }
 
 void main() {
   final config = StagingConfig.fromEnv();
+  final overridePackageSizeMb = int.tryParse(
+      Platform.environment['ONEPUB_DOWNLOAD_LIMIT_PACKAGE_SIZE_MB'] ?? '');
+  final remainingDownloadsBeforeLimit = int.tryParse(
+        Platform.environment['ONEPUB_DOWNLOAD_LIMIT_REMAINING_DOWNLOADS'] ?? '',
+      ) ??
+      _defaultRemainingDownloadsBeforeLimit;
   final targets = <_DownloadLimitTarget>[
-    const _DownloadLimitTarget(plan: 'free'),
-    const _DownloadLimitTarget(plan: 'pro'),
-    const _DownloadLimitTarget(plan: 'team'),
+    _DownloadLimitTarget(
+      plan: 'free',
+      packageSizeMb: overridePackageSizeMb ?? 9,
+    ),
+    _DownloadLimitTarget(
+      plan: 'pro',
+      packageSizeMb: overridePackageSizeMb ?? 9,
+    ),
+    _DownloadLimitTarget(
+      plan: 'team',
+      packageSizeMb: overridePackageSizeMb ?? 14,
+    ),
   ];
   final provisioned = <String, ProvisionedTestOrganisation>{};
   var canProvision = false;
@@ -73,8 +92,14 @@ void main() {
             final published = await publishAndVerify(
               context,
               config,
-              largeNativeAssetMb: config.downloadLimitPackageSizeMb,
+              largeNativeAssetMb: target.packageSizeMb,
             );
+            final seedBytes = _seedBytesForPlan(
+              plan: target.plan,
+              packageSizeMb: target.packageSizeMb,
+              remainingDownloadsBeforeLimit: remainingDownloadsBeforeLimit,
+            );
+            await _seedDownloadUsage(seedBytes);
             final archiveUrl = published.versionsBody.versions
                 .firstWhere((v) => v.version == published.version)
                 .archiveUrl;
@@ -93,6 +118,8 @@ void main() {
             stdout.writeln('''
 plan=${organisation.plan}
 organisationId=${organisation.organisationId}
+packageSizeMB=${target.packageSizeMb}
+seededDownloadBytes=$seedBytes
 Download bytes workers=${summary.workers}
 downloads=${summary.downloads}
 totalBytes=${summary.totalBytes}
@@ -112,6 +139,38 @@ recoverable429=${summary.recoverable429Count}
         timeout: const Timeout(Duration(hours: 2)),
         skip: config.skipDownloadLimit || config.skipPublish);
   }
+}
+
+Future<void> _seedDownloadUsage(int bytes) async {
+  final response = await sendCommand(
+    command: 'test/download/seed/$bytes',
+    commandType: CommandType.cli,
+    method: Method.post,
+  );
+  if (!response.success) {
+    throw StateError(
+      'Failed to seed download usage: HTTP ${response.status} '
+      '${response.errorMessage}',
+    );
+  }
+}
+
+int _seedBytesForPlan({
+  required String plan,
+  required int packageSizeMb,
+  required int remainingDownloadsBeforeLimit,
+}) {
+  final quotaGb = switch (plan) {
+    'free' => 1,
+    'pro' => 1,
+    'team' => 2,
+    _ => 1,
+  };
+  final quotaBytes = quotaGb * 1000 * 1000 * 1000;
+  final marginBytes =
+      packageSizeMb * 1000 * 1000 * remainingDownloadsBeforeLimit;
+  final seeded = quotaBytes - marginBytes;
+  return seeded < 0 ? 0 : seeded;
 }
 
 class _ArchiveDownloadResult {
@@ -215,22 +274,23 @@ Future<_DownloadSummary> _runDownloadWorkers({
       downloads += data['downloads'] as int;
       totalBytes += data['bytes'] as int;
       recoverable429Count += data['recoverable429'] as int;
-
-      stdout.writeln('''
-downloads=$downloads
-totalBytes=$totalBytes
-totalMB=${(totalBytes / (1024 * 1024)).toStringAsFixed(2)}
-limited=$limited
-recoverable429=$recoverable429Count
-''');
     } else if (type == 'limited') {
       limited = true;
       stopAll();
     } else if (type == 'error') {
-      final statusCode = data['statusCode'] as int?;
+      final statusCodeValue = data['statusCode'];
+      final statusCode = statusCodeValue is int ? statusCodeValue : null;
+      final workerErrorValue = data['error'];
+      final workerError = workerErrorValue is String ? workerErrorValue : null;
+      final malformedStatus = statusCodeValue == null || statusCode != null
+          ? ''
+          : ' Invalid worker status value: $statusCodeValue.';
+      final workerMessage = workerError == null
+          ? 'Download worker failed.$malformedStatus'
+          : 'Download worker failed: $workerError$malformedStatus';
       firstError ??= StateError(
         statusCode == null
-            ? 'Download worker failed.'
+            ? workerMessage
             : 'Download bytes test failed with status $statusCode.',
       );
       stopAll();
@@ -278,7 +338,6 @@ recoverable429=$recoverable429Count
 }
 
 Future<void> _downloadWorkerEntry(Map<String, Object> args) async {
-  final id = args['id']! as int;
   final archiveUrl = args['archiveUrl']! as String;
   final token = args['token']! as String;
   final limitMessage = args['limitMessage']! as String;
@@ -338,10 +397,10 @@ Future<void> _downloadWorkerEntry(Map<String, Object> args) async {
       localRecoverable429 = 0;
       // }
     }
-  } catch (_) {
+  } catch (error, stackTrace) {
     sendPort.send(<String, Object>{
       'type': 'error',
-      'statusCode': Null,
+      'error': '$error\n$stackTrace',
     });
   } finally {
     if (localDownloads > 0 || localBytes > 0 || localRecoverable429 > 0) {
@@ -353,6 +412,5 @@ Future<void> _downloadWorkerEntry(Map<String, Object> args) async {
       });
     }
     client.close(force: true);
-    stdout.writeln('Download worker $id exited.');
   }
 }

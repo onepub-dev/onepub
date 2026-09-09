@@ -1,0 +1,86 @@
+name: GitHub OIDC E2E
+run-name: Trusted publishing E2E ${{ inputs.test_id }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      cli_sha:
+        description: Exact candidate CLI commit
+        required: true
+        type: string
+      server_url:
+        description: Isolated loopback URL allocated by op-build
+        required: true
+        type: string
+      server_version:
+        description: Expected candidate server version
+        required: true
+        type: string
+      audience:
+        description: Unique audience provisioned by op-build
+        required: true
+        type: string
+      package_name:
+        description: Disposable package provisioned by op-build
+        required: true
+        type: string
+      runner_label:
+        description: Unique label of the self-hosted build-machine runner
+        required: true
+        type: string
+      test_id:
+        description: Build correlation ID
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: trusted-publishing-${{ inputs.runner_label }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish using a real GitHub identity
+    runs-on: [self-hosted, linux, '${{ inputs.runner_label }}']
+    timeout-minutes: 15
+    environment: oidc-e2e
+    env:
+      ONEPUB_E2E_URL: ${{ inputs.server_url }}
+      ONEPUB_E2E_VERSION: ${{ inputs.server_version }}
+      ONEPUB_E2E_AUDIENCE: ${{ inputs.audience }}
+      ONEPUB_E2E_PACKAGE: ${{ inputs.package_name }}
+      ONEPUB_PATH: ${{ runner.temp }}/onepub-e2e-${{ github.run_id }}/settings
+      XDG_CONFIG_HOME: ${{ runner.temp }}/onepub-e2e-${{ github.run_id }}/config
+      _PUB_TEST_CONFIG_DIR: ${{ runner.temp }}/onepub-e2e-${{ github.run_id }}/config/dart
+      PUB_CACHE: ${{ runner.temp }}/onepub-e2e-${{ github.run_id }}/pub-cache
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.cli_sha }}
+          persist-credentials: false
+
+      - name: Verify the candidate checkout
+        env:
+          EXPECTED_SHA: ${{ inputs.cli_sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - name: Install CLI dependencies
+        run: dart pub get --enforce-lockfile
+
+      - name: Publish with the GitHub trusted identity
+        run: dart run tool/trusted_publishing_e2e.dart
+
+      - name: Remove temporary credentials and cache
+        if: always()
+        shell: bash
+        env:
+          CLEANUP_PATH: ${{ runner.temp }}/onepub-e2e-${{ github.run_id }}
+        run: rm -rf -- "$CLEANUP_PATH"

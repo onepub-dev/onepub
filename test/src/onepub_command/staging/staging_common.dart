@@ -13,6 +13,8 @@ import '../../../test_users.dart';
 import 'publish_test_package.dart';
 import 'verify_published_package.dart';
 
+const _testUserProvisionCooldownMs = 6000;
+
 class StagingConfig {
   final String stagingUrl;
   final String team;
@@ -89,7 +91,7 @@ class StagingConfig {
         downloadLimitRequests:
             int.parse(_env('ONEPUB_DOWNLOAD_LIMIT_REQUESTS', '75')),
         downloadLimitPackageSizeMb:
-            int.parse(_env('ONEPUB_DOWNLOAD_LIMIT_PACKAGE_SIZE_MB', '64')),
+            int.parse(_env('ONEPUB_DOWNLOAD_LIMIT_PACKAGE_SIZE_MB', '8')),
         downloadLimitConcurrency:
             int.parse(_env('ONEPUB_DOWNLOAD_LIMIT_CONCURRENCY', '20')),
         downloadStressRequests:
@@ -160,6 +162,8 @@ class ProvisionedTestOrganisation {
   });
 }
 
+var _loggedReducedCoverageWarning = false;
+
 Future<void> ensureTestUsers(StagingConfig config,
     {String? preferredOrgId}) async {
   final isAdmin = await hasSystemAdminToken(
@@ -167,8 +171,7 @@ Future<void> ensureTestUsers(StagingConfig config,
     preferredOrgId: preferredOrgId,
   );
   if (!isAdmin) {
-    stderr.writeln('''
-TestUsers: skipping provisioning (current token is not system admin).''');
+    _logReducedCoverageWarning(config, preferredOrgId: preferredOrgId);
     return;
   }
 
@@ -177,8 +180,10 @@ TestUsers: skipping provisioning (current token is not system admin).''');
     final namespace = _sanitizeNamespace('''
 ${Uri.parse(settings.onepubUrl ?? OnePubSettings.defaultOnePubUrl).host}'''
         '-${settings.obfuscatedOrganisationId}');
+    await _respectProvisionCooldown(namespace);
     TestUsers.configureEmailNamespace(namespace);
     await TestUsers(init: true).init();
+    await _recordProvisionTimestamp(namespace);
   });
 }
 
@@ -199,6 +204,59 @@ Future<bool> hasSystemAdminToken(
   });
   return isAdmin;
 }
+
+void _logReducedCoverageWarning(
+  StagingConfig config, {
+  String? preferredOrgId,
+}) {
+  if (_loggedReducedCoverageWarning) {
+    return;
+  }
+  _loggedReducedCoverageWarning = true;
+
+  final targetUrl = config.stagingUrl.isNotEmpty
+      ? config.stagingUrl
+      : OnePubSettings.use().onepubUrl ?? OnePubSettings.defaultOnePubUrl;
+  final scopedOrg = preferredOrgId == null || preferredOrgId.isEmpty
+      ? 'current organisation'
+      : 'organisation $preferredOrgId';
+
+  stderr.writeln('''
+TestUsers: reduced-coverage mode. Current token for $targetUrl is not a System Administrator, so staging tests cannot provision dedicated Administrator/TeamLeader/Collaborator users for $scopedOrg.
+TestUsers: admin-backed setup will be skipped and some role-separation assertions will run against the current member instead.''');
+}
+
+Future<void> _respectProvisionCooldown(String namespace) async {
+  final marker = _provisionCooldownFile(namespace);
+  if (!marker.existsSync()) {
+    return;
+  }
+  final contents = marker.readAsStringSync();
+  final lastProvisionMs = int.tryParse(contents.trim());
+  if (lastProvisionMs == null) {
+    return;
+  }
+  final nowMs = DateTime.now().millisecondsSinceEpoch;
+  final elapsedMs = nowMs - lastProvisionMs;
+  final waitMs = _testUserProvisionCooldownMs - elapsedMs;
+  if (waitMs > 0) {
+    stderr.writeln(
+      'TestUsers: waiting ${waitMs}ms for member API rate-limit cooldown '
+      'before provisioning test users.',
+    );
+    await Future<void>.delayed(Duration(milliseconds: waitMs));
+  }
+}
+
+Future<void> _recordProvisionTimestamp(String namespace) async {
+  final marker = _provisionCooldownFile(namespace);
+  await marker.parent.create(recursive: true);
+  await marker.writeAsString('${DateTime.now().millisecondsSinceEpoch}');
+}
+
+File _provisionCooldownFile(String namespace) => File(
+      '${Directory.systemTemp.path}/onepub_test_user_cooldown_$namespace',
+    );
 
 Future<void> withAdmin(
     StagingConfig config, Future<void> Function(StagingContext context) action,
@@ -323,7 +381,7 @@ Future<ProvisionedTestOrganisation> createProvisionedTestOrganisation(
     final response = await sendCommand(
       command:
           'test/organisation/create/${Uri.encodeComponent(organisationName)}'
-          '?plan=${Uri.encodeQueryComponent(plan)}',
+          '?plan=${Uri.encodeQueryComponent(plan)}&dedicatedOwner=true',
       commandType: CommandType.cli,
     );
     if (!response.success) {
@@ -370,15 +428,52 @@ Not logged into OnePub for ${settings.onepubApiUrl}. Run: onepub login''');
 }
 
 Future<List<CliTeamInfo>> listAvailableTeams() async {
-  final response = await sendCommand(
-    command: 'test/team/list',
-    commandType: CommandType.cli,
-  );
-  if (!response.success) {
-    throw StateError('Unable to list teams: ${response.errorMessage}');
+  const maxAttempts = 4;
+  for (var attempt = 1; attempt <= maxAttempts; attempt++) {
+    final response = await sendCommand(
+      command: 'test/team/list',
+      commandType: CommandType.cli,
+    );
+    if (response.success) {
+      final envelope = response.parseCli(CliTeamListBody.fromJson);
+      return envelope.body?.teams ?? <CliTeamInfo>[];
+    }
+    if (response.status == HttpStatus.tooManyRequests &&
+        attempt < maxAttempts) {
+      final backoffMs = 500 * attempt;
+      stderr.writeln(
+        'Warning: team list hit HTTP 429 on attempt $attempt of '
+        '$maxAttempts; retrying in ${backoffMs}ms...',
+      );
+      await Future<void>.delayed(Duration(milliseconds: backoffMs));
+      continue;
+    }
+    throw StateError(
+      'Unable to list teams: HTTP ${response.status} '
+      'message="${response.errorMessage}" '
+      'response=$response',
+    );
   }
-  final envelope = response.parseCli(CliTeamListBody.fromJson);
-  return envelope.body?.teams ?? <CliTeamInfo>[];
+  return <CliTeamInfo>[];
+}
+
+Future<void> waitForCliRateLimitRecovery({
+  Duration timeout = const Duration(seconds: 30),
+}) async {
+  final started = DateTime.now();
+  while (DateTime.now().difference(started) < timeout) {
+    final response = await sendCommand(
+      command: 'organisation/details',
+      commandType: CommandType.cli,
+    );
+    if (response.status != HttpStatus.tooManyRequests) {
+      return;
+    }
+    await Future<void>.delayed(const Duration(seconds: 1));
+  }
+  throw StateError(
+    'CLI rate limit did not recover within ${timeout.inSeconds} seconds.',
+  );
 }
 
 Future<String?> resolveForbiddenTeam(StagingConfig config) async {
@@ -488,10 +583,36 @@ Future<_StagingTokenInfo> _loadStagingToken(StagingConfig config,
       preferredOrgIdOverride != null && preferredOrgIdOverride.trim().isNotEmpty
           ? preferredOrgIdOverride.trim()
           : '';
+  final runnerToken = (Platform.environment['ONEPUB_TOKEN'] ?? '').trim();
+  final runnerOrgId = (Platform.environment['ONEPUB_TEST_ORG_ID'] ?? '').trim();
+
+  final runnerMatchesRequestedOrganisation = explicitOrgId.isEmpty ||
+      (runnerOrgId.isNotEmpty && explicitOrgId == runnerOrgId);
+  if (runnerToken.isNotEmpty && runnerMatchesRequestedOrganisation) {
+    final organisationId = explicitOrgId.isNotEmpty
+        ? explicitOrgId
+        : runnerOrgId.isNotEmpty
+            ? runnerOrgId
+            : preferredOrgId;
+    if (organisationId.isEmpty) {
+      throw StateError(
+        'ONEPUB_TOKEN was supplied without an organisation id. Set '
+        'ONEPUB_TEST_ORG_ID or configure the current organisation.',
+      );
+    }
+    return _StagingTokenInfo(
+      token: runnerToken,
+      organisationId: organisationId,
+      onepubUrl: onepubUrl,
+    );
+  }
 
   final credentials = await OnePubTokenStore().credentials;
   Credential? match;
   for (final credential in credentials) {
+    if (!_hasResolvableToken(credential)) {
+      continue;
+    }
     final credentialOrgId = _extractOrganisationId(credential.url);
     final desiredOrgId =
         explicitOrgId.isNotEmpty ? explicitOrgId : preferredOrgId;
@@ -506,7 +627,8 @@ Future<_StagingTokenInfo> _loadStagingToken(StagingConfig config,
         'Run: onepub login for the Team-plan organisation and retry.');
   }
   match ??= credentials.firstWhere(
-    (credential) => credential.url.host == host,
+    (credential) =>
+        credential.url.host == host && _hasResolvableToken(credential),
     orElse: () => throw StateError(
         'No OnePub token found for host $host. Run: onepub login'),
   );
@@ -524,6 +646,11 @@ Future<_StagingTokenInfo> _loadStagingToken(StagingConfig config,
     onepubUrl: onepubUrl,
   );
 }
+
+bool _hasResolvableToken(Credential credential) =>
+    credential.token != null ||
+    (credential.env != null &&
+        Platform.environment.containsKey(credential.env));
 
 Future<String> _extractToken(Credential credential) async {
   if (credential.token != null) {

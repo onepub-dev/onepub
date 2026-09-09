@@ -14,8 +14,7 @@ const pubTestsConfigDirKey = '_PUB_TEST_CONFIG_DIR';
 ///
 /// `null` if no config dir could be found.
 final String? dartConfigDir = () {
-  if (runningFromTest &&
-      Platform.environment.containsKey('_PUB_TEST_CONFIG_DIR')) {
+  if (Platform.environment.containsKey('_PUB_TEST_CONFIG_DIR')) {
     return Platform.environment['_PUB_TEST_CONFIG_DIR'];
   }
   try {
