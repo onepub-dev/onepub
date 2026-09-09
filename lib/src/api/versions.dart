@@ -90,7 +90,7 @@ class JsonVersion {
 
   JsonVersion(Map<String, dynamic>? data) {
     version = data?['version'] as String? ?? '';
-    retracted = data?['rectrated'] as bool? ?? false;
+    retracted = data?['retracted'] as bool? ?? false;
     archiveUrl = data?['archive_url'] as String? ?? '';
     pubspec = _pubspecFromJson(data?['pubspec']);
   }

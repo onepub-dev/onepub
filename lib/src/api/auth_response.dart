@@ -22,21 +22,36 @@ class AuthResponse {
   factory AuthResponse.parse(EndpointResponse response) {
     final auth = AuthResponse._internal();
     if (response.success) {
-      final envelope = response.parseCli(CliAuthBody.fromJson);
-      final body = envelope.body;
-      auth.status =
-          parseStatus(body?.status ?? AwaitLoginStatus.authFailed.name);
+      final body = response.requireCliBody((json) {
+        final status = requiredResponseString(json, 'status');
+        if (parseStatus(status) == AwaitLoginStatus.authSucceeded) {
+          for (final field in [
+            'onePubToken',
+            'operatorEmail',
+            'organisationName',
+            'obfuscatedOrganisationId',
+          ]) {
+            requiredResponseString(json, field);
+          }
+          if (json['firstLogin'] is! bool) {
+            throw APIException(
+                'Missing or invalid response field "firstLogin"');
+          }
+        }
+        return CliAuthBody.fromJson(json);
+      });
+      auth.status = parseStatus(body.status);
 
       switch (auth.status) {
         case AwaitLoginStatus.authSucceeded:
           auth
-            ..onepubToken = body?.onePubToken ?? ''
-            ..firstLogin = body?.firstLogin ?? false
-            ..operatorEmail = body?.operatorEmail ?? ''
-            ..organisationName = body?.organisationName ?? ''
-            ..obfuscatedOrganisationId = body?.obfuscatedOrganisationId ?? '';
+            ..onepubToken = body.onePubToken
+            ..firstLogin = body.firstLogin
+            ..operatorEmail = body.operatorEmail
+            ..organisationName = body.organisationName
+            ..obfuscatedOrganisationId = body.obfuscatedOrganisationId;
         case AwaitLoginStatus.retry:
-          auth.pollInterval = body?.pollInterval ?? 3;
+          auth.pollInterval = body.pollInterval > 0 ? body.pollInterval : 3;
         case AwaitLoginStatus.authFailed:
           throw ExitException(exitCode: 1, message: 'Authentication failed');
         case AwaitLoginStatus.timeout:
@@ -64,4 +79,6 @@ enum AwaitLoginStatus {
 }
 
 AwaitLoginStatus parseStatus(String name) => AwaitLoginStatus.values.firstWhere(
-    (e) => e.toString() == 'AwaitLoginStatus.${name.split('.').last}');
+      (e) => e.name == name.split('.').last,
+      orElse: () => throw APIException('Invalid login status'),
+    );

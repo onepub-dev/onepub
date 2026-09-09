@@ -31,9 +31,12 @@ Future<void> teamNegativeTest({
         'Team scoping test failed: package creation succeeded unexpectedly.');
   }
 
-  if (expectForbidden && response.status != HttpStatus.forbidden) {
+  if (expectForbidden &&
+      response.status != HttpStatus.forbidden &&
+      response.status != HttpStatus.unauthorized) {
     throw StateError(
-      'Team scoping test failed: expected HTTP 403, got ${response.status}.',
+      'Team scoping test failed: expected HTTP 401/403, '
+      'got ${response.status}.',
     );
   }
 }

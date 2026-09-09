@@ -33,6 +33,18 @@ onepub login
 ```
 The `onepub login` command will register you with OnePub.
 
+# Trusted publishing login
+
+```sh
+onepub login trusted
+```
+
+Log in from CI/CD without storing a OnePub token. Requires trusted publishing
+to be configured in OnePub.
+
+The command detects your CI provider automatically. Run
+`onepub login trusted --help` for provider and identity-token options.
+
 # Publish
 To publish a private package to OnePub
 

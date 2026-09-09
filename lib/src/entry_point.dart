@@ -8,7 +8,6 @@ import 'package:scope/scope.dart';
 
 import 'exceptions.dart';
 import 'my_runner.dart';
-import 'onepub_settings.dart';
 import 'util/log.dart' as ulog;
 import 'util/printerr.dart';
 import 'version/version.g.dart';
@@ -70,6 +69,4 @@ void printPreamble() {
   print(orange('OnePub version: $packageVersion '));
 
   print('');
-
-  OnePubSettings().nonStandardUrlWarning();
 }

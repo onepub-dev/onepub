@@ -16,7 +16,7 @@ import '../util/bread_butter_auth.dart';
 import '../util/one_pub_token_store.dart';
 import '../util/printerr.dart';
 import '../util/send_command.dart';
-import 'login/oidc.dart';
+import 'login/trusted.dart';
 
 /// onepub login
 /// We trigger oauth by showing url
@@ -36,7 +36,7 @@ class OnePubLoginCommand extends Command<int> {
   ///
   OnePubLoginCommand() {
     addSubcommand(_BrowserLoginCommand());
-    addSubcommand(OidcLoginCommand());
+    addSubcommand(TrustedLoginCommand());
   }
 
   @override
@@ -71,7 +71,7 @@ class OnePubLoginCommand extends Command<int> {
           firstLogin: auth.firstLogin,
           organisationName: auth.organisationName,
           operator: auth.operatorEmail);
-    } on FetchException catch (e, _) {
+    } on FetchException catch (e) {
       printerr(red('Unable to connect to '
           '${OnePubSettings.use().onepubApiUrlAsString}. '
           'Error: $e '

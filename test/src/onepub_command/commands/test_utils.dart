@@ -6,6 +6,9 @@
 import 'package:dcli/dcli.dart' hide copyTree, printerr;
 import 'package:dcli_core/dcli_core.dart' as core;
 import 'package:dcli_core/dcli_core.dart';
+import 'package:onepub/src/onepub_settings.dart';
+import 'package:onepub/src/token_store/io.dart';
+import 'package:onepub/src/util/one_pub_token_store.dart';
 import 'package:onepub/src/util/printerr.dart';
 import 'package:path/path.dart';
 
@@ -31,8 +34,14 @@ CommandResult runCmdResult(String command, {String? workingDirectory}) {
   final pathToOnePub = join(pathToRoot, 'bin', 'onepub.dart');
 
   final progress = Progress.capture();
-  'dart $pathToOnePub $command'.start(
-      workingDirectory: workingDirectory, progress: progress, nothrow: true);
+  withEnvironment(() {
+    'dart $pathToOnePub $command'.start(
+        workingDirectory: workingDirectory, progress: progress, nothrow: true);
+  }, environment: {
+    OnePubSettings.onepubPathEnvKey:
+        dirname(OnePubSettings.use().pathToSettings),
+    pubTestsConfigDirKey: OnePubTokenStore.pathToTokenStore,
+  });
 
   if (progress.exitCode != 0) {
     printerr(progress.toParagraph());

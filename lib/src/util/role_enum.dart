@@ -9,6 +9,7 @@ import '../exceptions.dart';
 enum RoleEnum {
   SystemAdministrator,
   Administrator,
+  CICD,
   Uploader,
   TeamLeader,
   Collaborator,

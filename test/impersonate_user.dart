@@ -7,6 +7,7 @@ import 'package:onepub/src/api/api.dart';
 import 'package:onepub/src/api/member.dart';
 import 'package:onepub/src/exceptions.dart';
 import 'package:onepub/src/onepub_settings.dart';
+import 'package:onepub/src/token_store/io.dart';
 import 'package:onepub/src/util/one_pub_token_store.dart';
 import 'package:onepub/src/util/role_enum.dart';
 
@@ -81,7 +82,13 @@ Future<void> impersonateMember({
             onepubApiUrl: settings.onepubApiUrlAsString,
             onepubToken: member.onepubToken);
 
-        await action();
+        await core.withEnvironmentAsync(
+          environment: {
+            OnePubSettings.onepubPathEnvKey: tempSettingsDir,
+            pubTestsConfigDirKey: tempSettingsDir,
+          },
+          action,
+        );
       });
     });
   });

@@ -58,7 +58,32 @@ class MyRunner extends CommandRunner<int> {
       exit(0);
     }
 
+    if (!_requiresSettings(results)) {
+      return;
+    }
+
     await OnePubSettings.install(dev: results['dev'] as bool);
+    OnePubSettings.use().nonStandardUrlWarning();
+  }
+
+  bool _requiresSettings(ArgResults results) {
+    var current = results;
+
+    if (current.command == null) {
+      return false;
+    }
+
+    while (true) {
+      if (current.options.contains('help') && current.flag('help')) {
+        return false;
+      }
+
+      final command = current.command;
+      if (command == null) {
+        return current.name != 'help';
+      }
+      current = command;
+    }
   }
 
   void onepubCommands() {

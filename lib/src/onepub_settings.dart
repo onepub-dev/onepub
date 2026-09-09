@@ -64,7 +64,7 @@ class OnePubSettings {
       createDir(dirname(this.pathToSettings), recursive: true);
     }
 
-    _settings = SettingsYaml.load(pathToSettings: this.pathToSettings);
+    _settings = _loadSettingsFile(this.pathToSettings);
   }
 
   ///
@@ -74,9 +74,10 @@ class OnePubSettings {
   OnePubSettings._load({required bool create}) {
     if (create) {
       if (!exists(defaultPathToSettings)) {
-        _create(pathToDir: defaultPathToSettings);
+        _create(pathToDir: defaultPathToSettingsDir);
       }
     }
+    pathToSettings = defaultPathToSettings;
     _settings = _loadYaml(pathToDir: defaultPathToSettingsDir);
   }
 
@@ -92,6 +93,7 @@ class OnePubSettings {
         _create(pathToDir: pathToDir);
       }
     }
+    pathToSettings = join(pathToDir, defaultSettingsFilename);
     _settings = _loadYaml(pathToDir: pathToDir);
   }
 
@@ -104,34 +106,45 @@ class OnePubSettings {
   /// Creates the onepub.yaml file at [defaultPathToSettingsDir] but does not
   /// initialise nor load it.
   static void _create({required String pathToDir}) {
-    final pathToSettingsFile =
-        join(defaultPathToSettingsDir, defaultSettingsFilename);
+    final pathToSettingsFile = join(pathToDir, defaultSettingsFilename);
     if (exists(pathToSettingsFile)) {
       final message =
           'The OnePubSettings file at $pathToSettingsFile alread exists.';
       logerr(red(message));
       throw ExitException(exitCode: 1, message: message);
     }
-    if (!exists(defaultPathToSettingsDir)) {
-      createDir(defaultPathToSettingsDir, recursive: true);
+    if (!exists(pathToDir)) {
+      createDir(pathToDir, recursive: true);
     }
     touch(pathToSettingsFile, create: true);
   }
 
   static SettingsYaml _loadYaml({required String pathToDir}) {
     final pathToFile = join(pathToDir, defaultSettingsFilename);
+    return _loadSettingsFile(pathToFile);
+  }
+
+  static SettingsYaml _loadSettingsFile(String pathToFile) {
     try {
       return SettingsYaml.load(pathToSettings: pathToFile);
     } on YamlException catch (e) {
-      logerr(red('Failed to load rules from $pathToFile'));
-      logerr(red(e.toString()));
-      rethrow;
+      throw _settingsLoadException(pathToFile, e);
     } on RulesException catch (e) {
-      logerr(red('Failed to load rules from $pathToFile'));
-      logerr(red(e.message));
-      rethrow;
+      throw _settingsLoadException(pathToFile, e);
+    } on FormatException catch (e) {
+      throw _settingsLoadException(pathToFile, e);
     }
   }
+
+  static ExitException _settingsLoadException(
+          String pathToFile, Object error) =>
+      ExitException(exitCode: 1, message: '''
+Unable to read the OnePub settings file:
+  $pathToFile
+
+$error
+
+Fix the YAML syntax, or move the file aside and rerun OnePub to recreate it.''');
 
   /// Loads a [OnePubSettings] file located
   /// in the directory [pathToSettingsDir]

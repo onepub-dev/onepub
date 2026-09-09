@@ -5,9 +5,13 @@ library;
  * Written by Brett Sutton <bsutton@onepub.dev>, Jan 2022
  */
 
+import 'dart:io';
+
 import 'package:dcli/dcli.dart';
 import 'package:onepub/src/api/api.dart';
 import 'package:onepub/src/entry_point.dart';
+import 'package:onepub/src/exceptions.dart';
+import 'package:onepub/src/util/send_command.dart';
 import 'package:path/path.dart' hide equals;
 import 'package:pub_semver/pub_semver.dart' as ps;
 import 'package:pubspec_manager/pubspec_manager.dart';
@@ -18,13 +22,18 @@ import '../../../../impersonate_user.dart';
 import '../../../../test_users.dart';
 import '../test_utils.dart';
 
+late final String dependencyPackageName;
+
 void main() {
   setUpAll(() async {
-    const packageName = 'test_packag_2';
+    const fixtureName = 'test_packag_2';
+    dependencyPackageName =
+        'onepub_test_package_2_${DateTime.now().microsecondsSinceEpoch}_$pid';
     await TestUsers(init: true).init();
-    await withTempProject(packageName, (dartProject) async {
+    await withTempProject(fixtureName, (dartProject) async {
       // await withTestSettings((testSettings) async {
       final member = TestUsers().administrator;
+      await _ensurePackageExists(dependencyPackageName);
       await impersonateMember(
           member: member,
           action: () async {
@@ -36,11 +45,14 @@ void main() {
             final pathToPackage2Pubspec = dartProject.pathToPubSpec;
             final pubspec = PubSpec.loadFromPath(pathToPackage2Pubspec);
 
-            final versions = await API()
-                .fetchVersions(member.obfuscatedOrganisationId, packageName);
-            final next = ps.Version.parse(versions.latest.version).nextMinor;
+            final next = await _nextPublishVersion(
+              member.obfuscatedOrganisationId,
+              dependencyPackageName,
+              pubspec,
+            );
 
             pubspec
+              ..name.set(dependencyPackageName)
               ..version.set(next.canonicalizedVersion)
               ..saveTo(pathToPackage2Pubspec);
 
@@ -67,16 +79,17 @@ void main() {
           member: member,
           action: () async {
             var pubSpec = dartProject.pubSpec;
-            expect(pubSpec.dependencies.exists('test_packag_2'), isFalse);
+            expect(pubSpec.dependencies.exists(dependencyPackageName), isFalse);
 
             // run onepub add <dep>
-            final progress = 'dart $pathToOnePubScript pub add test_packag_2'
-                .start(workingDirectory: dartProject.pathToProjectRoot);
+            final progress =
+                'dart $pathToOnePubScript pub add $dependencyPackageName'
+                    .start(workingDirectory: dartProject.pathToProjectRoot);
             expect(progress.exitCode, equals(0));
 
             // load the updated pubspec
             pubSpec = PubSpec.loadFromPath(dartProject.pathToPubSpec);
-            expect(pubSpec.dependencies.exists('test_packag_2'), isTrue);
+            expect(pubSpec.dependencies.exists(dependencyPackageName), isTrue);
           });
     });
   });
@@ -95,11 +108,45 @@ void main() {
                   unitTestWorkingDirectoryKey, dartProject.pathToProjectRoot);
             await scope.run(() async {
               await entrypoint(
-                  args: ['pub', 'add', 'test_packag_2'],
+                  args: ['pub', 'add', dependencyPackageName],
                   executableName: 'onepub');
             });
             expect(stat(dartProject.pathToPubSpec).size, greaterThan(size));
           });
     });
   }, skip: true);
+}
+
+Future<void> _ensurePackageExists(String packageName) async {
+  final response = await sendCommand(
+    command: 'test/package/create/$packageName?team=everyone',
+    commandType: CommandType.cli,
+    method: Method.post,
+  );
+  if (!response.success && response.status != HttpStatus.conflict) {
+    throw StateError(
+      'Unable to create package $packageName (HTTP ${response.status}): '
+      '${response.errorMessage}',
+    );
+  }
+}
+
+Future<ps.Version> _nextPublishVersion(
+  String organisationId,
+  String packageName,
+  PubSpec pubspec,
+) async {
+  try {
+    final versions = await API().fetchVersions(organisationId, packageName);
+    final latestVersion = versions.latest.version.trim();
+    if (latestVersion.isEmpty) {
+      return pubspec.version.semVersion;
+    }
+    return ps.Version.parse(latestVersion).nextMinor;
+  } on APIException catch (e) {
+    if (!e.message.toLowerCase().contains('unknown package name')) {
+      rethrow;
+    }
+    return pubspec.version.semVersion;
+  }
 }

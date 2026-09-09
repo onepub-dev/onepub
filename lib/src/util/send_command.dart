@@ -73,7 +73,8 @@ Future<EndpointResponse> sendCommand(
     bool authorised = true,
     Map<String, String> headers = const <String, String>{},
     String? body,
-    Method method = Method.get}) async {
+    Method method = Method.get,
+    Duration? timeout}) async {
   final settings = OnePubSettings.use();
   final resolvedEndpoint = settings.resolveApiEndPoint(command);
 
@@ -82,25 +83,32 @@ Future<EndpointResponse> sendCommand(
 
   final uri = Uri.parse(resolvedEndpoint);
 
-  try {
-    final client = HttpClient()
-      ..connectionTimeout = const Duration(seconds: 5)
-      // we use 2.15.0 as the agent version to indicate to the server
-      // that we are running at least dart 2.15.0 (even if we are not)
-      // so it will accept our requests.
-      ..userAgent = 'onepub 2.15.0';
+  final client = HttpClient()
+    ..connectionTimeout = const Duration(seconds: 5)
+    // we use 2.15.0 as the agent version to indicate to the server
+    // that we are running at least dart 2.15.0 (even if we are not)
+    // so it will accept our requests.
+    ..userAgent = 'onepub 2.15.0';
 
+  try {
     /// allow self signed/staged certs in dev
     if (settings.allowBadCertificates) {
       client.badCertificateCallback = (cert, host, port) => true;
     }
 
-    final response =
-        await _startRequest(client, method, uri, headers, body, authorised);
+    Future<EndpointResponse> receive() async {
+      final response =
+          await _startRequest(client, method, uri, headers, body, authorised);
+      return _processData(response, commandType);
+    }
 
-    return await _processData(client, response, commandType);
+    final pending = receive();
+    return await (timeout == null ? pending : pending.timeout(timeout));
   } on SocketException catch (e) {
     throw FetchException.fromException(e);
+  } finally {
+    // Also abort in-flight I/O when the request deadline expires.
+    client.close(force: true);
   }
 }
 
@@ -151,66 +159,13 @@ void _addHeaders(Map<String, String> headers, HttpClientRequest request) {
 }
 
 Future<EndpointResponse> _processData(
-  HttpClient client,
   HttpClientResponse response,
   CommandType commandType,
-) {
-  final completer = Completer<EndpointResponse>();
-
-  final body = StringBuffer();
-
-  if (Settings().isVerbose) {
-    verbose(() => 'Chunked Transfer Encodeing: '
-        '${response.headers.chunkedTransferEncoding}');
-    verbose(() => 'Content Length: ${response.headers.contentLength}');
-    verbose(() => 'Content Type: ${response.headers.contentType}');
-    verbose(() => 'Date: ${response.headers.date}');
-    verbose(() => 'Expires: ${response.headers.expires}');
-    verbose(() => 'Host: ${response.headers.host}');
-    verbose(() =>
-        'Persistent Connection: ${response.headers.persistentConnection}');
-  }
-
-  // var lengthReceived = 0;
-  // final contentLength = response.contentLength;
-  // we have a response.
-
-  late StreamSubscription<List<int>> subscription;
-  subscription = response.listen(
-    (newBytes) {
-      /// if we don't pause we get overlapping calls from listen
-      /// which causes the [write] to fail as you can't
-      /// do overlapping io.
-      subscription.pause();
-
-      verbose(() => 'received (hex): ${toHex(newBytes)}');
-      verbose(() => 'received (ascii): ${toAscii(newBytes)}');
-
-      /// we have new data to save.
-      body.write(utf8.decode(newBytes));
-
-      // lengthReceived += newBytes.length;
-
-      subscription.resume();
-    },
-    onDone: () async {
-      /// down load is complete
-      await subscription.cancel();
-      client.close();
-
-      completer
-          .complete(EndpointResponse(response.statusCode, body, commandType));
-    },
-    onError: (Object e, StackTrace st) async {
-      // something went wrong.
-      await subscription.cancel();
-      client.close();
-      completer.completeError(e, st);
-    },
-    cancelOnError: true,
-  );
-
-  return completer.future;
+) async {
+  // Decode the stream, rather than individual chunks: a UTF-8 character may
+  // straddle packet boundaries. Stream errors propagate to the caller.
+  final body = await response.transform(utf8.decoder).join();
+  return EndpointResponse(response.statusCode, StringBuffer(body), commandType);
 }
 
 enum CommandType {
@@ -255,33 +210,21 @@ class EndpointResponse {
 
   void _parseCli() {
     final decoded = _bodyAsJsonMap(_body);
-    if (decoded.keys.contains('body') ||
-        decoded.keys.contains('success') ||
-        decoded.keys.contains('error')) {
-      _success =
-          decoded.keys.contains('body') || decoded.keys.contains('success');
-      if (decoded.keys.contains('error')) {
-        _errorMessage =
-            CliError.fromJson(_mapFromJson(decoded['error'])).message;
-      } else {
-        _errorMessage = '';
-      }
+    if (status >= 400 || decoded.containsKey('error')) {
+      _success = false;
+      _errorMessage = decoded.containsKey('error')
+          ? _cliErrorFromJson(decoded['error']).message
+          : decoded['message'] as String? ??
+              _mapFromJson(decoded['body'])['message'] as String? ??
+              (decoded.isEmpty ? 'Empty response' : 'HTTP $status');
       return;
     }
-    if (decoded.keys.contains('message')) {
-      final message = decoded['message'] as String? ?? '';
-      if (status >= 400) {
-        _success = false;
-        _errorMessage = message;
-      } else {
-        _success = true;
-        _errorMessage = '';
-      }
-      return;
-    }
-    if (decoded.isEmpty) {
-      _success = status < 400;
-      _errorMessage = status < 400 ? '' : 'Empty response';
+    if (decoded.containsKey('body') ||
+        decoded.containsKey('success') ||
+        decoded.containsKey('message') ||
+        decoded.isEmpty) {
+      _success = true;
+      _errorMessage = '';
       return;
     }
     throw UnexpectedHttpResponseException(_body);
@@ -305,31 +248,35 @@ class EndpointResponse {
 
   CliEnvelope<T> parseCli<T>(T Function(Map<String, dynamic>) fromJson) {
     final decoded = _bodyAsJsonMap(_body);
-    if (decoded.keys.contains('body')) {
+    if (!success) {
+      return CliEnvelope<T>(
+          error: decoded.containsKey('error')
+              ? _cliErrorFromJson(decoded['error'])
+              : CliError(message: errorMessage));
+    }
+    if (decoded.containsKey('body')) {
       return CliEnvelope<T>(body: fromJson(_mapFromJson(decoded['body'])));
     }
-    if (decoded.keys.contains('success')) {
+    if (decoded.containsKey('success')) {
+      return CliEnvelope<T>(success: _cliMessageFromJson(decoded['success']));
+    }
+    if (decoded.containsKey('message') || decoded.isEmpty) {
       return CliEnvelope<T>(
-          success: CliMessage.fromJson(_mapFromJson(decoded['success'])));
-    }
-    if (decoded.keys.contains('error')) {
-      return CliEnvelope<T>(
-          error: CliError.fromJson(_mapFromJson(decoded['error'])));
-    }
-    if (decoded.keys.contains('message')) {
-      final message = decoded['message'] as String? ?? '';
-      if (status >= 400) {
-        return CliEnvelope<T>(error: CliError(message: message));
-      }
-      return CliEnvelope<T>(success: CliMessage(message: message));
-    }
-    if (decoded.isEmpty) {
-      if (status >= 400) {
-        return CliEnvelope<T>(error: CliError(message: 'Empty response'));
-      }
-      return CliEnvelope<T>(success: CliMessage(message: ''));
+          success: CliMessage(message: decoded['message'] as String? ?? ''));
     }
     throw UnexpectedHttpResponseException(_body);
+  }
+
+  T requireCliBody<T>(T Function(Map<String, dynamic>) fromJson) {
+    final envelope = parseCli(fromJson);
+    if (envelope.error != null) {
+      throw APIException(envelope.error!.message);
+    }
+    final body = envelope.body;
+    if (body == null) {
+      throw APIException('Missing response body');
+    }
+    return body;
   }
 
   PubEnvelope<T> parsePub<T>(T Function(Map<String, dynamic>) fromJson) {
@@ -383,6 +330,20 @@ Map<String, dynamic> _mapFromJson(Object? value) {
     return Map<String, dynamic>.from(value);
   }
   return <String, dynamic>{};
+}
+
+CliMessage _cliMessageFromJson(Object? value) {
+  if (value is String) {
+    return CliMessage(message: value);
+  }
+  return CliMessage.fromJson(_mapFromJson(value));
+}
+
+CliError _cliErrorFromJson(Object? value) {
+  if (value is String) {
+    return CliError(message: value);
+  }
+  return CliError.fromJson(_mapFromJson(value));
 }
 
 String toHex(List<int> bytes) {

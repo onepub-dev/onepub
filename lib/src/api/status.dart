@@ -15,7 +15,7 @@ class Status {
     } else {
       try {
         this.version = Version.parse(version);
-      } on FormatException catch (e, _) {
+      } on FormatException {
         throw ExitException(
             exitCode: -1,
             message: 'Invalid version "$version" returned by Status command.');

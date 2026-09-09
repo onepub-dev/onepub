@@ -20,5 +20,37 @@ void main() {
       expect(response.success, isFalse);
       expect(response.errorMessage, 'Upstream temporarily unavailable');
     });
+
+    test('accepts string error envelopes', () {
+      final response = EndpointResponse(
+        400,
+        StringBuffer('{"error":"Unexpected character."}'),
+        CommandType.cli,
+      );
+
+      expect(response.success, isFalse);
+      expect(response.errorMessage, 'Unexpected character.');
+      expect(
+        response.parseCli<Map<String, dynamic>>((json) => json).error?.message,
+        'Unexpected character.',
+      );
+    });
+
+    test('accepts string success envelopes', () {
+      final response = EndpointResponse(
+        200,
+        StringBuffer('{"success":"Request accepted."}'),
+        CommandType.cli,
+      );
+
+      expect(response.success, isTrue);
+      expect(
+        response
+            .parseCli<Map<String, dynamic>>((json) => json)
+            .success
+            ?.message,
+        'Request accepted.',
+      );
+    });
   });
 }

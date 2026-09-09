@@ -57,7 +57,10 @@ void main() {
     }
     await withAdmin(config, (context) async {
       final member = await _memberForTokenInvalidation();
-      final tokenResponse = await API().exportMemberToken(member.email);
+      final tokenResponse = await API().exportTestMemberToken(
+        obfuscatedOrganisationId: member.obfuscatedOrganisationId,
+        memberEmail: member.email,
+      );
       if (!tokenResponse.success || tokenResponse.token == null) {
         throw StateError('''
 Unable to export token for ${member.email}: ${tokenResponse.errorMessage}''');

@@ -20,6 +20,8 @@ class _FlowStressSummary {
   final Map<int, int> metadataStatuses;
   final Map<int, int> versionStatuses;
   final Map<int, int> archiveStatuses;
+  final Duration elapsed;
+  final List<int> flowLatenciesMicros;
 
   _FlowStressSummary({
     required this.workers,
@@ -29,10 +31,24 @@ class _FlowStressSummary {
     required this.metadataStatuses,
     required this.versionStatuses,
     required this.archiveStatuses,
+    required this.elapsed,
+    required this.flowLatenciesMicros,
   });
 
   int get totalFlows => workers * requestsPerWorker;
   int get failedFlows => totalFlows - successfulFlows;
+  double get flowsPerSecond =>
+      totalFlows / (elapsed.inMicroseconds / Duration.microsecondsPerSecond);
+  double get archiveMiBPerSecond =>
+      (archiveBytes / (1024 * 1024)) /
+      (elapsed.inMicroseconds / Duration.microsecondsPerSecond);
+
+  int percentileLatencyMicros(double percentile) {
+    final sorted = [...flowLatenciesMicros]..sort();
+    final index =
+        ((sorted.length * percentile).ceil() - 1).clamp(0, sorted.length - 1);
+    return sorted[index];
+  }
 }
 
 void main() {
@@ -79,10 +95,16 @@ archiveBytes=${summary.archiveBytes}
 metadataStatuses=${summary.metadataStatuses}
 versionStatuses=${summary.versionStatuses}
 archiveStatuses=${summary.archiveStatuses}
+elapsedMs=${summary.elapsed.inMilliseconds}
+flowsPerSecond=${summary.flowsPerSecond.toStringAsFixed(2)}
+archiveMiBPerSecond=${summary.archiveMiBPerSecond.toStringAsFixed(2)}
+flowLatencyMinMs=${(summary.flowLatenciesMicros.reduce((a, b) => a < b ? a : b) / 1000).toStringAsFixed(2)}
+flowLatencyP99Ms=${(summary.percentileLatencyMicros(0.99) / 1000).toStringAsFixed(2)}
+flowLatencyMaxMs=${(summary.flowLatenciesMicros.reduce((a, b) => a > b ? a : b) / 1000).toStringAsFixed(2)}
 ''');
 
-      expect(summary.successfulFlows, greaterThan(0), reason: '''
-Mixed pub API stress test did not complete any successful flows.''');
+      expect(summary.successfulFlows, summary.totalFlows, reason: '''
+Every mixed pub API stress flow must complete successfully.''');
     });
   },
       timeout: const Timeout(Duration(hours: 1)),
@@ -112,6 +134,8 @@ Future<_FlowStressSummary> _runFlowStressWorkers({
   final metadataStatuses = <int, int>{};
   final versionStatuses = <int, int>{};
   final archiveStatuses = <int, int>{};
+  final flowLatenciesMicros = <int>[];
+  final elapsed = Stopwatch()..start();
 
   var active = 0;
   var successfulFlows = 0;
@@ -132,6 +156,7 @@ Future<_FlowStressSummary> _runFlowStressWorkers({
             (versionStatuses[versionStatus] ?? 0) + 1;
         archiveStatuses[archiveStatus] =
             (archiveStatuses[archiveStatus] ?? 0) + 1;
+        flowLatenciesMicros.add(data['latencyMicros'] as int);
 
         if (metadataStatus == 200 &&
             versionStatus == 200 &&
@@ -155,6 +180,7 @@ Future<_FlowStressSummary> _runFlowStressWorkers({
       if (firstError != null) {
         done.completeError(firstError!);
       } else {
+        elapsed.stop();
         done.complete(_FlowStressSummary(
           workers: workerCount,
           requestsPerWorker: requestsPerWorker,
@@ -163,6 +189,8 @@ Future<_FlowStressSummary> _runFlowStressWorkers({
           metadataStatuses: metadataStatuses,
           versionStatuses: versionStatuses,
           archiveStatuses: archiveStatuses,
+          elapsed: elapsed.elapsed,
+          flowLatenciesMicros: flowLatenciesMicros,
         ));
       }
     }
@@ -238,6 +266,7 @@ Future<void> _flowStressWorkerEntry(Map<String, Object> args) async {
 
   try {
     for (var attempt = 0; attempt < requestsPerWorker; attempt++) {
+      final elapsed = Stopwatch()..start();
       final metadataStatus = await _getStatus(url: metadataUrl, token: token);
       final versionStatus = await _getStatus(url: versionUrl, token: token);
       final archiveResult = await _downloadArchive(
@@ -245,12 +274,14 @@ Future<void> _flowStressWorkerEntry(Map<String, Object> args) async {
         token: token,
         saveToPath: p.join(tempDir.path, 'archive_$attempt.tar.gz'),
       );
+      elapsed.stop();
       sendPort.send(<String, Object>{
         'type': 'progress',
         'metadataStatus': metadataStatus,
         'versionStatus': versionStatus,
         'archiveStatus': archiveResult.statusCode,
         'archiveBytes': archiveResult.bytes,
+        'latencyMicros': elapsed.elapsedMicroseconds,
       });
     }
   } catch (e) {

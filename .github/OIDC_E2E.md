@@ -1,57 +1,87 @@
-# GitHub OIDC end-to-end test
+# GitHub trusted publishing E2E build gate
 
-The `GitHub OIDC E2E` workflow runs the checked-out OnePub CLI against a real
-JWT issued by GitHub Actions. It covers GitHub provider detection, ID-token
-acquisition, OnePub token exchange, an authenticated organisation lookup, and
-installation of the short-lived token into Dart's hosted-repository token
-store. No long-lived OnePub credential is stored in GitHub.
+A regular Vaadin `op-build` now waits for a real GitHub identity test before
+publishing its Docker image or packaging the release. The test uses the exact
+unpublished image built locally and a pushed, immutable CLI commit.
 
-The existing unit and server E2E tests use controlled test JWTs. Keep them:
-they cover rejection, replay, revocation, and claim-boundary cases that should
-not be tested by repeatedly mutating a shared external environment. This
-workflow adds the provider integration that those deterministic tests cannot
-exercise.
+## How GitHub reaches the test server
+
+Register a **self-hosted Linux GitHub Actions runner on the build machine**.
+Give it a unique label, for example `onepub-build-brett`. Do not use the same
+label on another machine. The workflow runs directly on that host, so its
+`127.0.0.1` is the same loopback interface as the temporary Docker stack.
+No public tunnel, staging deployment or inbound firewall opening is needed.
+The runner needs outbound HTTPS access to GitHub and Dart package dependencies.
+
+If op-build itself runs inside Actions, use a second idle runner on the same
+machine for the E2E job. A runner cannot execute a second job while its first
+job waits for it. Preflight rejects a busy runner.
 
 ## One-time setup
 
-1. Deploy the OIDC branch to an isolated, externally reachable HTTPS test
-   instance. Never point this workflow at production or beta.
-2. In the CLI repository, create a protected GitHub Environment named
-   `oidc-e2e`. Restrict its deployment branches to the OIDC branch while the
-   feature is under development.
-3. Add these environment variables:
+1. Commit and push the candidate CLI, including this workflow and its Dart
+   helpers. The workflow must also exist on the repository's default branch
+   for `workflow_dispatch` to be available. Configure `--trusted-workflow-ref`
+   to the branch containing this workflow when testing another candidate.
+2. Register the dedicated runner in `onepub-dev/onepub` and keep it online.
+   It must be permitted to execute workflows in this repository.
+3. Create the GitHub Environment `oidc-e2e`. Restrict it to the release/workflow
+   branches you trust. No OnePub token, endpoint or audience secret is needed.
+   Any environment approval must complete within the build's 30-minute deadline.
+4. Authenticate `gh` on the build machine with repository access and Actions
+   write permission for dispatch, polling and cancellation. Preflight also
+   reads repository metadata, environments and self-hosted runner availability;
+   the authenticated account needs access to those endpoints.
 
-   - `ONEPUB_OIDC_E2E_URL`: the test instance base URL.
-   - `ONEPUB_OIDC_E2E_AUDIENCE`: a test-specific audience, such as
-     `https://staging.onepub.dev/github-oidc-e2e`.
+Do not attach this runner/environment to untrusted pull-request workflows.
+Only the manually dispatched release workflow requests `id-token: write`.
 
-4. On that OnePub instance, create a restricted CI/CD member and a trusted-CI
-   issuer profile with:
+## Run
 
-   - issuer: `https://token.actions.githubusercontent.com`
-   - JWKS URI: `https://token.actions.githubusercontent.com/.well-known/jwks`
-   - audience: exactly `ONEPUB_OIDC_E2E_AUDIENCE`
-   - algorithm: `RS256`
+From the sibling `onepub-deploy` repository:
 
-5. Create a trust rule for the CI/CD member. At minimum, constrain the immutable
-   `repository_owner_id` and `repository_id` claims to this repository's values,
-   and constrain `environment=oidc-e2e`. GitHub exposes the numeric IDs in the
-   workflow context as `github.repository_owner_id` and
-   `github.event.repository.id`.
+```sh
+dart run bin/op-build.dart --trusted-runner-label onepub-build-brett
+```
 
-The GitHub Environment changes the token subject to the environment form. Its
-deployment protection rules are therefore part of the trust boundary. For an
-even narrower rule, also constrain `workflow_ref` to this workflow and its
-approved branch after inspecting the exact claim from a test run.
+To test an existing **local** candidate image without building or deploying:
 
-## Run it
+```sh
+dart run bin/op-build.dart --no-build --no-deploy --version 5.17.2 --system-test-suite integration --trusted-runner-label onepub-build-brett
+```
 
-Push the OIDC branch, open **Actions > GitHub OIDC E2E**, select the OIDC branch,
-and choose **Run workflow**. A successful job proves that GitHub signed the
-workload JWT, OnePub verified and exchanged it, the issued OnePub token could
-read the organisation, and Dart installed it for the returned hosted URL.
+The image must exist locally or in the registry. `--no-build` does not create it.
+The default workflow ref is `main`; override it with `--trusted-workflow-ref`.
+The default runner label is `onepub-build`. For an explicitly local-only run,
+`--no-trusted-publishing-test` skips this gate. Skipping post-build tests or
+using a quick build also skips it and is not evidence of a real GitHub E2E pass.
 
-The workflow deliberately has no automatic pull-request trigger. GitHub does
-not pass protected environment configuration to untrusted fork workflows, and
-the external test instance must be running the matching unreleased server
-branch before this integration can succeed.
+## What the build verifies
+
+1. Fail early if the CLI source is dirty/unpushed, the workflow/environment is
+   missing, or exactly one matching idle runner is not online.
+2. Run the normal local CLI suites, then create a fresh isolated MariaDB/Vaadin
+   stack for trusted publishing using the same candidate image.
+3. Create a disposable test package and a package-scoped GitHub issuer/trust
+   rule. Pin repository owner ID, repository ID, workflow ref, workflow SHA,
+   environment, and a per-build audience. Bootstrap credentials stay local.
+4. Dispatch the workflow with the exact CLI SHA and generated test details.
+   Follow the run ID returned by GitHub, with a unique run title as a second
+   check. Never select the latest run or reuse an earlier successful result.
+5. On the self-hosted runner, check out that CLI SHA, verify the server version,
+   and run `onepub login trusted --publish-only` with a real GitHub JWT. Publish
+   version 1.0.0 of the disposable package using the installed restricted token.
+6. After GitHub reports success, verify package metadata, a nonempty downloadable
+   archive and a `TOKEN_EXCHANGED` audit record locally. These checks use the
+   isolated bootstrap credential because package-scoped tokens cannot download.
+7. Remove temporary credentials on the runner and the entire test stack on the
+   build machine. Failures, cancellations, skips, API errors or timeouts fail the
+   build. On a wait failure the build requests cancellation of that exact run.
+
+All OnePub HTTP targets are checked through `test/test_settings.dart`. The
+workflow and bootstrap additionally require the allocated `127.0.0.1` target.
+Nothing contacts production `onepub.dev`.
+
+GitHub dispatch/polling uses the REST API through `gh`, with API version
+`2026-03-10`, whose dispatch response includes the workflow run ID:
+https://docs.github.com/en/rest/actions/workflows#create-a-workflow-dispatch-event

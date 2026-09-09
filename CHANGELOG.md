@@ -1,3 +1,16 @@
+# Unreleased
+- Gate builds on real GitHub trusted publishing, with an isolated local stack
+  and a self-hosted runner.
+- Support package-scoped trusted login with `--publish-only`.
+- Add `onepub login trusted` for CI/CD trusted publishing login.
+- Validate required API response fields before saving login/import credentials.
+- Bound import audit requests to five seconds and close failed/timed-out connections.
+- Decode streamed UTF-8 responses correctly across packet boundaries.
+- Preserve server login failure messages and avoid zero-delay login retries.
+- Correct parsing of the package metadata `retracted` flag.
+- Add response-contract tests for onepub-vaadin 5.15.18 and local import audit tests.
+- Keep native Maven/Gradle/Swift configuration on its separate development branch.
+
 # 6.3.0
 - We now lock down the versions of direct dependencies to avoid upstream
  packages causing issues activating the onepub command.

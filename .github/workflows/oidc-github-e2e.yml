@@ -1,88 +1,86 @@
 name: GitHub OIDC E2E
+run-name: Trusted publishing E2E ${{ inputs.test_id }}
 
 on:
   workflow_dispatch:
+    inputs:
+      cli_sha:
+        description: Exact candidate CLI commit
+        required: true
+        type: string
+      server_url:
+        description: Isolated loopback URL allocated by op-build
+        required: true
+        type: string
+      server_version:
+        description: Expected candidate server version
+        required: true
+        type: string
+      audience:
+        description: Unique audience provisioned by op-build
+        required: true
+        type: string
+      package_name:
+        description: Disposable package provisioned by op-build
+        required: true
+        type: string
+      runner_label:
+        description: Unique label of the self-hosted build-machine runner
+        required: true
+        type: string
+      test_id:
+        description: Build correlation ID
+        required: true
+        type: string
 
 permissions:
   contents: read
   id-token: write
 
 concurrency:
-  group: github-oidc-e2e
+  group: trusted-publishing-${{ inputs.runner_label }}
   cancel-in-progress: false
 
 jobs:
-  login:
-    name: Exchange a real GitHub identity
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+  publish:
+    name: Publish using a real GitHub identity
+    runs-on: [self-hosted, linux, '${{ inputs.runner_label }}']
+    timeout-minutes: 15
     environment: oidc-e2e
     env:
-      ONEPUB_E2E_URL: ${{ vars.ONEPUB_OIDC_E2E_URL }}
-      ONEPUB_E2E_AUDIENCE: ${{ vars.ONEPUB_OIDC_E2E_AUDIENCE }}
-      ONEPUB_PATH: ${{ runner.temp }}/onepub-oidc-e2e
-      PUB_CACHE: ${{ runner.temp }}/pub-cache
+      ONEPUB_E2E_URL: ${{ inputs.server_url }}
+      ONEPUB_E2E_VERSION: ${{ inputs.server_version }}
+      ONEPUB_E2E_AUDIENCE: ${{ inputs.audience }}
+      ONEPUB_E2E_PACKAGE: ${{ inputs.package_name }}
+      ONEPUB_PATH: ${{ runner.temp }}/onepub-e2e-${{ github.run_id }}/settings
+      XDG_CONFIG_HOME: ${{ runner.temp }}/onepub-e2e-${{ github.run_id }}/config
+      _PUB_TEST_CONFIG_DIR: ${{ runner.temp }}/onepub-e2e-${{ github.run_id }}/config/dart
+      PUB_CACHE: ${{ runner.temp }}/onepub-e2e-${{ github.run_id }}/pub-cache
 
     steps:
-      - name: Validate the isolated test target
-        shell: bash
-        run: |
-          set -euo pipefail
-          node <<'NODE'
-          const target = process.env.ONEPUB_E2E_URL;
-          const audience = process.env.ONEPUB_E2E_AUDIENCE;
-          if (!target || !audience) {
-            throw new Error(
-              'Set ONEPUB_OIDC_E2E_URL and ONEPUB_OIDC_E2E_AUDIENCE ' +
-              'on the oidc-e2e GitHub Environment.'
-            );
-          }
-
-          const url = new URL(target);
-          const host = url.hostname.toLowerCase();
-          if (url.protocol !== 'https:') {
-            throw new Error('The OIDC E2E target must use HTTPS.');
-          }
-          if (url.username || url.password || url.search || url.hash) {
-            throw new Error('The OIDC E2E target must be a plain base URL.');
-          }
-          if (host === 'onepub.dev' || host === 'www.onepub.dev' ||
-              host === 'beta.onepub.dev') {
-            throw new Error('OIDC E2E must never access production or beta.');
-          }
-          NODE
-
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.cli_sha }}
+          persist-credentials: false
+
+      - name: Verify the candidate checkout
+        env:
+          EXPECTED_SHA: ${{ inputs.cli_sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
 
       - uses: dart-lang/setup-dart@v1
         with:
           sdk: stable
 
       - name: Install CLI dependencies
-        run: dart pub get
+        run: dart pub get --enforce-lockfile
 
-      - name: Configure the isolated OnePub endpoint
+      - name: Publish with the GitHub trusted identity
+        run: dart run tool/trusted_publishing_e2e.dart
+
+      - name: Remove temporary credentials and cache
+        if: always()
         shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p "$ONEPUB_PATH"
-          printf 'version: 1\nonepubUrl: "%s"\n' "$ONEPUB_E2E_URL" \
-            > "$ONEPUB_PATH/onepub.yaml"
-
-      - name: Login using GitHub OIDC
-        shell: bash
-        run: |
-          set -euo pipefail
-          dart run bin/onepub.dart login oidc \
-            --audience "$ONEPUB_E2E_AUDIENCE"
-
-      - name: Verify Dart received a hosted-repository token
-        shell: bash
-        run: |
-          set -euo pipefail
-          token_list="$(dart pub token list)"
-          if [[ "$token_list" != *"$ONEPUB_E2E_URL"* ]]; then
-            echo 'The OnePub hosted repository is absent from the Dart token store.' >&2
-            exit 1
-          fi
-
+        env:
+          CLEANUP_PATH: ${{ runner.temp }}/onepub-e2e-${{ github.run_id }}
+        run: rm -rf -- "$CLEANUP_PATH"

@@ -29,9 +29,9 @@ class Organisation {
     }
 
     if (response.success) {
-      final envelope = response.parseCli(CliOrganisationBody.fromJson);
-      final name = envelope.body?.organisationName ?? '';
-      final obfuscatedId = envelope.body?.obfuscatedId ?? '';
+      final body = response.requireCliBody(CliOrganisationBody.fromJson);
+      final name = body.organisationName;
+      final obfuscatedId = body.obfuscatedId;
       return Organisation.success(name: name, obfuscatedId: obfuscatedId);
     } else {
       return Organisation._error(response.errorMessage);

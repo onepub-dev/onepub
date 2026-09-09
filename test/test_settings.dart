@@ -1,5 +1,9 @@
+import 'dart:io';
+
 import 'package:dcli/dcli.dart' as dcli;
 import 'package:dcli_core/dcli_core.dart' as core;
+import 'package:onepub/src/api/api.dart';
+import 'package:onepub/src/api/onepub_token.dart';
 import 'package:onepub/src/onepub_settings.dart';
 import 'package:onepub/src/util/one_pub_token_store.dart';
 import 'package:path/path.dart';
@@ -30,17 +34,13 @@ class TestSettings {
 
   String get organisationId => _settings.asString('organisationId');
 
+  set organisationId(String value) => _settings['organisationId'] = value;
+
   String get organisationName => _settings.asString('organisationName');
 
   String get member => _settings.asString('member');
 
-  String get onepubToken {
-    final envToken = dcli.env['ONEPUB_TOKEN'];
-    if (envToken != null && envToken.isNotEmpty) {
-      return envToken;
-    }
-    return _settings.asString('onepub_token');
-  }
+  String get onepubToken => _settings.asString('onepub_token');
 
   String get pathToTestSettings {
     final pathToTest = dcli.DartProject.self.pathToTestDir;
@@ -130,8 +130,11 @@ bool _isPrivateIpv4Host(String host) {
   return false;
 }
 
-Future<T> withTestServer<T>(Future<T> Function() action,
-    {String? onepubUrlOverride}) {
+Future<T> withTestServer<T>(
+  Future<T> Function() action, {
+  String? onepubUrlOverride,
+  bool resolveOrganisationToken = true,
+}) {
   final testSettings = TestSettings();
   return core.withTempDirAsync(
       (tempSettingsDir) => OnePubSettings.withPathTo(tempSettingsDir, () async {
@@ -150,11 +153,166 @@ Future<T> withTestServer<T>(Future<T> Function() action,
                 onepubApiUrl: settings.onepubApiUrlAsString,
                 onepubToken: testSettings.onepubToken,
               );
+              if (resolveOrganisationToken) {
+                final onepubToken = await _resolveTestServerToken(
+                  testSettings: testSettings,
+                );
+                if (onepubToken != testSettings.onepubToken) {
+                  await OnePubTokenStore().addToken(
+                    onepubApiUrl: settings.onepubApiUrlAsString,
+                    onepubToken: onepubToken,
+                  );
+                }
+              }
               result = await action();
             });
 
             return result;
           }));
+}
+
+Future<String> _resolveTestServerToken({
+  required TestSettings testSettings,
+}) async {
+  final token = await OnePubTokenStore().load();
+  final response = await API().fetchMember(token);
+  if (response.success) {
+    final member = response.toMember();
+    if (member.obfuscatedOrganisationId == testSettings.organisationId) {
+      return token;
+    }
+  }
+
+  final cachedToken = await _loadCachedOrganisationToken(
+    testSettings: testSettings,
+    sourceToken: token,
+  );
+  if (cachedToken != null) {
+    return cachedToken;
+  }
+
+  final tokenResponse = await _exportTestMemberTokenWithRetry(
+    testSettings: testSettings,
+  );
+  if (!tokenResponse.success || tokenResponse.token == null) {
+    throw StateError(
+      'Unable to obtain a test token for ${testSettings.member} in '
+      '${testSettings.organisationId}. ${tokenResponse.errorMessage}',
+    );
+  }
+  await _writeCachedOrganisationToken(
+    testSettings: testSettings,
+    sourceToken: token,
+    organisationToken: tokenResponse.token!,
+  );
+  return tokenResponse.token!;
+}
+
+Future<OnePubToken> _exportTestMemberTokenWithRetry({
+  required TestSettings testSettings,
+}) async {
+  const maxAttempts = 5;
+  OnePubToken? lastResponse;
+  for (var attempt = 1; attempt <= maxAttempts; attempt++) {
+    final response = await API().exportTestMemberToken(
+      obfuscatedOrganisationId: testSettings.organisationId,
+      memberEmail: testSettings.member,
+    );
+    if (response.success) {
+      return response;
+    }
+    lastResponse = response;
+    if (!_isRateLimitMessage(response.errorMessage) || attempt == maxAttempts) {
+      return response;
+    }
+
+    final delay = Duration(seconds: attempt * 2);
+    stderr.writeln(
+      'Test token exchange hit rate limit on attempt $attempt/$maxAttempts; '
+      'retrying in ${delay.inSeconds}s.',
+    );
+    await Future<void>.delayed(delay);
+  }
+  return lastResponse!;
+}
+
+bool _isRateLimitMessage(String? message) {
+  final normalized = (message ?? '').toLowerCase();
+  return normalized.contains('too many cli requests') ||
+      normalized.contains('too many requests') ||
+      normalized.contains('rate limit');
+}
+
+Future<String?> _loadCachedOrganisationToken({
+  required TestSettings testSettings,
+  required String sourceToken,
+}) async {
+  final cacheFile = _organisationTokenCacheFile(
+    testSettings: testSettings,
+    sourceToken: sourceToken,
+  );
+  if (!cacheFile.existsSync()) {
+    return null;
+  }
+
+  try {
+    final cachedToken = cacheFile.readAsStringSync().trim();
+    if (cachedToken.isEmpty) {
+      return null;
+    }
+    final tokenResponse = await API().fetchMember(cachedToken);
+    if (!tokenResponse.success) {
+      return null;
+    }
+    final member = tokenResponse.toMember();
+    if (member.email == testSettings.member &&
+        member.obfuscatedOrganisationId == testSettings.organisationId) {
+      return cachedToken;
+    }
+  } catch (_) {
+    return null;
+  }
+  return null;
+}
+
+Future<void> _writeCachedOrganisationToken({
+  required TestSettings testSettings,
+  required String sourceToken,
+  required String organisationToken,
+}) async {
+  final cacheFile = _organisationTokenCacheFile(
+    testSettings: testSettings,
+    sourceToken: sourceToken,
+  );
+  await cacheFile.parent.create(recursive: true);
+  await cacheFile.writeAsString(organisationToken);
+}
+
+File _organisationTokenCacheFile({
+  required TestSettings testSettings,
+  required String sourceToken,
+}) {
+  final sourceTokenPrefix =
+      sourceToken.length <= 16 ? sourceToken : sourceToken.substring(0, 16);
+  final key = _safeCacheKey([
+    testSettings.onepubUrl,
+    testSettings.organisationId,
+    testSettings.member,
+    sourceTokenPrefix,
+  ].join('_'));
+  return File('${Directory.systemTemp.path}/onepub_test_token_cache/$key');
+}
+
+String _safeCacheKey(String input) {
+  final buffer = StringBuffer();
+  for (final codeUnit in input.codeUnits) {
+    final isDigit = codeUnit >= 48 && codeUnit <= 57;
+    final isUpper = codeUnit >= 65 && codeUnit <= 90;
+    final isLower = codeUnit >= 97 && codeUnit <= 122;
+    buffer.write(
+        isDigit || isUpper || isLower ? String.fromCharCode(codeUnit) : '_');
+  }
+  return buffer.toString();
 }
 
 //   /// Updates the inscope OnePubSettings by overriding the current

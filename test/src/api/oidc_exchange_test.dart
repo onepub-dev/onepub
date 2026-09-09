@@ -5,6 +5,10 @@ import 'package:onepub/src/auth/oidc_http.dart';
 import 'package:onepub/src/onepub_settings.dart';
 import 'package:test/test.dart';
 
+import '../../test_settings.dart';
+
+final testUrl = assertSafeOnePubTestUrl('http://localhost:8080');
+
 void main() {
   test('exchanges a JWT without overriding its provider-issued audience',
       () async {
@@ -13,16 +17,17 @@ void main() {
     final http = _FakeHttp();
 
     await OnePubSettings.withPathTo<void>(temp.path, () async {
+      OnePubSettings.use().onepubUrl = testUrl;
       final result = await OidcExchangeApi(http: http).exchange(
         assertion: 'header.payload.signature',
       );
 
       expect(result.accessToken, 'onepub-token');
-      expect(result.hostedUrl, 'https://onepub.dev/api/organisation/');
+      expect(result.hostedUrl, '$testUrl/api/organisation/');
       expect(result.expiresAt, DateTime.utc(2026, 8, 7, 12));
       expect(
         http.uri.toString(),
-        'https://onepub.dev/api/trusted-access/v1/workload/exchange',
+        '$testUrl/api/trusted-access/v1/workload/exchange',
       );
       expect(http.jsonBody, isNot(contains('audience')));
       expect(http.jsonBody['subject_token'], 'header.payload.signature');
@@ -46,7 +51,7 @@ class _FakeHttp extends OidcHttpClient {
     this.jsonBody = jsonBody ?? {};
     return OidcHttpResponse(200, {
       'access_token': 'onepub-token',
-      'hosted_url': 'https://onepub.dev/api/organisation/',
+      'hosted_url': '$testUrl/api/organisation/',
       'expires_at': '2026-08-07T12:00:00Z',
     });
   }

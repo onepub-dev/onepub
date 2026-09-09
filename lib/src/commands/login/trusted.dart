@@ -12,8 +12,8 @@ import '../../exceptions.dart';
 import '../../onepub_settings.dart';
 import '../../util/one_pub_token_store.dart';
 
-class OidcLoginCommand extends Command<int> {
-  OidcLoginCommand({
+class TrustedLoginCommand extends Command<int> {
+  TrustedLoginCommand({
     Map<String, String>? environment,
     OidcTokenAcquirer? acquirer,
     OidcExchangeApi? exchangeApi,
@@ -29,6 +29,12 @@ class OidcLoginCommand extends Command<int> {
         api = api ?? API(),
         tokenStore = tokenStore ?? OnePubTokenStore() {
     argParser
+      ..addFlag(
+        'publish-only',
+        negatable: false,
+        help: 'Install the publishing token without requesting organisation '
+            'details. Required for package-scoped trusted publishers.',
+      )
       ..addOption(
         'provider',
         allowed: CiProvider.values.map((provider) => provider.id),
@@ -68,11 +74,11 @@ class OidcLoginCommand extends Command<int> {
   final OnePubTokenStore tokenStore;
 
   @override
-  String get description =>
-      'Exchange a CI workload identity for a short-lived OnePub token.';
+  String get description => 'Log in from CI/CD without storing a OnePub token. '
+      'Requires trusted publishing to be configured in OnePub.';
 
   @override
-  String get name => 'oidc';
+  String get name => 'trusted';
 
   @override
   Future<int> run() async {
@@ -88,6 +94,16 @@ class OidcLoginCommand extends Command<int> {
       final exchange = await exchangeApi.exchange(
         assertion: assertion,
       );
+      if (argResults!['publish-only'] as bool) {
+        await tokenStore.addToken(
+          onepubApiUrl: exchange.hostedUrl,
+          onepubToken: exchange.accessToken,
+        );
+        print(blue('Publishing token installed '
+            '(expires ${exchange.expiresAt.toUtc()}).'));
+        return 0;
+      }
+
       final organisation = await api.fetchOrganisation(exchange.accessToken);
       if (!organisation.success) {
         throw ExitException(
