@@ -1,0 +1,61 @@
+# Copy this file to .gitlab-ci.yml in a private GitLab.com test project.
+# Use a protected shell runner on the same machine as op-build.
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "api" && $ONEPUB_E2E_TEST_ID && $CI_COMMIT_REF_PROTECTED == "true"'
+    - when: never
+
+stages: [publish, publish-again]
+
+.trusted-publish:
+  tags:
+    - $ONEPUB_E2E_RUNNER_TAG
+  timeout: 15 minutes
+  interruptible: true
+  environment:
+    name: oidc-e2e
+    action: verify
+  id_tokens:
+    ONEPUB_OIDC_TOKEN:
+      aud: $ONEPUB_E2E_AUDIENCE
+  variables:
+    ONEPUB_E2E_PROVIDER: gitlab
+    GIT_DEPTH: '1'
+  script:
+    - |
+      set -euo pipefail
+      test "$CI_SERVER_HOST" = gitlab.com
+      test "$CI_RUNNER_ID" = "$ONEPUB_E2E_RUNNER_ID"
+      test "${CI_DEBUG_TRACE:-false}" != true
+      test "${ONEPUB_BOOTSTRAP_TEST_TOKEN:-}" = ""
+      [[ "$ONEPUB_E2E_CLI_SHA" =~ ^[a-f0-9]{40}$ ]]
+      fixture_root="$CI_PROJECT_DIR/.onepub-e2e-$CI_JOB_ID"
+      mkdir -p "$fixture_root"
+      trap 'rm -rf -- "$fixture_root"' EXIT
+      export ONEPUB_PATH="$fixture_root/settings"
+      export XDG_CONFIG_HOME="$fixture_root/config"
+      export _PUB_TEST_CONFIG_DIR="$fixture_root/config/dart"
+      export PUB_CACHE="$fixture_root/pub-cache"
+      git init "$fixture_root/cli"
+      cd "$fixture_root/cli"
+      git remote add origin https://github.com/onepub-dev/onepub.git
+      git fetch --depth 1 origin "$ONEPUB_E2E_CLI_SHA"
+      git checkout --detach FETCH_HEAD
+      test "$(git rev-parse HEAD)" = "$ONEPUB_E2E_CLI_SHA"
+      dart pub get --enforce-lockfile
+      dart run tool/trusted_publishing_e2e.dart
+  after_script:
+    - rm -rf -- "$CI_PROJECT_DIR/.onepub-e2e-$CI_JOB_ID"
+
+trusted-publish:
+  extends: .trusted-publish
+  stage: publish
+  variables:
+    ONEPUB_E2E_PACKAGE_VERSION: '1.0.0'
+
+trusted-publish-again:
+  extends: .trusted-publish
+  stage: publish-again
+  needs: [trusted-publish]
+  variables:
+    ONEPUB_E2E_PACKAGE_VERSION: '1.0.1'

@@ -8,14 +8,22 @@ import 'package:path/path.dart' as p;
 
 import '../test/test_settings.dart';
 
-/// Runs only inside the build-machine GitHub runner job. The bootstrap token
-/// stays in op-build; this process has only the GitHub workload identity.
+/// Runs inside a build-machine CI job. The bootstrap token stays in op-build;
+/// this process has only the provider workload identity.
 Future<void> main() async {
   Directory? temp;
   try {
     final environment = Platform.environment;
+    final provider = environment['ONEPUB_E2E_PROVIDER'] ?? 'github';
+    if (!const ['github', 'gitlab'].contains(provider)) {
+      throw StateError('Unsupported trusted publishing test provider.');
+    }
+    final packageVersion = environment['ONEPUB_E2E_PACKAGE_VERSION'] ?? '1.0.0';
+    if (!const ['1.0.0', '1.0.1'].contains(packageVersion)) {
+      throw StateError('Invalid trusted publishing test version.');
+    }
     final target = assertSafeOnePubTestUrl(environment['ONEPUB_E2E_URL'] ?? '',
-        source: 'GitHub trusted publishing');
+        source: '$provider trusted publishing');
     if (Uri.parse(target).host != '127.0.0.1') {
       throw StateError(
           'This workflow requires the build-machine loopback stack.');
@@ -39,8 +47,15 @@ Future<void> main() async {
         throw StateError(
             'Expected server $expectedVersion; got ${status.version}.');
       }
-      await runDart(
-          [cli, 'login', 'trusted', '--publish-only', '--audience', audience]);
+      await runDart([
+        cli,
+        'login',
+        'trusted',
+        '--provider',
+        provider,
+        '--audience',
+        audience
+      ]);
       final credentials = (await OnePubTokenStore().credentials).toList();
       if (credentials.length != 1) {
         throw StateError('Expected one newly installed publishing credential.');
@@ -54,7 +69,7 @@ Future<void> main() async {
       final directory = temp!.path;
       File(p.join(directory, 'pubspec.yaml')).writeAsStringSync('''
 name: $package
-version: 1.0.0
+version: $packageVersion
 description: Isolated OnePub trusted publishing integration test package.
 publish_to: ${jsonEncode(hosted)}
 environment:
@@ -66,12 +81,13 @@ environment:
       File(p.join(directory, 'README.md'))
           .writeAsStringSync('# Integration test\n');
       File(p.join(directory, 'CHANGELOG.md'))
-          .writeAsStringSync('# 1.0.0\nTest release.\n');
+          .writeAsStringSync('# $packageVersion\nTest release.\n');
       File(p.join(directory, 'LICENSE'))
           .writeAsStringSync('Test fixture. All rights reserved.\n');
       await runDart(['pub', 'publish', '--force'], workingDirectory: directory);
       stdout.writeln(
-          'Published $package 1.0.0 using the GitHub workload identity.');
+          'Published $package $packageVersion using the $provider workload '
+          'identity.');
     });
   } on Object catch (e) {
     stderr.writeln('Trusted publishing E2E failed: $e');

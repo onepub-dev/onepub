@@ -112,6 +112,154 @@ void main() {
       isEmpty,
     );
   });
+
+  test('rejects verification when the second expected version is missing',
+      () async {
+    final server = await _startVerificationServer(
+      publishedVersions: const ['1.0.0'],
+    );
+    addTearDown(() => server.close(force: true));
+
+    final result =
+        await _runVerification(server, expectedVersions: '1.0.0,1.0.1')
+            .timeout(const Duration(seconds: 30));
+
+    expect(result.exitCode, isNonZero,
+        reason: '${result.stdout}\n${result.stderr}');
+    expect(result.stderr, contains('Published versions do not match'));
+  });
+
+  test('rejects verification when the second archive cannot be downloaded',
+      () async {
+    final server = await _startVerificationServer(
+      publishedVersions: const ['1.0.0', '1.0.1'],
+      unavailableArchives: const {'1.0.1'},
+    );
+    addTearDown(() => server.close(force: true));
+
+    final result =
+        await _runVerification(server, expectedVersions: '1.0.0,1.0.1')
+            .timeout(const Duration(seconds: 30));
+
+    expect(result.exitCode, isNonZero,
+        reason: '${result.stdout}\n${result.stderr}');
+    expect(result.stderr, contains('Published archive download failed'));
+  });
+
+  test('verifies both published versions and archives', () async {
+    final server = await _startVerificationServer(
+      publishedVersions: const ['1.0.0', '1.0.1'],
+    );
+    addTearDown(() => server.close(force: true));
+
+    final result =
+        await _runVerification(server, expectedVersions: '1.0.0,1.0.1')
+            .timeout(const Duration(seconds: 30));
+
+    expect(result.exitCode, 0, reason: '${result.stdout}\n${result.stderr}');
+    expect(result.stdout, contains('Verified published package and archive'));
+  });
+}
+
+const _verificationToken = 'verification-token';
+const _verificationPackage = 'onepub_test_trusted_deadbeef';
+
+Future<ProcessResult> _runVerification(
+  HttpServer server, {
+  required String expectedVersions,
+}) {
+  final script = p.join(
+    Directory.current.path,
+    'tool',
+    'prepare_trusted_publishing_test.dart',
+  );
+  final url = assertSafeOnePubTestUrl(
+    'http://127.0.0.1:${server.port}',
+    source: 'trusted-publishing verification regression',
+  );
+  return Process.run(
+    Platform.resolvedExecutable,
+    [script, url, _verificationPackage, '--verify'],
+    workingDirectory: Directory.current.path,
+    environment: {
+      ...Platform.environment,
+      'ONEPUB_BOOTSTRAP_TEST_TOKEN': _verificationToken,
+      'ONEPUB_E2E_EXPECTED_VERSIONS': expectedVersions,
+    },
+  );
+}
+
+Future<HttpServer> _startVerificationServer({
+  required List<String> publishedVersions,
+  Set<String> unavailableArchives = const <String>{},
+}) async {
+  final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+  final versions = [
+    for (final version in publishedVersions)
+      {
+        'version': version,
+        'retracted': false,
+        'archive_url': 'http://127.0.0.1:${server.port}/archive/$version',
+        'pubspec': {
+          'name': _verificationPackage,
+          'version': version,
+        },
+      },
+  ];
+
+  server.listen((request) async {
+    final authorization = request.headers.value('authorization');
+    expect(authorization, _verificationToken);
+
+    if (request.uri.path == '/api/organisation/details') {
+      expect(request.method, 'GET');
+      await _reply(request, {
+        'body': {
+          'organisationName': 'Trusted Publishing Test Org',
+          'obfuscatedId': 'trusted-test-org',
+        },
+      });
+      return;
+    }
+
+    if (request.uri.path ==
+        '/api/trusted-test-org/api/packages/$_verificationPackage') {
+      expect(request.method, 'GET');
+      await _reply(request, {
+        'name': _verificationPackage,
+        'isDiscontinued': false,
+        'replacedBy': '',
+        'latest': versions.last,
+        'versions': versions,
+      });
+      return;
+    }
+
+    if (request.uri.path.startsWith('/archive/')) {
+      expect(request.method, 'GET');
+      final version = request.uri.pathSegments.last;
+      if (unavailableArchives.contains(version)) {
+        await _reply(
+            request,
+            {
+              'error': {'message': 'archive unavailable'},
+            },
+            status: HttpStatus.notFound);
+      } else {
+        await _reply(request, 'archive bytes');
+      }
+      return;
+    }
+
+    await _reply(
+      request,
+      {
+        'error': {'message': 'Unexpected verification route'}
+      },
+      status: HttpStatus.notFound,
+    );
+  });
+  return server;
 }
 
 Future<void> _reply(

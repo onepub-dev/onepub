@@ -1,4 +1,5 @@
 # Unreleased
+- Added a GitLab trusted-publishing test pipeline and updated the shared test script to use the current login command.
 - Gate builds on real GitHub trusted publishing, with an isolated local stack
   and a self-hosted runner.
 - Make trusted login publishing-only so CI jobs never perform an organisation lookup.

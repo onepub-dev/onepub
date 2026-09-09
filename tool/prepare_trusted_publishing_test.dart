@@ -43,29 +43,43 @@ Future<void> main(List<String> args) async {
         if (verify) {
           final versions =
               await API().fetchVersions(org.obfuscatedId!, args[1]);
-          final published = versions.versions
-              .singleWhere((version) => version.version == '1.0.0');
-          final archive = assertSafeOnePubTestUrl(published.archiveUrl,
-              source: 'trusted test published archive');
-          if (Uri.parse(archive).origin != Uri.parse(url).origin) {
-            throw StateError('Archive is not on the isolated test stack.');
+          final expectedVersions =
+              (Platform.environment['ONEPUB_E2E_EXPECTED_VERSIONS'] ?? '1.0.0')
+                  .split(',');
+          if (expectedVersions.isEmpty ||
+              expectedVersions.any(
+                  (version) => !const ['1.0.0', '1.0.1'].contains(version))) {
+            throw StateError('Invalid expected test package versions.');
           }
-          final client = HttpClient();
-          try {
-            final request = await client.getUrl(Uri.parse(archive));
-            request.followRedirects = false;
-            request.headers.set('authorization', token);
-            final response = await request.close();
-            if (response.statusCode != 200) {
-              throw StateError('Published archive download failed.');
+          if (versions.versions.length != expectedVersions.length) {
+            throw StateError(
+                'Published versions do not match the isolated test.');
+          }
+          for (final expectedVersion in expectedVersions) {
+            final published = versions.versions
+                .singleWhere((version) => version.version == expectedVersion);
+            final archive = assertSafeOnePubTestUrl(published.archiveUrl,
+                source: 'trusted test published archive');
+            if (Uri.parse(archive).origin != Uri.parse(url).origin) {
+              throw StateError('Archive is not on the isolated test stack.');
             }
-            final bytes =
-                await response.fold<int>(0, (sum, bytes) => sum + bytes.length);
-            if (bytes == 0) {
-              throw StateError('Published archive is empty.');
+            final client = HttpClient();
+            try {
+              final request = await client.getUrl(Uri.parse(archive));
+              request.followRedirects = false;
+              request.headers.set('authorization', token);
+              final response = await request.close();
+              if (response.statusCode != 200) {
+                throw StateError('Published archive download failed.');
+              }
+              final bytes = await response.fold<int>(
+                  0, (sum, bytes) => sum + bytes.length);
+              if (bytes == 0) {
+                throw StateError('Published archive is empty.');
+              }
+            } finally {
+              client.close(force: true);
             }
-          } finally {
-            client.close(force: true);
           }
           stdout.writeln('Verified published package and archive.');
           return;
