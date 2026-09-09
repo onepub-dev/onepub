@@ -63,23 +63,7 @@ Future<void> main(List<String> args) async {
             if (Uri.parse(archive).origin != Uri.parse(url).origin) {
               throw StateError('Archive is not on the isolated test stack.');
             }
-            final client = HttpClient();
-            try {
-              final request = await client.getUrl(Uri.parse(archive));
-              request.followRedirects = false;
-              request.headers.set('authorization', token);
-              final response = await request.close();
-              if (response.statusCode != 200) {
-                throw StateError('Published archive download failed.');
-              }
-              final bytes = await response.fold<int>(
-                  0, (sum, bytes) => sum + bytes.length);
-              if (bytes == 0) {
-                throw StateError('Published archive is empty.');
-              }
-            } finally {
-              client.close(force: true);
-            }
+            await verifyPublishedArchive(Uri.parse(archive), token);
           }
           stdout.writeln('Verified published package and archive.');
           return;
@@ -110,4 +94,63 @@ Future<void> main(List<String> args) async {
   } finally {
     temp?.deleteSync(recursive: true);
   }
+}
+
+/// The authenticated archive route redirects to a temporary download grant.
+/// Keep every request on the isolated origin and send the bootstrap token only
+/// to the original route. Do not print grant URLs or response bodies.
+Future<void> verifyPublishedArchive(Uri archive, String token) async {
+  final client = HttpClient();
+  try {
+    await _downloadArchive(client, archive, token)
+        .timeout(const Duration(seconds: 30));
+  } finally {
+    client.close(force: true);
+  }
+}
+
+Future<void> _downloadArchive(
+    HttpClient client, Uri archive, String token) async {
+  var current = archive;
+  for (var redirects = 0; redirects <= 5; redirects++) {
+    final request = await client.getUrl(current);
+    request.followRedirects = false;
+    if (redirects == 0) {
+      request.headers.set(HttpHeaders.authorizationHeader, token);
+    }
+    final response = await request.close();
+    if (const [301, 302, 303, 307, 308].contains(response.statusCode)) {
+      final location = response.headers.value(HttpHeaders.locationHeader);
+      if (location == null || location.isEmpty) {
+        throw StateError('Published archive redirect has no location.');
+      }
+      final Uri next;
+      try {
+        next = current.resolve(location);
+      } on FormatException {
+        throw StateError('Published archive redirect is invalid.');
+      }
+      if (!const ['http', 'https'].contains(next.scheme) ||
+          next.origin != archive.origin ||
+          next.userInfo.isNotEmpty) {
+        throw StateError('Archive redirect is not on the isolated test stack.');
+      }
+      await response.drain<void>();
+      current = next;
+      continue;
+    }
+    if (response.statusCode != HttpStatus.ok) {
+      throw StateError(
+          'Published archive download failed (HTTP ${response.statusCode}).');
+    }
+    final bytes = await response.fold<int>(
+      0,
+      (sum, bytes) => sum + bytes.length,
+    );
+    if (bytes == 0) {
+      throw StateError('Published archive is empty.');
+    }
+    return;
+  }
+  throw StateError('Published archive exceeded the redirect limit.');
 }
