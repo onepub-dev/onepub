@@ -52,12 +52,19 @@ jobs:
       ONEPUB_E2E_VERSION: ${{ inputs.server_version }}
       ONEPUB_E2E_AUDIENCE: ${{ inputs.audience }}
       ONEPUB_E2E_PACKAGE: ${{ inputs.package_name }}
-      ONEPUB_PATH: ${{ runner.temp }}/onepub-e2e-${{ github.run_id }}/settings
-      XDG_CONFIG_HOME: ${{ runner.temp }}/onepub-e2e-${{ github.run_id }}/config
-      _PUB_TEST_CONFIG_DIR: ${{ runner.temp }}/onepub-e2e-${{ github.run_id }}/config/dart
-      PUB_CACHE: ${{ runner.temp }}/onepub-e2e-${{ github.run_id }}/pub-cache
 
     steps:
+      - name: Configure isolated CLI storage
+        shell: bash
+        run: |
+          fixture_root="$RUNNER_TEMP/onepub-e2e-$GITHUB_RUN_ID"
+          {
+            echo "ONEPUB_PATH=$fixture_root/settings"
+            echo "XDG_CONFIG_HOME=$fixture_root/config"
+            echo "_PUB_TEST_CONFIG_DIR=$fixture_root/config/dart"
+            echo "PUB_CACHE=$fixture_root/pub-cache"
+          } >> "$GITHUB_ENV"
+
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.cli_sha }}
