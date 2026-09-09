@@ -82,6 +82,7 @@ Future<void> main(List<String> args) async {
           command:
               'test/package/create/${args[1]}?team=${Uri.encodeQueryComponent(team.name)}',
           commandType: CommandType.cli,
+          method: Method.post,
           timeout: const Duration(seconds: 15),
         );
         if (!result.success) {
