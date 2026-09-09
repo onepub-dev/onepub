@@ -1,7 +1,7 @@
 # Unreleased
 - Gate builds on real GitHub trusted publishing, with an isolated local stack
   and a self-hosted runner.
-- Support package-scoped trusted login with `--publish-only`.
+- Make trusted login publishing-only so CI jobs never perform an organisation lookup.
 - Add `onepub login trusted` for CI/CD trusted publishing login.
 - Validate required API response fields before saving login/import credentials.
 - Bound import audit requests to five seconds and close failed/timed-out connections.

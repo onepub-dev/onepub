@@ -17,3 +17,10 @@ custom_lint.log
 custom_lint.log
 logs/analyzer.txt
 .mcp_logs/mcp_command_server.log
+# GitHub Actions self-hosted runner local configuration and binaries
+actions-runner/
+.runner
+.credentials
+.credentials_rsaparams
+_diag/
+_work/

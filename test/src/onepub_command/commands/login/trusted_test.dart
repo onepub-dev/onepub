@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:args/command_runner.dart';
 import 'package:onepub/src/api/api.dart';
 import 'package:onepub/src/api/oidc_exchange.dart';
-import 'package:onepub/src/api/organisation.dart';
 import 'package:onepub/src/auth/ci_provider.dart';
 import 'package:onepub/src/auth/oidc_token_acquirer.dart';
 import 'package:onepub/src/commands/login.dart';
@@ -70,16 +69,14 @@ void main() {
       expect(exchange.assertion, assertion);
       expect(exchange.audience, isNull);
       expect(api.checkedVersion, isTrue);
-      expect(api.fetchedWith, 'short-lived-onepub-token');
       expect(tokenStore.url, '$testUrl/api/organisation/');
       expect(tokenStore.token, 'short-lived-onepub-token');
-      expect(OnePubSettings.use().organisationName, 'Test Organisation');
-      expect(OnePubSettings.use().operatorEmail, 'OIDC workload');
+      expect(OnePubSettings.use().organisationName, isEmpty);
+      expect(OnePubSettings.use().operatorEmail, isEmpty);
     });
   });
 
-  test('publish-only exchanges and installs without changing login settings',
-      () async {
+  test('trusted login installs without changing login settings', () async {
     final temp = Directory.systemTemp.createTempSync('onepub-oidc-publish-');
     addTearDown(() => temp.deleteSync(recursive: true));
     final acquirer = _FakeAcquirer(assertion);
@@ -105,14 +102,13 @@ void main() {
         ..organisationName = 'Existing Organisation';
       await settings.save();
 
-      expect(await runner.run(['trusted', '--publish-only']), 0);
+      expect(await runner.run(['trusted']), 0);
 
       expect(acquirer.provider, CiProvider.githubActions);
       expect(acquirer.audience, 'http://localhost:8080');
       expect(exchange.assertion, assertion);
       expect(exchange.audience, isNull);
       expect(api.checkedVersion, isTrue);
-      expect(api.fetchedWith, isNull);
       expect(tokenStore.url, '$testUrl/api/organisation/');
       expect(tokenStore.token, 'short-lived-onepub-token');
       expect(settings.operatorEmail, 'existing@example.test');
@@ -122,7 +118,7 @@ void main() {
     });
   });
 
-  test('publish-only acquires all package publisher providers', () async {
+  test('acquires all package publisher providers', () async {
     for (final provider in [
       CiProvider.githubActions,
       CiProvider.gitlabCi,
@@ -151,7 +147,6 @@ void main() {
         expect(
             await runner.run([
               'trusted',
-              '--publish-only',
               '--provider',
               provider.id,
             ]),
@@ -160,7 +155,6 @@ void main() {
 
       expect(acquirer.provider, provider);
       expect(acquirer.audience, 'http://localhost:8080');
-      expect(api.fetchedWith, isNull);
     }
   });
 
@@ -253,20 +247,10 @@ class _FakeExchangeApi extends OidcExchangeApi {
 
 class _FakeApi extends API {
   var checkedVersion = false;
-  String? fetchedWith;
 
   @override
   Future<void> checkVersion() async {
     checkedVersion = true;
-  }
-
-  @override
-  Future<Organisation> fetchOrganisation(String onepubToken) async {
-    fetchedWith = onepubToken;
-    return Organisation.success(
-      name: 'Test Organisation',
-      obfuscatedId: 'organisation',
-    );
   }
 }
 

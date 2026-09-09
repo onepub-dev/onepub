@@ -29,12 +29,6 @@ class TrustedLoginCommand extends Command<int> {
         api = api ?? API(),
         tokenStore = tokenStore ?? OnePubTokenStore() {
     argParser
-      ..addFlag(
-        'publish-only',
-        negatable: false,
-        help: 'Install the publishing token without requesting organisation '
-            'details. Required for package-scoped trusted publishers.',
-      )
       ..addOption(
         'provider',
         allowed: CiProvider.values.map((provider) => provider.id),
@@ -94,38 +88,13 @@ class TrustedLoginCommand extends Command<int> {
       final exchange = await exchangeApi.exchange(
         assertion: assertion,
       );
-      if (argResults!['publish-only'] as bool) {
-        await tokenStore.addToken(
-          onepubApiUrl: exchange.hostedUrl,
-          onepubToken: exchange.accessToken,
-        );
-        print(blue('Publishing token installed '
-            '(expires ${exchange.expiresAt.toUtc()}).'));
-        return 0;
-      }
-
-      final organisation = await api.fetchOrganisation(exchange.accessToken);
-      if (!organisation.success) {
-        throw ExitException(
-          exitCode: 1,
-          message: organisation.errorMessage ??
-              'Unable to read the organisation for the issued token.',
-        );
-      }
-
-      final settings = OnePubSettings.use()
-        ..operatorEmail = 'OIDC workload'
-        ..obfuscatedOrganisationId = organisation.obfuscatedId!
-        ..organisationName = organisation.name!;
-      await settings.save();
-
       await tokenStore.addToken(
         onepubApiUrl: exchange.hostedUrl,
         onepubToken: exchange.accessToken,
       );
 
-      print(blue('Successfully logged into ${organisation.name} with a '
-          'short-lived token (expires ${exchange.expiresAt.toUtc()}).'));
+      print(blue('Publishing token installed '
+          '(expires ${exchange.expiresAt.toUtc()}).'));
       return 0;
     } on ExitException {
       rethrow;
