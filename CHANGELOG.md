@@ -11,6 +11,10 @@
 - Add response-contract tests for onepub-vaadin 5.15.18 and local import audit tests.
 - Keep native Maven/Gradle/Swift configuration on its separate development branch.
 
+# 6.4.0
+- Add package-scoped trusted publishing login with `onepub login trusted --publish-only`
+  without changing saved organisation settings.
+
 # 6.3.0
 - We now lock down the versions of direct dependencies to avoid upstream
  packages causing issues activating the onepub command.
