@@ -1,4 +1,5 @@
 # Unreleased
+- Download public test dependencies without the unrelated pub.dev publishing credential added by Dart setup.
 - Verify trusted publishing downloads through the server’s temporary download links.
 - Fix trusted publishing tests when Dart setup has already added a pub.dev credential, and keep test downloads in a temporary cache.
 - Added a GitLab trusted-publishing test pipeline and updated the shared test script to use the current login command.

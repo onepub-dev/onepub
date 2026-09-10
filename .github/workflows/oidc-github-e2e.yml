@@ -84,6 +84,11 @@ jobs:
         shell: bash
         run: echo "PUB_CACHE=$RUNNER_TEMP/onepub-e2e-$GITHUB_RUN_ID/pub-cache" >> "$GITHUB_ENV"
 
+      # setup-dart adds a pub.dev publishing identity. Public dependency reads
+      # must be anonymous; OnePub obtains its own identity during trusted login.
+      - name: Remove pub.dev publishing credential
+        run: dart tool/clear_pub_dev_credential.dart
+
       - name: Install CLI dependencies
         run: dart pub get --enforce-lockfile
 
