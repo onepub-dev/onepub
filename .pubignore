@@ -1,6 +1,16 @@
-test
-tool
-onepub.token.yaml
-dart_test.yaml
-bin/onepub
-bin/opub
+# Publish only CLI sources and public package documentation. Keep local runner
+# installations, credentials, tests, tooling, and development files out even
+# when new directories are added to the checkout.
+/*
+!/bin/
+/bin/*
+!/bin/onepub.dart
+/bin/onepub
+/bin/opub
+!/lib/
+!/example/
+!/pubspec.yaml
+!/README.md
+!/CHANGELOG.md
+!/LICENSE
+!/SECURITY.md
