@@ -75,7 +75,7 @@ void main() {
   setUpAll(() => ensureTestUsers(config));
 
   test('rate limit burst', () async {
-    await withAdmin(config, (_) async {
+    await withSuiteAdministrator(config, (_) async {
       final result = await rateLimitTest(config.rateRoute, config.rateRequests);
       if (result.tooMany == 0) {
         throw StateError('Rate-limit test did not produce any 429 responses.');
@@ -84,7 +84,7 @@ void main() {
   }, timeout: const Timeout(Duration(minutes: 5)), skip: config.skipRateLimit);
 
   test('rate limit recovery', () async {
-    await withAdmin(config, (_) async {
+    await withSuiteAdministrator(config, (_) async {
       await rateLimitRecoveryTest(config.rateRoute);
     });
   },

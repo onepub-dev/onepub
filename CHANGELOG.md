@@ -1,23 +1,23 @@
-# Unreleased
-- Download public test dependencies without the unrelated pub.dev publishing credential added by Dart setup.
-- Verify trusted publishing downloads through the server’s temporary download links.
-- Fix trusted publishing tests when Dart setup has already added a pub.dev credential, and keep test downloads in a temporary cache.
-- Added a GitLab trusted-publishing test pipeline and updated the shared test script to use the current login command.
-- Gate builds on real GitHub trusted publishing, with an isolated local stack
-  and a self-hosted runner.
-- Make trusted login publishing-only so CI jobs never perform an organisation lookup.
-- Add `onepub login trusted` for CI/CD trusted publishing login.
-- Validate required API response fields before saving login/import credentials.
-- Bound import audit requests to five seconds and close failed/timed-out connections.
-- Decode streamed UTF-8 responses correctly across packet boundaries.
-- Preserve server login failure messages and avoid zero-delay login retries.
-- Correct parsing of the package metadata `retracted` flag.
-- Add response-contract tests for onepub-vaadin 5.15.18 and local import audit tests.
-- Keep native Maven/Gradle/Swift configuration on its separate development branch.
+# 7.0.0
 
-# 6.4.0
-- Add package-scoped trusted publishing login with `onepub login trusted --publish-only`
-  without changing saved organisation settings.
+- Add trusted publishing with `onepub login trusted`, allowing CI/CD jobs to
+  obtain a short-lived publishing token using OIDC instead of storing a OnePub
+  token. Requires a OnePub server with OIDC support and a configured trusted
+  publisher.
+- Trusted login installs a package-scoped publishing token without changing
+  saved organisation settings. No `--publish-only` flag is required.
+- Preserve existing browser login and token authentication workflows, including
+  `onepub login`, `onepub import`, and `onepub export`.
+- Validate server responses before saving login or import credentials, and
+  preserve server login failure messages.
+- Prevent import audit requests from blocking token import when the audit
+  endpoint fails or is unavailable, with a five-second timeout.
+- Fix decoding of UTF-8 responses split across network packets and avoid
+  immediate retries when the server returns an invalid login polling interval.
+- Correct handling of retracted package versions in package metadata.
+- Expand compatibility and trusted publishing tests, including GitHub Actions
+  and GitLab CI/CD pipelines, isolated download caches, and temporary download
+  links.
 
 # 6.3.0
 - We now lock down the versions of direct dependencies to avoid upstream

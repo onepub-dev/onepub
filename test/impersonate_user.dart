@@ -77,7 +77,8 @@ Future<void> impersonateMember({
       await settings.save();
 
       // set an alternate location for the token store
-      await OnePubTokenStore.withPathTo(tempSettingsDir, () async {
+      await OnePubTokenStore.withPathTo('$tempSettingsDir/config/dart',
+          () async {
         await OnePubTokenStore().addToken(
             onepubApiUrl: settings.onepubApiUrlAsString,
             onepubToken: member.onepubToken);
@@ -85,7 +86,8 @@ Future<void> impersonateMember({
         await core.withEnvironmentAsync(
           environment: {
             OnePubSettings.onepubPathEnvKey: tempSettingsDir,
-            pubTestsConfigDirKey: tempSettingsDir,
+            pubTestsConfigDirKey: '$tempSettingsDir/config/dart',
+            'XDG_CONFIG_HOME': '$tempSettingsDir/config',
           },
           action,
         );

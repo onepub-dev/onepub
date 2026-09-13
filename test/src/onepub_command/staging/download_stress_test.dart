@@ -32,10 +32,10 @@ class _StressSummary {
 }
 
 void main() {
-  final config = StagingConfig.fromEnv();
+  final config = StagingConfig.fromEnv(loadTest: true);
 
   test('download stress: authenticated archive downloads', () async {
-    await withAdmin(config, (context) async {
+    await withSuiteAdministrator(config, (context) async {
       final published = await publishAndVerify(
         context,
         config,

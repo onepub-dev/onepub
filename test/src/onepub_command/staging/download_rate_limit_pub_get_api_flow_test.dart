@@ -105,7 +105,7 @@ void main() {
   setUpAll(() => ensureTestUsers(config));
 
   test('download rate limits: pub get API flow', () async {
-    await withAdmin(config, (context) async {
+    await withSuiteAdministrator(config, (context) async {
       final published = await publishAndVerify(context, config);
       final result = await simulatePubGetApiFlow(
         context: context,

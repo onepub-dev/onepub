@@ -57,7 +57,7 @@ void main() {
   setUpAll(() => ensureTestUsers(config));
 
   test('pub metadata', () async {
-    await withAdmin(config, (context) async {
+    await withSuiteAdministrator(config, (context) async {
       final published = await publishAndVerify(context, config);
       await pubMetadataTest(
         versionsBody: published.versionsBody,

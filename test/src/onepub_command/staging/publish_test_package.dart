@@ -5,9 +5,11 @@ import 'dart:math';
 import 'package:dcli/dcli.dart';
 import 'package:dcli_core/dcli_core.dart' as core;
 import 'package:onepub/src/api/cli_models.dart';
+import 'package:onepub/src/token_store/io.dart';
 import 'package:onepub/src/util/one_pub_token_store.dart';
 import 'package:onepub/src/util/send_command.dart';
 import 'package:path/path.dart';
+import 'package:uuid/uuid.dart';
 
 import 'publish_result.dart';
 
@@ -19,7 +21,8 @@ Future<PublishResult> publishTestPackage({
   int largeNativeAssetBytes = 0,
 }) async {
   final suffix = DateTime.now().toUtc().millisecondsSinceEpoch;
-  final packageName = '${packagePrefix}_$suffix';
+  final packageName =
+      '${packagePrefix}_${const Uuid().v4().replaceAll('-', '')}';
   final version = '0.0.1-dev.$suffix';
 
   stdout.writeln('Publishing $packageName $version...');
@@ -84,6 +87,7 @@ Copyright (c) 2025 OnePub
       publishTokenEnv: publishToken,
       'HOME': pubHomeDir,
       'XDG_CONFIG_HOME': pubConfigRoot,
+      pubTestsConfigDirKey: join(pubConfigRoot, 'dart'),
     };
 
     final tokenProgress = Progress.capture();
@@ -117,7 +121,8 @@ ${tokenProgress.toParagraph()}''');
       },
       environment: publishEnv,
     );
-    final publishOutput = progress.toParagraph();
+    final publishOutput =
+        progress.toParagraph().replaceAll(publishToken, '<redacted>');
     stdout.writeln(publishOutput);
     if (progress.exitCode != 0) {
       if (publishOutput.contains('must create the package first')) {
@@ -131,8 +136,11 @@ publish_to: $apiUrl
 team: ${team ?? '<none>'}
 raw output:
 $publishOutput''');
-      throw StateError(
-          'dart pub publish failed with exit code ${progress.exitCode}');
+      throw StateError('''
+dart pub publish failed for $packageName (exit code ${progress.exitCode})
+publish_to: $apiUrl
+team: ${team ?? '<none>'}
+$publishOutput''');
     }
   });
 

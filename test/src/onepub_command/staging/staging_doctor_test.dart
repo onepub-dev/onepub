@@ -10,6 +10,6 @@ void main() {
   final config = StagingConfig.fromEnv();
 
   test('onepub doctor', () async {
-    await runOnepubDoctor();
+    await withAdmin(config, (_) => runOnepubDoctor());
   }, timeout: const Timeout(Duration(minutes: 5)), skip: config.skipDoctor);
 }

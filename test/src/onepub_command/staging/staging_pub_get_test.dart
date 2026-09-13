@@ -11,7 +11,7 @@ void main() {
   setUpAll(() => ensureTestUsers(config));
 
   test('pub get', () async {
-    await withAdmin(config, (context) async {
+    await withSuiteAdministrator(config, (context) async {
       final published = await publishAndVerify(context, config);
       await pubGetTestPackage(
         published.name,

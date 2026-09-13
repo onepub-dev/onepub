@@ -10,6 +10,7 @@ import 'package:onepub/src/api/onepub_token.dart';
 import 'package:onepub/src/exceptions.dart';
 import 'package:onepub/src/util/one_pub_token_store.dart';
 import 'package:onepub/src/util/role_enum.dart';
+import 'package:uuid/uuid.dart';
 
 import 'test_settings.dart';
 
@@ -18,6 +19,10 @@ class TestUsers {
 
   static var initialised = false;
   static String? _emailNamespace;
+
+  // Each test file runs in its own isolate. Keep its role users distinct from
+  // concurrent suites and earlier runs, even when they use the same server.
+  static final suiteId = const Uuid().v4().replaceAll('-', '').substring(0, 16);
   static var _loggedReducedCoverageWarning = false;
 
   late final Member administrator;
@@ -49,7 +54,6 @@ class TestUsers {
   Future<void> init() async {
     if (!initialised) {
       await withTestServer(() async {
-        initialised = true;
         _emailNamespace ??= _defaultNamespace();
         if (!await _hasAdminPrivileges()) {
           if (_requireAdmin()) {
@@ -61,6 +65,7 @@ class TestUsers {
           administrator = member;
           teamLeader = member;
           basicMember = member;
+          initialised = true;
           return;
         }
         administrator =
@@ -69,6 +74,7 @@ class TestUsers {
             _scopedEmail('teamleader-on-sys@testdomain.com'));
         basicMember = await createBasicMember(
             _scopedEmail('basicmember-on-sys@testdomain.com'));
+        initialised = true;
         // cicdMember = await createCICD('cicd@testdomain.com');
       });
     }
@@ -397,10 +403,10 @@ TestUsers: member "$emailAddress" already existed but lookup returned "${memberR
   }
 
   String _scopedEmail(String emailAddress) {
-    final namespace = _emailNamespace;
-    if (namespace == null || namespace.isEmpty) {
-      return emailAddress;
-    }
+    final prefix = _emailNamespace ?? '';
+    // Leave room for the role name and suite id in the email local part.
+    final shortened = prefix.length > 20 ? prefix.substring(0, 20) : prefix;
+    final namespace = shortened.isEmpty ? suiteId : '${shortened}_$suiteId';
     final parts = emailAddress.split('@');
     if (parts.length != 2) {
       return '${emailAddress}_$namespace';
@@ -438,11 +444,8 @@ TestUsers: member "$emailAddress" already existed but lookup returned "${memberR
   }
 
   Future<bool> _hasAdminPrivileges() async {
-    try {
-      return await Member.isSystemAdministrator();
-    } catch (_) {
-      return false;
-    }
+    final member = await _currentMember();
+    return member.roles.contains(RoleEnum.SystemAdministrator);
   }
 
   bool _requireAdmin() =>
@@ -451,7 +454,10 @@ TestUsers: member "$emailAddress" already existed but lookup returned "${memberR
 
   Future<Member> _currentMember() async {
     final token = await OnePubTokenStore().load();
-    final response = await API().fetchMember(token);
+    final response = await retryTestSetup(
+      () => API().fetchMember(token),
+      (response) => response.success ? '' : response.errorMessage,
+    );
     if (!response.success) {
       final message = response.errorMessage.trim();
       final effective = message.isEmpty || message == 'Empty response'

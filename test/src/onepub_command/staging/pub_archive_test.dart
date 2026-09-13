@@ -16,7 +16,7 @@ void main() {
   setUpAll(() => ensureTestUsers(config));
 
   test('pub archive', () async {
-    await withAdmin(config, (context) async {
+    await withSuiteAdministrator(config, (context) async {
       final published = await publishAndVerify(context, config);
       final entry = published.versionsBody.versions.firstWhere(
         (candidate) => candidate.version == published.version,

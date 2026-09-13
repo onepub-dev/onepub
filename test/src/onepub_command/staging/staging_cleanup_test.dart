@@ -12,7 +12,7 @@ void main() {
   setUpAll(() => ensureTestUsers(config));
 
   test('cleanup package', () async {
-    await withAdmin(config, (context) async {
+    await withSuiteAdministrator(config, (context) async {
       final publishResult = await publishTestPackage(
         packagePrefix: config.packagePrefix,
         apiUrl: context.apiUrl,

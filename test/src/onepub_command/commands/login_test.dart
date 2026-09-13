@@ -21,59 +21,59 @@ import '../../../test_settings.dart';
 
 void main() {
   test('onepub login completes through the running test server', () async {
-    final outerSettings = OnePubSettings.use();
-    final targetUrl = TestSettings.resolveOnePubUrl(
-      override: outerSettings.onepubUrl,
-    );
-    final bootstrapToken =
-        (Platform.environment['ONEPUB_BOOTSTRAP_TEST_TOKEN'] ?? '').trim();
-    final authorisingToken = bootstrapToken.isNotEmpty
-        ? bootstrapToken
-        : await OnePubTokenStore().load();
+    await withTestServer(() async {
+      final targetUrl = TestSettings.resolveOnePubUrl();
+      final bootstrapToken =
+          (Platform.environment['ONEPUB_BOOTSTRAP_TEST_TOKEN'] ?? '').trim();
+      final authorisingToken = bootstrapToken.isNotEmpty
+          ? bootstrapToken
+          : await OnePubTokenStore().load();
 
-    await withTempDirAsync((tempDir) async {
-      await OnePubSettings.withPathTo(join(tempDir, 'settings'), () async {
-        final settings = OnePubSettings.use()..onepubUrl = targetUrl;
-        await settings.save();
+      await withTempDirAsync((tempDir) async {
+        await OnePubSettings.withPathTo(join(tempDir, 'settings'), () async {
+          final settings = OnePubSettings.use()..onepubUrl = targetUrl;
+          await settings.save();
 
-        await OnePubTokenStore.withPathTo(join(tempDir, 'tokens'), () async {
-          final authToken = Completer<String>();
-          final output = <String>[];
-          final login = runZoned(
-            () => entrypoint(args: ['login'], executableName: 'onepub'),
-            zoneSpecification: ZoneSpecification(
-              print: (self, parent, zone, line) {
-                output.add(line);
-                final match = RegExp('clilogin/([a-f0-9-]+)').firstMatch(line);
-                if (match != null && !authToken.isCompleted) {
-                  authToken.complete(match.group(1)!);
-                }
-                parent.print(zone, line);
-              },
-            ),
-          );
+          await OnePubTokenStore.withPathTo(join(tempDir, 'tokens'), () async {
+            final authToken = Completer<String>();
+            final output = <String>[];
+            final login = runZoned(
+              () => entrypoint(args: ['login'], executableName: 'onepub'),
+              zoneSpecification: ZoneSpecification(
+                print: (self, parent, zone, line) {
+                  output.add(line);
+                  final match =
+                      RegExp('clilogin/([a-f0-9-]+)').firstMatch(line);
+                  if (match != null && !authToken.isCompleted) {
+                    authToken.complete(match.group(1)!);
+                  }
+                  parent.print(zone, line);
+                },
+              ),
+            );
 
-          final token = await authToken.future.timeout(
-            const Duration(seconds: 10),
-            onTimeout: () => throw StateError(
-              'onepub login did not publish its browser authentication URL.',
-            ),
-          );
-          await _completePendingLogin(token, authorisingToken);
-          await login.timeout(const Duration(seconds: 15));
+            final token = await authToken.future.timeout(
+              const Duration(seconds: 10),
+              onTimeout: () => throw StateError(
+                'onepub login did not publish its browser authentication URL.',
+              ),
+            );
+            await _completePendingLogin(token, authorisingToken);
+            await login.timeout(const Duration(seconds: 15));
 
-          expect(
-            output.join('\n'),
-            contains('Successfully logged into'),
-          );
-          expect(settings.operatorEmail, isNotEmpty);
-          expect(
-            await OnePubTokenStore().isLoggedIn(settings.onepubApiUrl),
-            isTrue,
-          );
+            expect(
+              output.join('\n'),
+              contains('Successfully logged into'),
+            );
+            expect(settings.operatorEmail, isNotEmpty);
+            expect(
+              await OnePubTokenStore().isLoggedIn(settings.onepubApiUrl),
+              isTrue,
+            );
+          });
         });
       });
-    });
+    }, resolveOrganisationToken: false);
   }, tags: ['integration']);
 
   test('welcome', () {

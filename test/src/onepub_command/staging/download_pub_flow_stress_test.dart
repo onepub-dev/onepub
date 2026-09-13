@@ -52,10 +52,10 @@ class _FlowStressSummary {
 }
 
 void main() {
-  final config = StagingConfig.fromEnv();
+  final config = StagingConfig.fromEnv(loadTest: true);
 
   test('download stress: pub API flow', () async {
-    await withAdmin(config, (context) async {
+    await withSuiteAdministrator(config, (context) async {
       final published = await publishAndVerify(
         context,
         config,
@@ -104,7 +104,10 @@ flowLatencyMaxMs=${(summary.flowLatenciesMicros.reduce((a, b) => a > b ? a : b) 
 ''');
 
       expect(summary.successfulFlows, summary.totalFlows, reason: '''
-Every mixed pub API stress flow must complete successfully.''');
+Every mixed pub API stress flow must complete successfully.
+Metadata: ${summary.metadataStatuses}
+Versions: ${summary.versionStatuses}
+Archives: ${summary.archiveStatuses}''');
     });
   },
       timeout: const Timeout(Duration(hours: 1)),

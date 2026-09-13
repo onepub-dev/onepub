@@ -10,7 +10,7 @@ void main() {
   setUpAll(() => ensureTestUsers(config));
 
   test('publish package', () async {
-    await withAdmin(config, (context) async {
+    await withSuiteAdministrator(config, (context) async {
       await publishAndVerify(context, config);
     });
   }, timeout: const Timeout(Duration(minutes: 10)), skip: config.skipPublish);

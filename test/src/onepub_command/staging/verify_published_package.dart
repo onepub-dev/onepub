@@ -3,15 +3,20 @@ import 'dart:io';
 import 'package:onepub/src/api/versions.dart';
 import 'package:onepub/src/util/send_command.dart';
 
+import '../../../test_settings.dart';
+
 Future<PubVersionsBody> verifyPublishedPackage({
   required String packageName,
   required String version,
   required String obfuscatedOrganisationId,
 }) async {
   stdout.writeln('Verifying $packageName via pub endpoint...');
-  final response = await sendCommand(
-    command: '$obfuscatedOrganisationId/api/packages/$packageName',
-    commandType: CommandType.pub,
+  final response = await retryTestSetup(
+    () => sendCommand(
+      command: '$obfuscatedOrganisationId/api/packages/$packageName',
+      commandType: CommandType.pub,
+    ),
+    (response) => response.success ? '' : response.errorMessage,
   );
 
   if (!response.success) {

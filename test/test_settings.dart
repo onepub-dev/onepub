@@ -32,6 +32,8 @@ class TestSettings {
 
   Future<void> save() => _settings.save();
 
+  String get loadTestUrl => _settings.asString('loadTestUrl');
+
   String get organisationId => _settings.asString('organisationId');
 
   set organisationId(String value) => _settings['organisationId'] = value;
@@ -171,11 +173,27 @@ Future<T> withTestServer<T>(
           }));
 }
 
+Future<T> retryTestSetup<T>(
+  Future<T> Function() request,
+  String Function(T response) errorMessage,
+) async {
+  for (var attempt = 0;; attempt++) {
+    final response = await request();
+    if (!_isRateLimitMessage(errorMessage(response)) || attempt == 11) {
+      return response;
+    }
+    await Future<void>.delayed(Duration(milliseconds: 5100 + attempt * 137));
+  }
+}
+
 Future<String> _resolveTestServerToken({
   required TestSettings testSettings,
 }) async {
   final token = await OnePubTokenStore().load();
-  final response = await API().fetchMember(token);
+  final response = await retryTestSetup(
+    () => API().fetchMember(token),
+    (response) => response.success ? '' : response.errorMessage,
+  );
   if (response.success) {
     final member = response.toMember();
     if (member.obfuscatedOrganisationId == testSettings.organisationId) {

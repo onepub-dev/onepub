@@ -33,10 +33,10 @@ void main() {
     await withTempProject(fixtureName, (dartProject) async {
       // await withTestSettings((testSettings) async {
       final member = TestUsers().administrator;
-      await _ensurePackageExists(dependencyPackageName);
       await impersonateMember(
           member: member,
           action: () async {
+            await _ensurePackageExists(dependencyPackageName);
             final pathToOnePub =
                 join(DartProject.self.pathToBinDir, 'onepub.dart');
             final pathToProjectRoot = dartProject.pathToProjectRoot;
