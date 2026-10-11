@@ -5,6 +5,7 @@ import 'dart:io';
 
 import 'package:args/args.dart';
 import 'package:dcli/dcli.dart';
+import 'package:onepub/src/api/api.dart';
 import 'package:onepub/src/api/cli_models.dart';
 import 'package:onepub/src/onepub_settings.dart';
 import 'package:onepub/src/util/one_pub_token_store.dart';
@@ -98,6 +99,13 @@ void main(List<String> args) async {
       extra: extra,
     );
 
+    final testMember = await retryTestSetup(
+      () => API().fetchMember(testToken),
+      (response) => response.success ? '' : response.errorMessage,
+    );
+    if (!testMember.success) {
+      throw StateError('Unable to resolve the validated system-test member.');
+    }
     final env = <String, String>{
       ...Platform.environment,
       'ONEPUB_STAGING_URL': targetUrl,
@@ -105,6 +113,14 @@ void main(List<String> args) async {
       'ONEPUB_DOWNLOAD_LIMIT_ORG_ID':
           OnePubSettings.use().obfuscatedOrganisationId,
       'ONEPUB_TOKEN': testToken,
+      TestSettings.runSettingsEnvironmentKey: jsonEncode({
+        'onepubUrl': targetUrl,
+        'loadTestUrl': targetUrl,
+        'organisationId': testMember.obfuscatedOrganisationId,
+        'organisationName': testMember.organisationName,
+        'member': testMember.email,
+        'onepub_token': testToken,
+      }),
       ..._localSuiteEnvOverrides(targetUrl: targetUrl, suite: suite),
     };
 
@@ -263,11 +279,6 @@ Future<String> _ensurePrimaryTokenForTests({
     settings.obfuscatedOrganisationId = realOrgId;
     await settings.save();
     print(yellow('Using organisationId $realOrgId for this test run.'));
-  }
-  final testSettings = TestSettings();
-  if (testSettings.organisationId != realOrgId) {
-    testSettings.organisationId = realOrgId;
-    await testSettings.save();
   }
   await store.addToken(onepubApiUrl: realApiUrl, onepubToken: token);
   await _ensureDartPubToken(apiUrl: realApiUrl, token: token);

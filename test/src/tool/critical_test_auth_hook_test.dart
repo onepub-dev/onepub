@@ -84,6 +84,7 @@ organisationId: production-org
           '_PUB_TEST_CONFIG_DIR': operatorTokens.parent.path,
           'ONEPUB_STAGING_URL': override ?? target,
           'ONEPUB_TOKEN': 'unrelated-publishing-token',
+          TestSettings.runSettingsEnvironmentKey: '',
         },
       );
 

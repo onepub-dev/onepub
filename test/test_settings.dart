@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:dcli/dcli.dart' as dcli;
@@ -20,17 +21,53 @@ const _explicitSafeOnePubTestHosts = <String>{
 };
 
 class TestSettings {
-  late final SettingsYaml _settings;
+  static const runSettingsEnvironmentKey = 'ONEPUB_SYSTEM_TEST_SETTINGS';
 
-  TestSettings() {
-    _settings = SettingsYaml.load(pathToSettings: pathToTestSettings);
+  late final SettingsYaml _settings;
+  final bool _isRunSnapshot;
+
+  TestSettings()
+      : _isRunSnapshot =
+            (dcli.env[runSettingsEnvironmentKey] ?? '').isNotEmpty {
+    if (_isRunSnapshot) {
+      // The runner supplies one immutable snapshot to every test isolate and
+      // nested helper. Never reload shared YAML during an isolated run.
+      try {
+        final content = dcli.env[runSettingsEnvironmentKey]!;
+        final values = jsonDecode(content) as Map<String, dynamic>;
+        for (final key in [
+          'onepubUrl',
+          'organisationId',
+          'organisationName',
+          'member',
+          'onepub_token',
+        ]) {
+          if (values[key] is! String || (values[key] as String).isEmpty) {
+            throw const FormatException();
+          }
+        }
+        _settings = SettingsYaml.fromString(content: content, filePath: '');
+      } catch (_) {
+        // Parsing diagnostics may contain the credential-bearing input.
+        throw StateError('Invalid isolated system-test settings.');
+      }
+      assertSafeOnePubTestUrl(onepubUrl,
+          source: 'isolated system-test settings');
+    } else {
+      _settings = SettingsYaml.load(pathToSettings: pathToTestSettings);
+    }
   }
 
   String get onepubUrl => _settings.asString('onepubUrl');
 
   set onepubUrl(String url) => _settings['onepubUrl'] = url;
 
-  Future<void> save() => _settings.save();
+  Future<void> save() {
+    if (_isRunSnapshot) {
+      throw StateError('Cannot save isolated system-test settings.');
+    }
+    return _settings.save();
+  }
 
   String get loadTestUrl => _settings.asString('loadTestUrl');
 

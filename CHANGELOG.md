@@ -1,3 +1,8 @@
+# Unreleased
+
+- Keep post-build system tests on the credentials selected for their isolated
+  test server, including nested test-user setup.
+
 # 7.0.0
 
 - Add trusted publishing with `onepub login trusted`, allowing CI/CD jobs to
