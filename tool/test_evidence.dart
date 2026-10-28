@@ -99,7 +99,9 @@ class TestEvidence {
       required int elapsedMs,
       required List<String> candidateFiles,
       required List<String> discoveredInventory,
-      required List<String> selectionArguments}) {
+      required List<String> selectionArguments,
+      List<String>? requiredFiles,
+      Map<String, List<String>> excludedFiles = const {}}) {
     directory.createSync(recursive: true);
     File('${directory.path}/events.jsonl')
         .writeAsStringSync(events.map(jsonEncode).join('\n'));
@@ -108,10 +110,12 @@ class TestEvidence {
       'exitCode': exitCode,
       'elapsedMs': elapsedMs,
       'candidateFilesBeforeTagAndNameFilters': candidateFiles,
+      'requiredLoadedFiles': requiredFiles ?? candidateFiles,
+      'excludedBeforeLoadingByLibraryTags': excludedFiles,
       'discoveredInventory': discoveredInventory,
       'selectionArguments': selectionArguments.map(sanitize).toList(),
       'observedSuiteFiles': observedSuiteFiles.toList(),
-      'validationErrors': validationErrors(candidateFiles),
+      'validationErrors': validationErrors(requiredFiles ?? candidateFiles),
       'cases': cases.values.toList(),
       'omittedFields': ['print', 'error message', 'stack trace', 'environment'],
     }));

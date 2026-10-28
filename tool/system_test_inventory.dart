@@ -1,5 +1,66 @@
 import 'dart:io';
 
+import 'package:analyzer/dart/analysis/utilities.dart';
+import 'package:analyzer/dart/ast/ast.dart';
+import 'package:boolean_selector/boolean_selector.dart';
+
+/// Mirrors the runner's pre-load exclusion of library-level tags. Positive
+/// name/tag filters run after loading, so those files still require evidence.
+({List<String> requiredFiles, Map<String, List<String>> excludedFiles})
+    effectiveTestInventory(String root, List<String> candidates,
+        List<String> arguments, String configuredExclusion) {
+  var selector = BooleanSelector.parse(configuredExclusion);
+  for (var index = 0; index < arguments.length; index++) {
+    final argument = arguments[index];
+    String? expression;
+    if (['--exclude-tags', '--exclude-tag', '-x'].contains(argument)) {
+      expression = arguments[++index];
+    } else if (argument.startsWith('--exclude-tags=') ||
+        argument.startsWith('--exclude-tag=')) {
+      expression = argument.substring(argument.indexOf('=') + 1);
+    } else if (argument.startsWith('-x') && argument.length > 2) {
+      expression = argument.substring(2);
+    }
+    if (expression != null) {
+      for (final part in expression.split(',')) {
+        selector = selector.union(BooleanSelector.parse(part));
+      }
+    }
+  }
+  final required = <String>[];
+  final excluded = <String, List<String>>{};
+  for (final path in candidates) {
+    final unit = parseString(content: File('$root/$path').readAsStringSync());
+    final tags = <String>{};
+    for (final directive
+        in unit.unit.directives.whereType<LibraryDirective>()) {
+      for (final annotation in directive.metadata) {
+        if (annotation.name.toSource().split('.').last != 'Tags') {
+          continue;
+        }
+        final arguments = annotation.arguments?.arguments;
+        if (arguments == null ||
+            arguments.length != 1 ||
+            arguments.single is! ListLiteral) {
+          throw FormatException('Cannot audit library test tags: $path');
+        }
+        for (final element in (arguments.single as ListLiteral).elements) {
+          if (element is! StringLiteral || element.stringValue == null) {
+            throw FormatException('Cannot audit library test tags: $path');
+          }
+          tags.add(element.stringValue!);
+        }
+      }
+    }
+    if (selector.evaluate(tags.contains)) {
+      excluded[path] = tags.toList()..sort();
+    } else {
+      required.add(path);
+    }
+  }
+  return (requiredFiles: required, excludedFiles: excluded);
+}
+
 /// Audited tests using only process-local state or their own loopback fixtures.
 /// New and untagged tests default to the serial lane until explicitly audited.
 const independentTestFiles = <String>{

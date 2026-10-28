@@ -784,6 +784,8 @@ Future<int> _runDartTestCommand({
                 selectors.any((selector) =>
                     file == selector || file.startsWith('$selector/')))
             .toList();
+    final effective = effectiveTestInventory(
+        _onepubRepoRoot, candidateFiles, args, _excludeTagsForSuite(suite));
     final timer = Stopwatch()..start();
     var code = 1;
     try {
@@ -813,7 +815,7 @@ Future<int> _runDartTestCommand({
       code = await process.exitCode;
       await output;
       await errors;
-      final evidenceErrors = evidence.validationErrors(candidateFiles);
+      final evidenceErrors = evidence.validationErrors(effective.requiredFiles);
       if (code == 0 && evidenceErrors.isNotEmpty) {
         code = 1;
         stderr.writeln(evidenceErrors.join('\n'));
@@ -824,6 +826,8 @@ Future<int> _runDartTestCommand({
           exitCode: code,
           elapsedMs: timer.elapsedMilliseconds,
           candidateFiles: candidateFiles,
+          requiredFiles: effective.requiredFiles,
+          excludedFiles: effective.excludedFiles,
           discoveredInventory: discovered,
           selectionArguments: args);
     }
