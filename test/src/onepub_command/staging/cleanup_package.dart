@@ -41,8 +41,7 @@ Future<void> cleanupPackage(String packageName) async {
     final transient = response.status >= HttpStatus.internalServerError ||
         message.contains('ticket raised');
     if (deletePermissionDenied) {
-      stderr.writeln(
-          '''
+      stderr.writeln('''
 Cleanup skipped for $packageName: delete permission is not available on this environment.''');
       return;
     }

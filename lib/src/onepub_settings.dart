@@ -198,12 +198,10 @@ Fix the YAML syntax, or move the file aside and rerun OnePub to recreate it.''')
       _settings.asString(onepubServerUrlKey, defaultValue: defaultOnePubUrl),
       _defaultWebBasePath);
 
-  String get docsOnePubUrl =>
-      'https://docs.onepub.dev';
+  String get docsOnePubUrl => 'https://docs.onepub.dev';
 
-
-String get guidePublishOnePubUrl =>
-      urlJoin(OnePubSettings.use().docsOnePubUrl, '/guides/publishing-packages');
+  String get guidePublishOnePubUrl => urlJoin(
+      OnePubSettings.use().docsOnePubUrl, '/guides/publishing-packages');
 
   // onepub url
   set onepubUrl(String? url) => _settings[onepubServerUrlKey] = url;

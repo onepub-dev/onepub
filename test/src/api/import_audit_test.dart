@@ -125,10 +125,16 @@ void main() {
           onepubApiUrl: OnePubSettings.use().onepubApiUrlAsString,
           onepubToken: 'original-token',
         );
-        final expectedOutput = '${scenario == 'malformed' ?
-            'Server response follows...\n\nnot JSON\n'
-            '${red('Bad response from server, please try again later.')}\n' : ''}'
-            '${blue('Successfully logged into Imported Org.')}\n';
+        final expectedOutput = [
+          if (scenario == 'malformed') ...[
+            'Server response follows...',
+            '',
+            'not JSON',
+            red('Bad response from server, please try again later.'),
+          ],
+          blue('Successfully logged into Imported Org.'),
+          '',
+        ].join('\n');
         await expectLater(
           () => importToken().timeout(const Duration(seconds: 9)),
           prints(expectedOutput),

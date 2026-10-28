@@ -13,10 +13,9 @@ class Logout {
     var success = response.success;
 
     if (!success) {
-      var errorMessage =
-          response.errorMessage.isNotEmpty
-              ? response.errorMessage
-              : 'Missing field "message"';
+      var errorMessage = response.errorMessage.isNotEmpty
+          ? response.errorMessage
+          : 'Missing field "message"';
       // if we failed because we were already logged out
       // we still report success.
       if (errorMessage.startsWith('Your token is no longer valid') ||
