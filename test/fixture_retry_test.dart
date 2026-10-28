@@ -18,7 +18,13 @@ void main() {
       expect(isAbsentFixtureMember(message), isFalse);
     }
   });
-  for (final failure in ['Member not found', 'Forbidden', 'already exists']) {
+  for (final failure in [
+    'Member not found',
+    'Forbidden',
+    '401 Unauthorized',
+    '403 Forbidden',
+    'already exists'
+  ]) {
     test('$failure returns immediately to the fixture state machine', () async {
       var calls = 0;
       final result = await retryFixture(
@@ -35,6 +41,7 @@ void main() {
     });
   }
   for (final failure in [
+    'Too many CLI requests',
     'Too many requests',
     'Service unavailable',
     'Empty response'
@@ -60,13 +67,14 @@ void main() {
   test('persistent transient failures exhaust exactly the configured attempts',
       () async {
     var calls = 0;
-    await retryFixture(() async {
+    final result = await retryFixture(() async {
       calls++;
-      return 'rate limit';
+      return 'Too many CLI requests';
     },
         shouldRetry: isTransientFixtureFailure,
         attempts: 2,
         delay: (_) async {});
     expect(calls, 2);
+    expect(result, 'Too many CLI requests');
   });
 }

@@ -1,5 +1,7 @@
 # Unreleased
 
+- Retry temporary rate limits while preparing authorization-test credentials, while keeping permission failures and access checks strict.
+
 - Account for deliberately excluded manual tests without treating them as missing from complete build checks.
 
 - Reuse test package fixtures to shorten build checks while preserving isolated test credentials and package coverage.

@@ -9,6 +9,7 @@ import 'package:onepub/src/api/member.dart';
 import 'package:onepub/src/util/send_command.dart';
 import 'package:test/test.dart';
 
+import '../../../fixture_retry.dart';
 import '../../../test_users.dart';
 import 'staging_common.dart';
 
@@ -52,9 +53,15 @@ Future<EndpointResponse> _exportTokenResponse(String email) => sendCommand(
     );
 
 Future<String> _exportTokenOrThrow(String email, String organisationId) async {
-  final tokenResponse = await API().exportTestMemberToken(
-    obfuscatedOrganisationId: organisationId,
-    memberEmail: email,
+  // Provisioning uses the administrator fixture and can exhaust its short
+  // request window. Retry only transient setup failures, never auth assertions.
+  final tokenResponse = await retryFixture(
+    () => API().exportTestMemberToken(
+      obfuscatedOrganisationId: organisationId,
+      memberEmail: email,
+    ),
+    shouldRetry: (response) =>
+        !response.success && isTransientFixtureFailure(response.errorMessage),
   );
   if (!tokenResponse.success || tokenResponse.token == null) {
     throw StateError(
@@ -64,19 +71,8 @@ Future<String> _exportTokenOrThrow(String email, String organisationId) async {
   return tokenResponse.token!;
 }
 
-Future<String> _exportScopedTestTokenOrThrow(Member member) async {
-  final tokenResponse = await API().exportTestMemberToken(
-    obfuscatedOrganisationId: member.obfuscatedOrganisationId,
-    memberEmail: member.email,
-  );
-  if (!tokenResponse.success || tokenResponse.token == null) {
-    throw StateError(
-      'Unable to export scoped test token for ${member.email}: '
-      '${tokenResponse.errorMessage}',
-    );
-  }
-  return tokenResponse.token!;
-}
+Future<String> _exportScopedTestTokenOrThrow(Member member) =>
+    _exportTokenOrThrow(member.email, member.obfuscatedOrganisationId);
 
 Future<Member> _createMemberByRoleName({
   required String email,
