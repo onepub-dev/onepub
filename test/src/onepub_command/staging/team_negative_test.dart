@@ -43,7 +43,7 @@ Future<void> teamNegativeTest({
 
 void main() {
   final config = StagingConfig.fromEnv();
-  setUpAll(() => ensureTestUsers(config));
+  setUpAll(() => ensureTestUsers(config, provisionAllRoles: true));
 
   test('team negative', () async {
     await withAdmin(config, (context) async {

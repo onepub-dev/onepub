@@ -1,38 +1,9 @@
-@Tags(['onepub_command', 'integration', 'staging'])
-library;
-
 import 'dart:io';
 
 import 'package:onepub/src/api/versions.dart';
 import 'package:onepub/src/util/one_pub_token_store.dart';
 import 'package:path/path.dart';
-import 'package:test/test.dart';
 import 'package:yaml/yaml.dart';
-
-import 'staging_common.dart';
-
-void main() {
-  final config = StagingConfig.fromEnv();
-  setUpAll(() => ensureTestUsers(config));
-
-  test('pub archive', () async {
-    await withSuiteAdministrator(config, (context) async {
-      final published = await publishAndVerify(context, config);
-      final entry = published.versionsBody.versions.firstWhere(
-        (candidate) => candidate.version == published.version,
-        orElse: () => throw StateError('''
-Published version ${published.version} missing from versions list.'''),
-      );
-      await pubArchiveTest(
-        versionEntry: entry,
-        packageName: published.name,
-        version: published.version,
-      );
-    });
-  },
-      timeout: const Timeout(Duration(minutes: 15)),
-      skip: config.skipArchiveTest || config.skipPublish);
-}
 
 Future<void> pubArchiveTest({
   required JsonVersion versionEntry,

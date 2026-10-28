@@ -76,6 +76,7 @@ jobs:
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
 
       - uses: dart-lang/setup-dart@v1
+        id: dart
         with:
           sdk: stable
 
@@ -89,8 +90,29 @@ jobs:
       - name: Remove pub.dev publishing credential
         run: dart tool/clear_pub_dev_credential.dart
 
+      - name: Restore public dependency content
+        id: public-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ${{ runner.temp }}/onepub-e2e-${{ github.run_id }}/pub-cache/hosted/pub.dev
+            ${{ runner.temp }}/onepub-e2e-${{ github.run_id }}/pub-cache/hosted-hashes/pub.dev
+          key: public-pub-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.dart.outputs.dart-version }}-${{ hashFiles('pubspec.lock') }}
+
       - name: Install CLI dependencies
+        # Cache public hosted content only. Never cache tokens, OnePub packages,
+        # git dependencies or the complete per-run PUB_CACHE.
+        id: dependencies
         run: dart pub get --enforce-lockfile
+
+      - name: Save public dependency content
+        if: steps.public-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ${{ runner.temp }}/onepub-e2e-${{ github.run_id }}/pub-cache/hosted/pub.dev
+            ${{ runner.temp }}/onepub-e2e-${{ github.run_id }}/pub-cache/hosted-hashes/pub.dev
+          key: public-pub-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.dart.outputs.dart-version }}-${{ hashFiles('pubspec.lock') }}
 
       - name: Publish with the GitHub trusted identity
         run: dart run tool/trusted_publishing_e2e.dart

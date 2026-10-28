@@ -1,5 +1,7 @@
 # Unreleased
 
+- Reuse test package fixtures to shorten build checks while preserving isolated test credentials and package coverage.
+
 - Keep post-build system tests on the credentials selected for their isolated
   test server, including nested test-user setup.
 

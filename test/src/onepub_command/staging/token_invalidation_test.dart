@@ -47,7 +47,7 @@ Future<Member> _memberForTokenInvalidation() async => TestUsers().basicMember;
 
 void main() {
   final config = StagingConfig.fromEnv();
-  setUpAll(() => ensureTestUsers(config));
+  setUpAll(() => ensureTestUsers(config, provisionAllRoles: true));
 
   test('token invalidation', () async {
     if (!TestUsers.initialised) {

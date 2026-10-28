@@ -1,12 +1,6 @@
-@Tags(['onepub_command', 'integration', 'staging'])
-library;
-
 import 'dart:io';
 
 import 'package:onepub/src/api/versions.dart';
-import 'package:test/test.dart';
-
-import 'staging_common.dart';
 
 Future<void> pubMetadataTest({
   required PubVersionsBody versionsBody,
@@ -50,22 +44,4 @@ Latest version mismatch: expected $version, got ${versionsBody.latest.version}.'
           'Pubspec version mismatch: expected $version, got $pubspecVersion.');
     }
   }
-}
-
-void main() {
-  final config = StagingConfig.fromEnv();
-  setUpAll(() => ensureTestUsers(config));
-
-  test('pub metadata', () async {
-    await withSuiteAdministrator(config, (context) async {
-      final published = await publishAndVerify(context, config);
-      await pubMetadataTest(
-        versionsBody: published.versionsBody,
-        packageName: published.name,
-        version: published.version,
-      );
-    });
-  },
-      timeout: const Timeout(Duration(minutes: 10)),
-      skip: config.skipMetadataTest || config.skipPublish);
 }

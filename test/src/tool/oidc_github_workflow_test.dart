@@ -132,6 +132,27 @@ void main() {
     expect((steps[restore] as YamlMap)['run'], contains('PUB_CACHE='));
     expect((steps[remove] as YamlMap)['run'],
         'dart tool/clear_pub_dev_credential.dart');
+    final restorePublic = _stepIndex(steps, 'uses', 'actions/cache/restore@v4');
+    final savePublic = _stepIndex(steps, 'uses', 'actions/cache/save@v4');
+    final publishStep =
+        _stepIndex(steps, 'name', 'Publish with the GitHub trusted identity');
+    expect(restorePublic, greaterThan(remove));
+    expect(restorePublic, lessThan(install));
+    expect(savePublic, greaterThan(install));
+    expect(savePublic, lessThan(publishStep));
+    for (final index in [restorePublic, savePublic]) {
+      final options = (steps[index] as YamlMap)['with'] as YamlMap;
+      final paths = (options['path'] as String).trim().split('\n');
+      expect(paths, hasLength(2));
+      expect(
+          paths.every((path) =>
+              path.endsWith('/pub-cache/hosted/pub.dev') ||
+              path.endsWith('/pub-cache/hosted-hashes/pub.dev')),
+          isTrue);
+      expect(options['key'], contains("hashFiles('pubspec.lock')"));
+      expect(options['key'], contains('steps.dart.outputs.dart-version'));
+      expect(options.containsKey('restore-keys'), isFalse);
+    }
   });
 }
 

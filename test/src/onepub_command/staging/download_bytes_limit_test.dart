@@ -34,6 +34,11 @@ void main() {
         Platform.environment['ONEPUB_DOWNLOAD_LIMIT_REMAINING_DOWNLOADS'] ?? '',
       ) ??
       _defaultRemainingDownloadsBeforeLimit;
+  if (remainingDownloadsBeforeLimit < 1 ||
+      (overridePackageSizeMb != null && overridePackageSizeMb < 1)) {
+    throw ArgumentError(
+        'Download fixture sizes and remaining downloads must be positive.');
+  }
   final targets = <_DownloadLimitTarget>[
     _DownloadLimitTarget(
       plan: 'free',
@@ -54,11 +59,7 @@ void main() {
   setUpAll(() async {
     canProvision = await hasSystemAdminToken(config);
     if (!canProvision) {
-      stdout.writeln(
-        'Skipping download byte-limit setup: requires a system-admin token '
-        'to provision test organisations.',
-      );
-      return;
+      throw StateError('Byte-quota coverage requires a system administrator.');
     }
     for (final target in targets) {
       provisioned[target.plan] = await createProvisionedTestOrganisation(
@@ -112,6 +113,10 @@ void main() {
               workerCount: workers,
               archiveUrl: archiveUrl,
               token: token,
+              maximumBytes: target.packageSizeMb *
+                  1024 *
+                  1024 *
+                  (remainingDownloadsBeforeLimit * 3 + workers * 2),
             );
             final totalMb = summary.totalBytes / (1024 * 1024);
 
@@ -248,18 +253,21 @@ Future<_DownloadSummary> _runDownloadWorkers({
   required int workerCount,
   required String archiveUrl,
   required String token,
+  required int maximumBytes,
 }) async {
   final workerPort = ReceivePort();
   final exitPort = ReceivePort();
   final isolates = <Isolate>[];
   final done = Completer<_DownloadSummary>();
 
-  var active = 0;
+  var active = workerCount;
   var downloads = 0;
   var totalBytes = 0;
   var recoverable429Count = 0;
   var limited = false;
   Object? firstError;
+  final elapsed = Stopwatch()..start();
+  var lastByteProgressMs = 0;
 
   void stopAll() {
     for (final isolate in isolates) {
@@ -274,6 +282,15 @@ Future<_DownloadSummary> _runDownloadWorkers({
       downloads += data['downloads'] as int;
       totalBytes += data['bytes'] as int;
       recoverable429Count += data['recoverable429'] as int;
+      if ((data['bytes'] as int) > 0) {
+        lastByteProgressMs = elapsed.elapsedMilliseconds;
+      }
+      if (totalBytes > maximumBytes) {
+        firstError ??= StateError(
+            'Quota seed did not take effect: downloaded $totalBytes bytes '
+            '(bound $maximumBytes).');
+        stopAll();
+      }
     } else if (type == 'limited') {
       limited = true;
       stopAll();
@@ -318,23 +335,48 @@ Future<_DownloadSummary> _runDownloadWorkers({
     }
   });
 
-  for (var i = 0; i < workerCount; i++) {
-    active++;
-    final isolate = await Isolate.spawn(
-      _downloadWorkerEntry,
-      <String, Object>{
-        'id': i + 1,
-        'archiveUrl': archiveUrl,
-        'token': token,
-        'limitMessage': _downloadLimitMessage,
-        'sendPort': workerPort.sendPort,
-      },
-      onExit: exitPort.sendPort,
-    );
-    isolates.add(isolate);
-  }
+  final progress = Timer.periodic(const Duration(seconds: 30), (_) {
+    stdout.writeln(
+        'Byte quota progress: elapsedMs=${elapsed.elapsedMilliseconds} '
+        'downloads=$downloads bytes=$totalBytes '
+        'rateLimits=$recoverable429Count');
+    if (elapsed.elapsedMilliseconds - lastByteProgressMs >
+        const Duration(minutes: 5).inMilliseconds) {
+      firstError ??=
+          StateError('Byte quota made no download progress for five minutes.');
+      stopAll();
+    }
+  });
+  try {
+    for (var i = 0; i < workerCount; i++) {
+      final isolate = await Isolate.spawn(
+        _downloadWorkerEntry,
+        <String, Object>{
+          'id': i + 1,
+          'archiveUrl': archiveUrl,
+          'token': token,
+          'limitMessage': _downloadLimitMessage,
+          'sendPort': workerPort.sendPort,
+        },
+        onExit: exitPort.sendPort,
+      );
+      isolates.add(isolate);
+      if (limited || firstError != null) {
+        isolate.kill(priority: Isolate.immediate);
+      }
+    }
 
-  return done.future;
+    return await done.future.timeout(const Duration(minutes: 20),
+        onTimeout: () {
+      throw StateError('Byte quota exceeded 20 minutes: downloads=$downloads '
+          'bytes=$totalBytes rateLimits=$recoverable429Count');
+    });
+  } finally {
+    progress.cancel();
+    stopAll();
+    workerPort.close();
+    exitPort.close();
+  }
 }
 
 Future<void> _downloadWorkerEntry(Map<String, Object> args) async {

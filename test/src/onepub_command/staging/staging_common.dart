@@ -173,7 +173,7 @@ class ProvisionedTestOrganisation {
 var _loggedReducedCoverageWarning = false;
 
 Future<void> ensureTestUsers(StagingConfig config,
-    {String? preferredOrgId}) async {
+    {String? preferredOrgId, bool provisionAllRoles = false}) async {
   final isAdmin = await hasSystemAdminToken(
     config,
     preferredOrgId: preferredOrgId,
@@ -190,7 +190,7 @@ ${Uri.parse(settings.onepubUrl ?? OnePubSettings.defaultOnePubUrl).host}'''
         '-${settings.obfuscatedOrganisationId}-${TestUsers.suiteId}');
     await _respectProvisionCooldown(namespace);
     TestUsers.configureEmailNamespace(namespace);
-    await TestUsers(init: true).init();
+    await TestUsers(init: true).init(provisionAllRoles: provisionAllRoles);
     await _recordProvisionTimestamp(namespace);
   });
 }

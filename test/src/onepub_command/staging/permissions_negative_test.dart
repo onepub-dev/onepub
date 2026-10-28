@@ -168,7 +168,7 @@ bool _hasProvisionedRoleCoverage() {
 
 void main() {
   final config = StagingConfig.fromEnv();
-  setUpAll(() => ensureTestUsers(config));
+  setUpAll(() => ensureTestUsers(config, provisionAllRoles: true));
 
   test('token export enforces identity role-rank boundaries', () async {
     if (!_hasProvisionedRoleCoverage()) {

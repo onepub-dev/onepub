@@ -29,7 +29,6 @@ Future<void> unauthorizedAccessTest(String command) async {
 
 void main() {
   final config = StagingConfig.fromEnv();
-  setUpAll(() => ensureTestUsers(config));
 
   test('unauthorized access', () async {
     await withAdmin(config, (context) async {

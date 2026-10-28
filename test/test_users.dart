@@ -12,6 +12,8 @@ import 'package:onepub/src/util/one_pub_token_store.dart';
 import 'package:onepub/src/util/role_enum.dart';
 import 'package:uuid/uuid.dart';
 
+import 'fixture_retry.dart';
+import 'fixture_roles.dart';
 import 'test_settings.dart';
 
 class TestUsers {
@@ -25,11 +27,12 @@ class TestUsers {
   static final suiteId = const Uuid().v4().replaceAll('-', '').substring(0, 16);
   static var _loggedReducedCoverageWarning = false;
 
-  late final Member administrator;
+  final _members = FixtureRoles<RoleEnum, Member>();
+  Member get administrator => _members.get(RoleEnum.Administrator);
 
-  late final Member teamLeader;
+  Member get teamLeader => _members.get(RoleEnum.TeamLeader);
 
-  late final Member basicMember;
+  Member get basicMember => _members.get(RoleEnum.Collaborator);
 
   factory TestUsers({bool init = false}) {
     if (!init && !initialised) {
@@ -51,8 +54,12 @@ class TestUsers {
   TestUsers._internal();
 
   /// creates and caches a set of users with different roles.
-  Future<void> init() async {
-    if (!initialised) {
+  Future<void> init({bool provisionAllRoles = false}) async {
+    final roles = [
+      RoleEnum.Administrator,
+      if (provisionAllRoles) ...[RoleEnum.TeamLeader, RoleEnum.Collaborator]
+    ];
+    if (!_members.containsAll(roles)) {
       await withTestServer(() async {
         _emailNamespace ??= _defaultNamespace();
         if (!await _hasAdminPrivileges()) {
@@ -62,18 +69,27 @@ class TestUsers {
           }
           final member = await _currentMember();
           _logReducedCoverageWarning(member.email);
-          administrator = member;
-          teamLeader = member;
-          basicMember = member;
+          for (final role in [
+            RoleEnum.Administrator,
+            RoleEnum.TeamLeader,
+            RoleEnum.Collaborator
+          ]) {
+            _members.set(role, member);
+          }
           initialised = true;
           return;
         }
-        administrator =
-            await createAdministrator(_scopedEmail('sysadmin@testdomain.com'));
-        teamLeader = await createTeamLeader(
-            _scopedEmail('teamleader-on-sys@testdomain.com'));
-        basicMember = await createBasicMember(
-            _scopedEmail('basicmember-on-sys@testdomain.com'));
+        await _members.ensure(
+            roles,
+            (role) => switch (role) {
+                  RoleEnum.Administrator => createAdministrator(
+                      _scopedEmail('sysadmin@testdomain.com')),
+                  RoleEnum.TeamLeader => createTeamLeader(
+                      _scopedEmail('teamleader-on-sys@testdomain.com')),
+                  RoleEnum.Collaborator => createBasicMember(
+                      _scopedEmail('basicmember-on-sys@testdomain.com')),
+                  _ => throw StateError('Unsupported fixture role $role'),
+                });
         initialised = true;
         // cicdMember = await createCICD('cicd@testdomain.com');
       });
@@ -131,6 +147,10 @@ TestUsers: existing member lookup for $emailAddress returned "${memberResponse.e
       }
       throw APIException(memberResponse.errorMessage);
     } else {
+      if (!isAbsentFixtureMember(tokenResponse.errorMessage)) {
+        throw APIException(
+            tokenResponse.errorMessage ?? 'Member token lookup failed.');
+      }
       // create new member
       final createResponse = await _createMemberWithRetry(
         userEmail: emailAddress,
@@ -211,33 +231,15 @@ TestUsers: member "$emailAddress" already existed but lookup returned "${memberR
     String emailAddress, {
     String? obfuscatedOrganisationId,
     int attempts = 5,
-  }) async {
-    for (var attempt = 0; attempt < attempts; attempt++) {
-      final response = await _exportMemberToken(
-        emailAddress,
-        obfuscatedOrganisationId: obfuscatedOrganisationId,
+  }) =>
+      retryFixture(
+        () => _exportMemberToken(emailAddress,
+            obfuscatedOrganisationId: obfuscatedOrganisationId),
+        shouldRetry: (response) =>
+            !response.success &&
+            isTransientFixtureFailure(response.errorMessage),
+        attempts: attempts,
       );
-      if (response.success) {
-        return response;
-      }
-      stderr.writeln(
-        'TestUsers: exportMemberToken attempt ${attempt + 1}/$attempts for '
-        '"$emailAddress" failed: ${response.errorMessage}.',
-      );
-      if (attempt < attempts - 1) {
-        await sleepAsync(
-          _retryDelayMs(attempt),
-          interval: Interval.milliseconds,
-        );
-      } else {
-        return response;
-      }
-    }
-    return _exportMemberToken(
-      emailAddress,
-      obfuscatedOrganisationId: obfuscatedOrganisationId,
-    );
-  }
 
   Future<OnePubToken> _exportMemberToken(
     String emailAddress, {
@@ -352,14 +354,8 @@ TestUsers: member "$emailAddress" already existed but lookup returned "${memberR
         onepubToken: onepubToken.token!);
   }
 
-  bool _isRetryableApiFailure(String? message) {
-    final normalized = (message ?? '').trim().toLowerCase();
-    return normalized.isEmpty ||
-        normalized == 'empty response' ||
-        normalized.contains('too many cli requests') ||
-        normalized.contains('too many requests') ||
-        normalized.contains('rate limit');
-  }
+  bool _isRetryableApiFailure(String? message) =>
+      isTransientFixtureFailure(message);
 
   int _retryDelayMs(int attempt) => 1500 * (attempt + 1);
 

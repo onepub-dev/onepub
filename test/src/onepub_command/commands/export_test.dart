@@ -44,7 +44,7 @@ void _expectPermissionDeniedOutput(List<String> lines) {
 
 void main() {
   setUpAll(() async {
-    await TestUsers(init: true).init();
+    await TestUsers(init: true).init(provisionAllRoles: true);
   });
   test('onepub export env...', () async {
     // await withTestSettings((testSettings) async {

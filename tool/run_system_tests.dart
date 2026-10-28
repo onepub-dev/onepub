@@ -1,4 +1,4 @@
-#!/usr/bin/env dcli
+#! /usr/bin/env dcli
 
 import 'dart:convert';
 import 'dart:io';
@@ -12,6 +12,8 @@ import 'package:onepub/src/util/one_pub_token_store.dart';
 import 'package:onepub/src/util/send_command.dart';
 
 import '../test/test_settings.dart';
+import 'system_test_inventory.dart';
+import 'test_evidence.dart';
 
 const _localUrl = 'https://squarephone.biz';
 const _stagingUrl = 'https://beta.onepub.dev';
@@ -701,99 +703,136 @@ Future<int> _runDartTestCommand({
   required Map<String, String> env,
   required TestSuite suite,
 }) async {
-  final overrideExcludeTags = _excludeTagsForSuite(suite);
-  final dartTestConfig = '$_onepubRepoRoot/$_dartTestConfigPath';
-  final originalConfig =
-      exists(dartTestConfig) ? File(dartTestConfig).readAsStringSync() : null;
-
-  if (originalConfig != null) {
-    final updated = _rewriteExcludeTags(
-      originalConfig,
-      overrideExcludeTags,
-    );
-    dartTestConfig.write(updated);
-  }
-
-  try {
-    final process = await Process.start(
-      command.first,
-      command.sublist(1),
-      workingDirectory: _onepubRepoRoot,
-      runInShell: true,
-      environment: env,
-    );
-    final stdoutFuture = process.stdout.transform(utf8.decoder).join();
-    final stderrFuture = process.stderr.transform(utf8.decoder).join();
-    final exitCode = await process.exitCode;
-    final stdoutOutput = await stdoutFuture;
-    final stderrOutput = await stderrFuture;
-
-    if (exitCode == 0) {
-      _printSuccessfulTestSummary(stdoutOutput, stderrOutput);
-      _printDownloadStressSummary(stdoutOutput, stderrOutput);
-    } else {
-      if (stdoutOutput.trim().isNotEmpty) {
-        stdout.write(stdoutOutput);
-        if (!stdoutOutput.endsWith('\n')) {
-          stdout.writeln();
+  final configFile = File('$_onepubRepoRoot/$_dartTestConfigPath');
+  final original = configFile.existsSync() ? configFile.readAsStringSync() : '';
+  final evidenceRoot = env['ONEPUB_TEST_EVIDENCE_DIR'];
+  final root = evidenceRoot == null
+      ? await Directory.systemTemp.createTemp('onepub-test-evidence-')
+      : await Directory(evidenceRoot).create(recursive: true);
+  final run = await root.createTemp('${suite.name}-');
+  final configuration = File('${run.path}/dart_test.yaml')
+    ..writeAsStringSync(
+        _rewriteExcludeTags(original, _excludeTagsForSuite(suite)));
+  final inventory = systemTestInventory(_onepubRepoRoot);
+  // A caller's positive filter may match only one lane. Keep that selected run
+  // together so an intentionally unmatched lane is not counted as an empty run.
+  final splitAll = suite == TestSuite.all &&
+      !command.any((arg) =>
+          ['--plain-name', '--name', '-N', '--tags', '-t'].contains(arg) ||
+          arg.startsWith('--plain-name=') ||
+          arg.startsWith('--name=') ||
+          arg.startsWith('--tags='));
+  final lanes = splitAll
+      ? <String, List<String>>{
+          'independent': inventory.independent,
+          'serial': inventory.serial
         }
-      }
-      if (stderrOutput.trim().isNotEmpty) {
-        stderr.write(stderrOutput);
-        if (!stderrOutput.endsWith('\n')) {
-          stderr.writeln();
-        }
-      }
-    }
-
-    return exitCode;
-  } finally {
-    if (originalConfig != null) {
-      dartTestConfig.write(originalConfig);
+      : <String, List<String>>{'selected': []};
+  var result = 0;
+  final secrets = <String>{
+    for (final entry in env.entries)
+      if (RegExp('token|secret|password|credential', caseSensitive: false)
+          .hasMatch(entry.key))
+        entry.value,
+  };
+  final runSettings = env[TestSettings.runSettingsEnvironmentKey];
+  if (runSettings != null) {
+    final settings = jsonDecode(runSettings) as Map<String, dynamic>;
+    final token = settings['onepub_token'];
+    if (token is String) {
+      secrets.add(token);
     }
   }
-}
-
-void _printDownloadStressSummary(String stdoutOutput, String stderrOutput) {
-  final output = '$stdoutOutput\n$stderrOutput';
-  final match = RegExp(
-    r'Download pub flow stress workers=.*?flowLatencyMaxMs=[^\r\n]*',
-    dotAll: true,
-  ).firstMatch(output);
-  if (match != null) {
-    print(match.group(0));
+  print('Test evidence: ${run.path}');
+  for (final lane in lanes.entries) {
+    if (splitAll && lane.value.isEmpty) {
+      continue;
+    }
+    final args = command.sublist(1);
+    // Reporter and concurrency are controlled here so evidence and server
+    // isolation cannot be disabled by a caller's optional extra arguments.
+    for (var index = 0; index < args.length;) {
+      final arg = args[index];
+      if (['-r', '--reporter', '--concurrency', '-j', '--configuration']
+          .contains(arg)) {
+        args.removeRange(index, index + 2);
+      } else if (arg.startsWith('--reporter=') ||
+          arg.startsWith('--concurrency=') ||
+          arg.startsWith('--configuration=')) {
+        args.removeAt(index);
+      } else {
+        index++;
+      }
+    }
+    args.addAll([
+      '--configuration',
+      configuration.path,
+      '--reporter',
+      'json',
+      '--concurrency',
+      if (lane.key == 'independent') '4' else '1',
+      ...lane.value
+    ]);
+    final evidence = TestEvidence(secrets, rootDirectory: _onepubRepoRoot);
+    final discovered = [...inventory.independent, ...inventory.serial];
+    final selectors = args.where((arg) => arg.startsWith('test/')).toList();
+    final candidateFiles = lane.value.isNotEmpty
+        ? lane.value
+        : discovered
+            .where((file) =>
+                selectors.isEmpty ||
+                selectors.any((selector) =>
+                    file == selector || file.startsWith('$selector/')))
+            .toList();
+    final timer = Stopwatch()..start();
+    var code = 1;
+    try {
+      final process = await Process.start(command.first, args,
+          workingDirectory: _onepubRepoRoot, environment: env);
+      final output = process.stdout
+          .transform(utf8.decoder)
+          .transform(const LineSplitter())
+          .forEach((line) {
+        evidence.addLine(line);
+        // Console diagnostics are available; arbitrary output is not persisted.
+        dynamic event;
+        try {
+          event = jsonDecode(line);
+        } on FormatException {
+          return;
+        }
+        if (event is Map &&
+            (event['type'] == 'error' || event['type'] == 'print')) {
+          stdout.writeln(
+              evidence.sanitize('${event['message'] ?? event['error'] ?? ''}'));
+        }
+      });
+      final errors = process.stderr
+          .transform(utf8.decoder)
+          .forEach((chunk) => stderr.write(evidence.sanitize(chunk)));
+      code = await process.exitCode;
+      await output;
+      await errors;
+      final evidenceErrors = evidence.validationErrors(candidateFiles);
+      if (code == 0 && evidenceErrors.isNotEmpty) {
+        code = 1;
+        stderr.writeln(evidenceErrors.join('\n'));
+      }
+    } finally {
+      timer.stop();
+      evidence.write(Directory('${run.path}/${lane.key}'),
+          exitCode: code,
+          elapsedMs: timer.elapsedMilliseconds,
+          candidateFiles: candidateFiles,
+          discoveredInventory: discovered,
+          selectionArguments: args);
+    }
+    if (code != 0) {
+      result = code;
+    }
+    print('${lane.key}: exit=$code elapsedMs=${timer.elapsedMilliseconds}');
   }
-}
-
-void _printSuccessfulTestSummary(String stdoutOutput, String stderrOutput) {
-  final output = '$stdoutOutput\n$stderrOutput';
-  final summary = _parseSuccessfulTestSummary(output);
-  if (summary == null) {
-    print(green('All system tests passed.'));
-    return;
-  }
-
-  final skipped = summary.skipped == 0 ? '' : ', ${summary.skipped} skipped';
-  print(green('All system tests passed: ${summary.passed} passed$skipped.'));
-}
-
-({int passed, int skipped})? _parseSuccessfulTestSummary(String output) {
-  final clean = output.replaceAll(
-    RegExp(r'\x1B\[[0-?]*[ -/]*[@-~]'),
-    '',
-  );
-  final matches = RegExp(r'\+(\d+)(?:\s+~(\d+))?:\s+All tests passed!')
-      .allMatches(clean)
-      .toList();
-  if (matches.isEmpty) {
-    return null;
-  }
-
-  final match = matches.last;
-  return (
-    passed: int.parse(match.group(1)!),
-    skipped: int.tryParse(match.group(2) ?? '') ?? 0,
-  );
+  return result;
 }
 
 String _rewriteExcludeTags(String yaml, String excludeTags) {

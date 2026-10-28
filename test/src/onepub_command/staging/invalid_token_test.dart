@@ -30,7 +30,6 @@ Future<void> invalidTokenTest(String command) async {
 
 void main() {
   final config = StagingConfig.fromEnv();
-  setUpAll(() => ensureTestUsers(config));
 
   test('invalid token', () async {
     await withAdmin(config, (context) async {
