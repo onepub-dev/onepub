@@ -1,3 +1,4 @@
+import 'package:dcli_terminal/dcli_terminal.dart';
 import 'package:onepub/src/util/send_command.dart';
 import 'package:test/test.dart';
 
@@ -11,10 +12,16 @@ void main() {
     });
 
     test('treats plain-text error bodies as errors instead of crashing', () {
-      final response = EndpointResponse(
-        502,
-        StringBuffer('Upstream temporarily unavailable'),
-        CommandType.cli,
+      late EndpointResponse response;
+      expect(
+        () => response = EndpointResponse(
+          502,
+          StringBuffer('Upstream temporarily unavailable'),
+          CommandType.cli,
+        ),
+        prints('Server response follows...\n\n'
+            'Upstream temporarily unavailable\n'
+            '${red('Bad response from server, please try again later.')}\n'),
       );
 
       expect(response.success, isFalse);

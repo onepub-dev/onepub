@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
+import 'package:dcli_terminal/dcli_terminal.dart';
 import 'package:onepub/src/api/api.dart';
 import 'package:onepub/src/commands/import.dart';
 import 'package:onepub/src/exceptions.dart';
@@ -124,7 +125,14 @@ void main() {
           onepubApiUrl: OnePubSettings.use().onepubApiUrlAsString,
           onepubToken: 'original-token',
         );
-        await importToken().timeout(const Duration(seconds: 9));
+        final expectedOutput = '${scenario == 'malformed' ?
+            'Server response follows...\n\nnot JSON\n'
+            '${red('Bad response from server, please try again later.')}\n' : ''}'
+            '${blue('Successfully logged into Imported Org.')}\n';
+        await expectLater(
+          () => importToken().timeout(const Duration(seconds: 9)),
+          prints(expectedOutput),
+        );
         expect(await OnePubTokenStore().load(), 'imported-token');
         expect(OnePubSettings.use().organisationName, 'Imported Org');
         expect(File(OnePubSettings.use().pathToSettings).readAsStringSync(),

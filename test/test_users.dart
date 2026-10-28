@@ -120,10 +120,12 @@ class TestUsers {
       required String lastname,
       required RoleEnum role}) async {
     final tokenResponse = await _exportMemberTokenWithRetry(emailAddress);
-    stderr.writeln(
-      'TestUsers: resolving user "$emailAddress" for role ${role.name} '
-      '(export success: ${tokenResponse.success}).',
-    );
+    if (env['ONEPUB_TEST_FIXTURE_DEBUG'] == '1') {
+      stderr.writeln(
+        'TestUsers: resolving user "$emailAddress" for role ${role.name} '
+        '(export success: ${tokenResponse.success}).',
+      );
+    }
     if (tokenResponse.success) {
       // member already exists.
       final memberResponse = await _fetchMemberWithRetry(tokenResponse.token!);
