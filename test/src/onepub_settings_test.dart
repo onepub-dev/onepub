@@ -60,10 +60,12 @@ void main() {
             originalDefaultSettings,
           );
           expect(scopedSettingsFile.existsSync(), isTrue);
-          expect(
-            scopedSettingsFile.readAsStringSync(),
-            contains('onepubUrl: "https://squarephone.biz"'),
+          final reloadedSettings = OnePubSettings(
+            pathToSettings: scopedSettingsFile.path,
           );
+          expect(reloadedSettings.onepubUrl, 'https://squarephone.biz');
+          expect(reloadedSettings.organisationName, 'Scoped Org');
+          expect(reloadedSettings.obfuscatedOrganisationId, 'scoped-org');
         }, environment: {OnePubSettings.onepubPathEnvKey: defaultDir});
       });
     });
