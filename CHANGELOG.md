@@ -1,13 +1,5 @@
-# Unreleased
-
-- Retry temporary rate limits while preparing authorization-test credentials, while keeping permission failures and access checks strict.
-
-- Account for deliberately excluded manual tests without treating them as missing from complete build checks.
-
-- Reuse test package fixtures to shorten build checks while preserving isolated test credentials and package coverage.
-
-- Keep post-build system tests on the credentials selected for their isolated
-  test server, including nested test-user setup.
+# 7.1.0
+- Now does a backup/retry when rate limited during auth. 
 
 # 7.0.0
 
