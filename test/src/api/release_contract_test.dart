@@ -15,8 +15,10 @@ import '../../test_settings.dart';
 // Synthetic values using the field names and envelopes from onepub-vaadin
 // tag 5.15.18: JsonStatus, JsonOrganisation, JsonCliAuthResponse,
 // JsonExportToken, JsonSuccess, JsonVersions and JsonVersion.
-EndpointResponse cli(Map<String, dynamic> json, {int status = 200}) =>
-    EndpointResponse(status, StringBuffer(jsonEncode(json)), CommandType.cli);
+EndpointResponse cli(Map<String, dynamic> json,
+        {int status = 200, String? retryAfter}) =>
+    EndpointResponse(status, StringBuffer(jsonEncode(json)), CommandType.cli,
+        retryAfter: retryAfter);
 
 Map<String, dynamic> loginBody() => {
       'status': 'authSucceeded',
@@ -71,6 +73,22 @@ void main() {
       }, status: 401)),
       throwsA(isA<ExitException>()
           .having((e) => e.message, 'message', contains('Access denied'))),
+    );
+  });
+
+  test('CLI login poll honors Retry-After on HTTP 429', () {
+    final limited = AuthResponse.parse(cli(
+      {'error': 'Too many login requests. Try again later.'},
+      status: 429,
+      retryAfter: '17',
+    ));
+    expect(limited.status, AwaitLoginStatus.rateLimited);
+    expect(limited.pollInterval, 17);
+    expect(
+      AuthResponse.parse(
+              cli({'error': 'busy'}, status: 429, retryAfter: 'invalid'))
+          .pollInterval,
+      5,
     );
   });
 

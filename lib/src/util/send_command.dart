@@ -165,7 +165,12 @@ Future<EndpointResponse> _processData(
   // Decode the stream, rather than individual chunks: a UTF-8 character may
   // straddle packet boundaries. Stream errors propagate to the caller.
   final body = await response.transform(utf8.decoder).join();
-  return EndpointResponse(response.statusCode, StringBuffer(body), commandType);
+  return EndpointResponse(
+    response.statusCode,
+    StringBuffer(body),
+    commandType,
+    retryAfter: response.headers.value(HttpHeaders.retryAfterHeader),
+  );
 }
 
 enum CommandType {
@@ -182,11 +187,13 @@ class EndpointResponse {
   int status;
 
   final String _body;
+  final String? retryAfter;
 
   late final bool _success;
   late final String _errorMessage;
 
-  EndpointResponse(this.status, StringBuffer body, this.commandType)
+  EndpointResponse(this.status, StringBuffer body, this.commandType,
+      {this.retryAfter})
       : _body = body.toString() {
     _parse();
   }

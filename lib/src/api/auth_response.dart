@@ -21,6 +21,13 @@ class AuthResponse {
 
   factory AuthResponse.parse(EndpointResponse response) {
     final auth = AuthResponse._internal();
+    if (response.status == 429) {
+      final retryAfter = int.tryParse(response.retryAfter?.trim() ?? '');
+      auth
+        ..status = AwaitLoginStatus.rateLimited
+        ..pollInterval = retryAfter != null && retryAfter > 0 ? retryAfter : 5;
+      return auth;
+    }
     if (response.success) {
       final body = response.requireCliBody((json) {
         final status = requiredResponseString(json, 'status');
@@ -52,6 +59,8 @@ class AuthResponse {
             ..obfuscatedOrganisationId = body.obfuscatedOrganisationId;
         case AwaitLoginStatus.retry:
           auth.pollInterval = body.pollInterval > 0 ? body.pollInterval : 3;
+        case AwaitLoginStatus.rateLimited:
+          auth.pollInterval = body.pollInterval > 0 ? body.pollInterval : 5;
         case AwaitLoginStatus.authFailed:
           throw ExitException(exitCode: 1, message: 'Authentication failed');
         case AwaitLoginStatus.timeout:
@@ -72,6 +81,9 @@ enum AwaitLoginStatus {
   /// the auth hasn't yet been completed.
   /// wait for pollInterval seconds and retry.
   retry,
+
+  /// The server asked this network to wait before another login poll.
+  rateLimited,
 
   /// The auth has been cancelled as the user
   /// didn't respond in a timely manner (usually five minutes)
