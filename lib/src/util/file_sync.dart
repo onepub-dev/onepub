@@ -35,18 +35,6 @@ class FileSync {
     _open(fileMode);
   }
 
-  /// Generates a temporary filename in the system temp directory
-  /// that is guaranteed to be unique.
-  ///
-  /// This method does not create the file.
-  ///
-  /// The temp file name will be `<uuid>.tmp`
-  /// unless you provide a [suffix] in which
-  /// case the file name will be `<uuid>.<suffix>`
-  @Deprecated('Use createTempFilename')
-  static String tempFile({String? suffix}) =>
-      createTempFilename(suffix: suffix);
-
   /// The path to this file.
   String get path => _file.path;
 

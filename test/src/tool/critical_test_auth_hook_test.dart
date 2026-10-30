@@ -76,7 +76,7 @@ organisationId: production-org
         Platform.resolvedExecutable,
         [
           '--packages=${p.absolute('.dart_tool/package_config.json')}',
-          p.join(fixture.path, 'tool/critical_test/pre_hook/auth.dart'),
+          p.join(fixture.path, 'tool/check_system_test_prereqs.dart'),
         ],
         workingDirectory: fixture.path,
         environment: {

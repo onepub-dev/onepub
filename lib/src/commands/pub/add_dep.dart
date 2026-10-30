@@ -48,7 +48,7 @@ Add a private dependencies to `pubspec.yaml`.''');
   Future<int> run() async {
     // cache.setDefault
     await API().checkVersion();
-    return add();
+    return await add();
   }
 
   Future<int> add() async {

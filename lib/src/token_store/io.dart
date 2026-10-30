@@ -18,7 +18,7 @@ final String? dartConfigDir = () {
     return Platform.environment['_PUB_TEST_CONFIG_DIR'];
   }
   try {
-    return applicationConfigHome('dart');
+    return BaseDirectories('dart').configHome;
   } on EnvironmentNotFoundException {
     return null;
   }

@@ -1,23 +1,12 @@
 import '../auth/oidc_http.dart';
 import '../onepub_settings.dart';
-
-class OidcExchangeResult {
-  OidcExchangeResult({
-    required this.accessToken,
-    required this.hostedUrl,
-    required this.expiresAt,
-  });
-
-  final String accessToken;
-  final String hostedUrl;
-  final DateTime expiresAt;
-}
+import 'oidc_exchange_result.dart';
 
 class OidcExchangeApi {
+  final OidcHttpClient http;
+
   OidcExchangeApi({OidcHttpClient? http})
       : http = http ?? const OidcHttpClient();
-
-  final OidcHttpClient http;
 
   Future<OidcExchangeResult> exchange({
     required String assertion,

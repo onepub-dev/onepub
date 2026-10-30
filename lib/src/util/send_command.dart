@@ -99,7 +99,7 @@ Future<EndpointResponse> sendCommand(
     Future<EndpointResponse> receive() async {
       final response =
           await _startRequest(client, method, uri, headers, body, authorised);
-      return _processData(response, commandType);
+      return await _processData(response, commandType);
     }
 
     final pending = receive();

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:args/command_runner.dart';
 import 'package:onepub/src/api/api.dart';
 import 'package:onepub/src/api/oidc_exchange.dart';
+import 'package:onepub/src/api/oidc_exchange_result.dart';
 import 'package:onepub/src/auth/ci_provider.dart';
 import 'package:onepub/src/auth/oidc_token_acquirer.dart';
 import 'package:onepub/src/commands/login.dart';
@@ -15,7 +16,7 @@ import 'package:test/test.dart';
 
 import '../../../../test_settings.dart';
 
-final testUrl = assertSafeOnePubTestUrl('http://localhost:8080');
+final String testUrl = assertSafeOnePubTestUrl('http://localhost:8080');
 
 void main() {
   const assertion = 'header.payload.signature';
@@ -212,11 +213,11 @@ void main() {
 }
 
 class _FakeAcquirer extends OidcTokenAcquirer {
-  _FakeAcquirer(this.result) : super(environment: const {});
-
   final String result;
   CiProvider? provider;
   String? audience;
+
+  _FakeAcquirer(this.result) : super(environment: const {});
 
   @override
   Future<String> acquire(CiProvider provider, String audience) async {

@@ -11,7 +11,7 @@ import 'package:dcli_terminal/dcli_terminal.dart';
 import 'package:path/path.dart';
 
 import '../api/api.dart';
-import '../auth/ci_provider.dart';
+import '../auth/ci_provider_detector.dart';
 import '../auth/token_source.dart';
 import '../exceptions.dart';
 import '../onepub_settings.dart';

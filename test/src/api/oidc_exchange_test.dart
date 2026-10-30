@@ -7,7 +7,7 @@ import 'package:test/test.dart';
 
 import '../../test_settings.dart';
 
-final testUrl = assertSafeOnePubTestUrl('http://localhost:8080');
+final String testUrl = assertSafeOnePubTestUrl('http://localhost:8080');
 
 void main() {
   test('exchanges a JWT without overriding its provider-issued audience',

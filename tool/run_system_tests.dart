@@ -19,7 +19,7 @@ const _localUrl = 'https://squarephone.biz';
 const _stagingUrl = 'https://beta.onepub.dev';
 const _downloadLimitOrgIdDefault = '326';
 const _dartTestConfigPath = 'dart_test.yaml';
-final _onepubRepoRoot = Directory.fromUri(
+final String _onepubRepoRoot = Directory.fromUri(
   Platform.script.resolve('..'),
 ).absolute.path;
 

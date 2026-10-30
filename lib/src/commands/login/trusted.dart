@@ -6,6 +6,7 @@ import 'package:dcli_terminal/dcli_terminal.dart';
 import '../../api/api.dart';
 import '../../api/oidc_exchange.dart';
 import '../../auth/ci_provider.dart';
+import '../../auth/ci_provider_detector.dart';
 import '../../auth/oidc_token_acquirer.dart';
 import '../../auth/oidc_token_reader.dart';
 import '../../exceptions.dart';
@@ -140,6 +141,6 @@ class TrustedLoginCommand extends Command<int> {
 
     final detected = CiProviderDetector(environment: environment)
         .requireSingle(override: provider);
-    return acquirer.acquire(detected, audience);
+    return await acquirer.acquire(detected, audience);
   }
 }

@@ -161,7 +161,7 @@ Future<_StressSummary> _runStressWorkers({
     isolates.add(isolate);
   }
 
-  return done.future;
+  return await done.future;
 }
 
 Future<void> _waitForArchiveRecovery({

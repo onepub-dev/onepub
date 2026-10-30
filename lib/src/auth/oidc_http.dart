@@ -2,10 +2,10 @@ import 'dart:convert';
 import 'dart:io';
 
 class OidcHttpResponse {
-  OidcHttpResponse(this.statusCode, this.body);
-
   final int statusCode;
   final Map<String, dynamic> body;
+
+  OidcHttpResponse(this.statusCode, this.body);
 }
 
 class OidcHttpClient {

@@ -90,7 +90,7 @@ class ActivateCommand extends Command<int> {
   Future<int> run() async {
     // cache.setDefault
     await API().checkVersion();
-    return activate();
+    return await activate();
   }
 
   Future<int> activate() async {

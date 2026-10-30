@@ -16,6 +16,11 @@ typedef OidcTextGetter = Future<String> Function(
 );
 
 class OidcTokenAcquirer {
+  final Map<String, String> environment;
+  final OidcHttpClient http;
+  final OidcProcessRunner processRunner;
+  final OidcTextGetter textGetter;
+
   OidcTokenAcquirer({
     Map<String, String>? environment,
     OidcHttpClient? http,
@@ -26,13 +31,8 @@ class OidcTokenAcquirer {
         processRunner = processRunner ?? Process.run,
         textGetter = textGetter ?? _plainGet;
 
-  final Map<String, String> environment;
-  final OidcHttpClient http;
-  final OidcProcessRunner processRunner;
-  final OidcTextGetter textGetter;
-
   Future<String> acquire(CiProvider provider, String audience) async =>
-      switch (provider) {
+      await switch (provider) {
         CiProvider.githubActions => _github(audience),
         CiProvider.azurePipelines => _azure(),
         CiProvider.bitbucketPipelines =>

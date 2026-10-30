@@ -17,22 +17,17 @@ import 'fixture_roles.dart';
 import 'test_settings.dart';
 
 class TestUsers {
-  static final _self = TestUsers._internal();
-
   static var initialised = false;
   static String? _emailNamespace;
+  static final _self = TestUsers._internal();
 
   // Each test file runs in its own isolate. Keep its role users distinct from
   // concurrent suites and earlier runs, even when they use the same server.
-  static final suiteId = const Uuid().v4().replaceAll('-', '').substring(0, 16);
+  static final String suiteId =
+      const Uuid().v4().replaceAll('-', '').substring(0, 16);
   static var _loggedReducedCoverageWarning = false;
 
   final _members = FixtureRoles<RoleEnum, Member>();
-  Member get administrator => _members.get(RoleEnum.Administrator);
-
-  Member get teamLeader => _members.get(RoleEnum.TeamLeader);
-
-  Member get basicMember => _members.get(RoleEnum.Collaborator);
 
   factory TestUsers({bool init = false}) {
     if (!init && !initialised) {
@@ -42,6 +37,14 @@ class TestUsers {
     return _self;
   }
 
+  TestUsers._internal();
+
+  Member get administrator => _members.get(RoleEnum.Administrator);
+
+  Member get teamLeader => _members.get(RoleEnum.TeamLeader);
+
+  Member get basicMember => _members.get(RoleEnum.Collaborator);
+
   static void configureEmailNamespace(String? namespace) {
     if (initialised && namespace != _emailNamespace) {
       throw StateError(
@@ -50,8 +53,6 @@ class TestUsers {
     _emailNamespace =
         (namespace == null || namespace.isEmpty) ? null : namespace;
   }
-
-  TestUsers._internal();
 
   /// creates and caches a set of users with different roles.
   Future<void> init({bool provisionAllRoles = false}) async {

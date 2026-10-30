@@ -1,1 +1,1 @@
-exclude-tags: ['manual']
+exclude-tags: ['manual', 'staging']

@@ -7,8 +7,8 @@ import 'package:test/test.dart';
 import '../../../tool/trusted_publishing_e2e.dart';
 import '../../test_settings.dart';
 
-final _localUrl = Uri.parse(assertSafeOnePubTestUrl('http://localhost:8080'));
-final _pubDevUrl = Uri.parse('https://pub.dev');
+final Uri _localUrl = Uri.parse(assertSafeOnePubTestUrl('http://localhost:8080'));
+final Uri _pubDevUrl = Uri.parse('https://pub.dev');
 
 void main() {
   test('finds the new credential with an existing pub.dev env credential', () {

@@ -1,4 +1,5 @@
 import 'package:onepub/src/auth/ci_provider.dart';
+import 'package:onepub/src/auth/ci_provider_detector.dart';
 import 'package:test/test.dart';
 
 void main() {

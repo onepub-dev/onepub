@@ -55,7 +55,7 @@ class OnePubSettings {
   /// The url to the currently logged in organisation
   static var reportedNonStandard = false;
 
-  final testingFlagPath = join(HOME, '.onepubtesting');
+  final String testingFlagPath = join(HOME, '.onepubtesting');
 
   OnePubSettings({String? pathToSettings}) {
     this.pathToSettings = pathToSettings ?? defaultPathToSettings;

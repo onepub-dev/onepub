@@ -217,7 +217,7 @@ Future<_FlowStressSummary> _runFlowStressWorkers({
     isolates.add(isolate);
   }
 
-  return done.future;
+  return await done.future;
 }
 
 Future<void> _waitForPubFlowRecovery({

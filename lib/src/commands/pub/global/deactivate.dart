@@ -58,7 +58,7 @@ class DeactivateCommand extends Command<int> {
   Future<int> run() async {
     // cache.setDefault
     await API().checkVersion();
-    return deactivate();
+    return await deactivate();
   }
 
   Future<int> deactivate() async {

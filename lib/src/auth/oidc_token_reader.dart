@@ -3,14 +3,14 @@ import 'dart:io';
 import 'oidc_token_acquirer.dart';
 
 class OidcTokenReader {
+  final Map<String, String> environment;
+  final String? Function() readStdin;
+
   OidcTokenReader({
     Map<String, String>? environment,
     String? Function()? readStdin,
   })  : environment = environment ?? Platform.environment,
         readStdin = readStdin ?? stdin.readLineSync;
-
-  final Map<String, String> environment;
-  final String? Function() readStdin;
 
   String fromEnvironment(String name) {
     final value = environment[name];

@@ -13,13 +13,13 @@ import 'package:onepub/src/util/printerr.dart';
 import 'package:path/path.dart';
 
 class CommandResult {
+  final List<String> lines;
+  final int exitCode;
+
   CommandResult({
     required this.lines,
     required this.exitCode,
   });
-
-  final List<String> lines;
-  final int exitCode;
 }
 
 /// Runs a onepub command on the cli and returns the output

@@ -128,12 +128,12 @@ void main() {
 }
 
 class _FakeHttp extends OidcHttpClient {
-  _FakeHttp(this.responseBody);
-
   final Map<String, dynamic> responseBody;
   String? method;
   Uri? uri;
   Map<String, String> headers = {};
+
+  _FakeHttp(this.responseBody);
 
   @override
   Future<OidcHttpResponse> send({
