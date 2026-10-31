@@ -1,109 +1,62 @@
-# OnePub
+# OnePub CLI
 
-OnePub is a hosted (SAAS) private package repository for Dart and Flutter.
+OnePub is a private package repository for Dart and Flutter teams. The `onepub` CLI helps you sign in, publish private packages, and add them to your projects. You can continue to use the standard Dart and Flutter tooling to publish and fetch packages.
 
-> OnePub is to Dart what NPM is to Javascript
+For setup guides and the full command reference, see the [OnePub manual](https://docs.onepub.dev).
 
-OnePub aims to provide the same experience as pub.dev but for your own private packages only shared within your team.
+## Register your OnePub account
 
-* A private repository for your Dart and Flutter packages.
-* Painless IDE and CLI Integration.
-* Watch public and private packages and receive update notices.
-* Hosted API documentation for your private packages
-* Search both pub.dev and your private packages from one search page.
-* Secure your supply chain by vendoring*1 each of you dependencies
+Go to [Register][https://onepub.dev] and click the Sign In/Sign Up link in the top right hand corner.
 
-OnePub lets you use the existing Dart tooling (dart pub publish | flutter pub publish) to publish packages to your own private repository.
 
-OnePub includes a free plan for small teams.
 
-To take it for a spin by registering at:
-https://onepub.dev
+## Install and sign in
 
-Full documentation is available at:
+Once you have registered with OnePub:
 
-https://docs.onepub.dev
 
-# Installing
-To install onepub run:
-
-```bash
+```sh
 dart pub global activate onepub
 onepub login
 ```
-The `onepub login` command will register you with OnePub.
 
-# Trusted publishing login
+`onepub login` opens a browser to sign in to your OnePub account. If you are setting up CI with trusted publishing, configure it in OnePub and use `onepub login trusted`. Run `onepub login trusted --help` for its options.
+
+Trusted Publishing is configured 'per package' on the My OnePub | Managed Packages page. Select a package then click the 'Trusted Publishing' tab.
+
+## Publish a private package
+
+From your package directory, mark the package as private and publish it:
 
 ```sh
-onepub login trusted
-```
-
-Log in from CI/CD without storing a OnePub token. Requires trusted publishing
-to be configured in OnePub.
-
-The command detects your CI provider automatically. Run
-`onepub login trusted --help` for provider and identity-token options.
-
-# Publish
-To publish a private package to OnePub
-
-```bash
-cd <my first project>
 onepub pub private
 dart pub publish
 ```
 
-# Add a private dependency
+The `onepub pub private` command sets the package's `publish_to` URL in the `pubspec.yaml` to your OnePub organisation.
 
-To add a dependency on a private package to your project
+For a Flutter package, you can use `flutter pub publish`. 
 
-```bash
-cd <my second project>
-onepub pub add <my first project>
+## Add a private dependency
+
+You can add a dependency in your dart/flutter project to a private package that you have hosted on OnePub.
+
+From the directory of the project that needs the package, run:
+
+```sh
+onepub pub add my_private_package
 ```
 
-# Staging test suite
+This adds the private package to your project's `pubspec.yaml` and fetches it.
 
-To run the staging server smoke/load checks (doctor, publish/get, metadata, archive, auth tests, rate-limit burst/recovery):
+## Other useful commands
 
-```bash
-dart test test/src/onepub_command/staging
-```
+| Command | Purpose |
+| --- | --- |
+| `onepub doctor` | Show your OnePub configuration and connection status. |
+| `onepub pub global activate <package>` | Make a private package's executables available globally. |
+| `onepub pub global deactivate <package>` | Remove a globally activated package. |
+| `onepub logout` | Sign out of the OnePub CLI on all your devices. |
+| `onepub --help` | List commands and options. |
 
-Or run a specific load suite:
-
-```bash
-dart run tool/run_system_tests.dart --system local --suite download-pub-flow-stress
-```
-
-Optional environment overrides:
-
-```bash
-ONEPUB_STAGING_URL=https://staging.onepub.dev
-ONEPUB_TEAM=MyTeam
-ONEPUB_INVALID_TEAM=not-a-team
-ONEPUB_RATE_ROUTE=organisation/details
-ONEPUB_RATE_REQUESTS=75
-ONEPUB_SKIP_PACKAGE_CREATE=true
-ONEPUB_SKIP_CLEANUP=true
-ONEPUB_SKIP_PUBLISH=true
-ONEPUB_SKIP_PUB_GET=true
-ONEPUB_SKIP_RATE_LIMIT=true
-ONEPUB_SKIP_DOWNLOAD_STRESS=true
-ONEPUB_SKIP_RATE_LIMIT_RECOVERY=true
-ONEPUB_SKIP_UNAUTHORIZED_TEST=true
-ONEPUB_SKIP_INVALID_TOKEN_TEST=true
-ONEPUB_SKIP_METADATA_TEST=true
-ONEPUB_SKIP_ARCHIVE_TEST=true
-ONEPUB_SKIP_TEAM_NEGATIVE=true
-ONEPUB_SKIP_TOKEN_INVALIDATION=true
-ONEPUB_DOWNLOAD_STRESS_REQUESTS=50
-ONEPUB_DOWNLOAD_STRESS_CONCURRENCY=20
-ONEPUB_DOWNLOAD_STRESS_PACKAGE_SIZE_MB=0
-```
-
-
-*1 Vendoring is the process of storing your own copy of a third party package
-within the your onepub private repository.  This lets you review and control
-how third party packages are used by your app.
+For detailed workflows, authentication options, and command usage, read the [OnePub manual](https://docs.onepub.dev).
