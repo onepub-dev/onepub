@@ -1,3 +1,9 @@
+# 7.1.1
+
+- When the server rejects a token import, show its reason and keep the current
+  CLI login and organisation settings. This includes imports started from a
+  different organisation. Temporary audit-service failures still allow import.
+
 # 7.1.0
 - Now does a backup/retry when rate limited during auth. 
 
