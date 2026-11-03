@@ -9,6 +9,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dart-lang/setup-dart@v1
-      - run: dart pub global activate onepub '^6.4.0'
-      - run: onepub login trusted --publish-only
+      - run: dart pub global activate onepub
+      - run: onepub login trusted
       - run: dart pub publish --force

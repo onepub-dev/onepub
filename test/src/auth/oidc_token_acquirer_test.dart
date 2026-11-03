@@ -50,6 +50,52 @@ void main() {
     expect(http.headers['Authorization'], 'Bearer system-secret');
   });
 
+  test('Azure reads the AzureCLI task token without requesting another token',
+      () async {
+    final http = _FakeHttp({'oidcToken': 'other.payload.signature'});
+    final acquirer = OidcTokenAcquirer(
+      environment: {
+        'idToken': ' $jwt\n',
+        'SYSTEM_OIDCREQUESTURI': 'https://azure.example/token',
+        'SYSTEM_ACCESSTOKEN': 'system-secret',
+        'AZURESUBSCRIPTION_SERVICE_CONNECTION_ID': 'connection-id',
+      },
+      http: http,
+    );
+    expect(await acquirer.acquire(CiProvider.azurePipelines, 'audience'), jwt);
+    expect(http.method, isNull);
+  });
+
+  test('Azure rejects an invalid task token instead of silently falling back',
+      () async {
+    final http = _FakeHttp({'oidcToken': jwt});
+    final acquirer = OidcTokenAcquirer(
+      environment: {'idToken': 'invalid'},
+      http: http,
+    );
+    await expectLater(
+      acquirer.acquire(CiProvider.azurePipelines, 'audience'),
+      throwsFormatException,
+    );
+    expect(http.method, isNull);
+  });
+
+  test('Azure falls back to its endpoint when the task token is empty',
+      () async {
+    final http = _FakeHttp({'oidcToken': jwt});
+    final acquirer = OidcTokenAcquirer(
+      environment: {
+        'idToken': '',
+        'SYSTEM_OIDCREQUESTURI': 'https://azure.example/token',
+        'SYSTEM_ACCESSTOKEN': 'system-secret',
+        'AZURESUBSCRIPTION_SERVICE_CONNECTION_ID': 'connection-id',
+      },
+      http: http,
+    );
+    expect(await acquirer.acquire(CiProvider.azurePipelines, 'audience'), jwt);
+    expect(http.method, 'POST');
+  });
+
   test('reads provider-supplied fixed token variables', () async {
     final bitbucket = OidcTokenAcquirer(
       environment: {'BITBUCKET_STEP_OIDC_TOKEN': jwt},

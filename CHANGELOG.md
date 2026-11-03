@@ -1,3 +1,13 @@
+# 7.1.2
+
+- Automatically use the publishing identity supplied by Azure Pipelines' AzureCLI
+  task. With workload identity and `addSpnToEnvironment` enabled, run
+  `onepub login trusted` without passing a token or provider.
+- Keep support for Azure service-connection token requests when no task token is
+  supplied, and preserve explicit token overrides.
+- Simplify the GitHub trusted publishing example to use the current CLI without
+  a version pin or the removed `--publish-only` option.
+
 # 7.1.1
 
 - When the server rejects a token import, show its reason and keep the current
