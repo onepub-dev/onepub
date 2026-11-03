@@ -42,7 +42,7 @@ Future<PublishResult> publishTestPackage({
 name: $packageName
 description: OnePub staging publish test package.
 version: $version
-homepage: https://onepub.dev
+homepage: $apiUrl
 publish_to: $apiUrl
 environment:
   sdk: '>=3.5.0 <4.0.0'

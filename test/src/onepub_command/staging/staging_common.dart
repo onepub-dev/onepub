@@ -391,8 +391,11 @@ Future<ProvisionedTestOrganisation> createProvisionedTestOrganisation(
   late final ProvisionedTestOrganisation provisioned;
   await _withTokenScope(config, action: (settings) async {
     final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final organisationName =
-        'onepub_staging_test_download_limit_${plan}_$timestamp';
+    final organisationName = stagingTestOrganisationName(
+      plan,
+      timestamp,
+      Platform.environment['ONEPUB_PENTEST_RUN_ID'],
+    );
     final response = await sendCommand(
       command:
           'test/organisation/create/${Uri.encodeComponent(organisationName)}'
@@ -430,8 +433,21 @@ Future<ProvisionedTestOrganisation> createProvisionedTestOrganisation(
       onepubToken: body.onepubToken,
       plan: body.plan,
     );
+    stdout.writeln('Disposable test organisation created: '
+        'run=${Platform.environment['ONEPUB_PENTEST_RUN_ID'] ?? 'unlabelled'} '
+        'id=${provisioned.organisationId} '
+        'name=${provisioned.organisationName}');
   });
   return provisioned;
+}
+
+String stagingTestOrganisationName(String plan, int timestamp, String? runId) {
+  final suffix = runId == null || runId.isEmpty ? '' : '${runId}_';
+  if (suffix.isNotEmpty && !RegExp(r'^[a-z0-9_]{1,20}$').hasMatch(runId!)) {
+    throw ArgumentError('ONEPUB_PENTEST_RUN_ID must be 1..20 lowercase '
+        'letters, digits or underscores.');
+  }
+  return 'onepub_staging_test_download_limit_${plan}_$suffix$timestamp';
 }
 
 Future<void> assertLoggedIn(OnePubSettings settings) async {
