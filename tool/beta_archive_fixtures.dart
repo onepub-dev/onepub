@@ -9,8 +9,8 @@ import 'package:dcli/dcli.dart' as dcli;
 
 void main(List<String> arguments) {
   final parser = ArgParser()
-    ..addOption('output', defaultsTo: '/tmp/onepub-beta-archive-fixtures')
-    ..addOption('package', defaultsTo: 'onepub_staging_test_archive_probe')
+    ..addOption('output', mandatory: true)
+    ..addOption('package', mandatory: true)
     ..addOption('version', defaultsTo: '0.0.1')
     ..addFlag('heavy', negatable: false);
   final args = parser.parse(arguments);
@@ -24,6 +24,11 @@ void main(List<String> arguments) {
   }
   if (!RegExp(r'^\d+\.\d+\.\d+$').hasMatch(version)) {
     throw ArgumentError('Use a simple x.y.z version.');
+  }
+  if (FileSystemEntity.typeSync(output.path, followLinks: false) ==
+          FileSystemEntityType.link ||
+      (output.existsSync() && output.listSync().isNotEmpty)) {
+    throw StateError('Use a fresh output directory for each run.');
   }
   output.createSync(recursive: true);
   final pubspec = utf8.encode('''
