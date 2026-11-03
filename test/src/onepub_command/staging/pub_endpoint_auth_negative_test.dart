@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:onepub/src/util/send_command.dart';
 import 'package:test/test.dart';
 
+import 'cleanup_package.dart';
 import 'staging_common.dart';
 
 Future<void> _expectDenied(EndpointResponse response, String action) async {
@@ -23,12 +24,20 @@ Future<void> _expectDenied(EndpointResponse response, String action) async {
 
 Future<void> _expectArchiveDenied({
   required String archiveUrl,
+  required Uri expectedOrigin,
   required String? authorization,
   required String action,
 }) async {
+  final archiveUri = Uri.parse(archiveUrl);
+  if (archiveUri.scheme != expectedOrigin.scheme ||
+      archiveUri.host != expectedOrigin.host ||
+      archiveUri.port != expectedOrigin.port) {
+    throw StateError('Archive URL left the configured staging host.');
+  }
   final client = HttpClient();
   try {
-    final request = await client.getUrl(Uri.parse(archiveUrl));
+    final request = await client.getUrl(archiveUri);
+    request.followRedirects = false;
     if (authorization != null) {
       request.headers.set('authorization', authorization);
     }
@@ -53,34 +62,39 @@ void main() {
   test('pub endpoints deny anonymous access', () async {
     await withAdmin(config, (context) async {
       final published = await publishAndVerify(context, config);
-      final packagePath =
-          '${context.settings.obfuscatedOrganisationId}/api/packages/${published.name}';
-      final versionPath = '$packagePath/versions/${published.version}.json';
-      final archiveUrl = published.versionsBody.versions
-          .firstWhere((v) => v.version == published.version)
-          .archiveUrl;
+      try {
+        final packagePath =
+            '${context.settings.obfuscatedOrganisationId}/api/packages/${published.name}';
+        final versionPath = '$packagePath/versions/${published.version}.json';
+        final archiveUrl = published.versionsBody.versions
+            .firstWhere((v) => v.version == published.version)
+            .archiveUrl;
 
-      await _expectDenied(
-        await sendCommand(
-          command: packagePath,
-          commandType: CommandType.pub,
-          authorised: false,
-        ),
-        'anonymous metadata request',
-      );
-      await _expectDenied(
-        await sendCommand(
-          command: versionPath,
-          commandType: CommandType.pub,
-          authorised: false,
-        ),
-        'anonymous version request',
-      );
-      await _expectArchiveDenied(
-        archiveUrl: archiveUrl,
-        authorization: null,
-        action: 'anonymous archive request',
-      );
+        await _expectDenied(
+          await sendCommand(
+            command: packagePath,
+            commandType: CommandType.pub,
+            authorised: false,
+          ),
+          'anonymous metadata request',
+        );
+        await _expectDenied(
+          await sendCommand(
+            command: versionPath,
+            commandType: CommandType.pub,
+            authorised: false,
+          ),
+          'anonymous version request',
+        );
+        await _expectArchiveDenied(
+          archiveUrl: archiveUrl,
+          expectedOrigin: Uri.parse(config.stagingUrl),
+          authorization: null,
+          action: 'anonymous archive request',
+        );
+      } finally {
+        await cleanupPackage(published.name);
+      }
     });
   },
       timeout: const Timeout(Duration(minutes: 10)),
@@ -89,37 +103,42 @@ void main() {
   test('pub endpoints deny invalid tokens', () async {
     await withAdmin(config, (context) async {
       final published = await publishAndVerify(context, config);
-      final packagePath =
-          '${context.settings.obfuscatedOrganisationId}/api/packages/${published.name}';
-      final versionPath = '$packagePath/versions/${published.version}.json';
-      final archiveUrl = published.versionsBody.versions
-          .firstWhere((v) => v.version == published.version)
-          .archiveUrl;
-      const invalidToken = 'invalid-token';
+      try {
+        final packagePath =
+            '${context.settings.obfuscatedOrganisationId}/api/packages/${published.name}';
+        final versionPath = '$packagePath/versions/${published.version}.json';
+        final archiveUrl = published.versionsBody.versions
+            .firstWhere((v) => v.version == published.version)
+            .archiveUrl;
+        const invalidToken = 'invalid-token';
 
-      await _expectDenied(
-        await sendCommand(
-          command: packagePath,
-          commandType: CommandType.pub,
-          authorised: false,
-          headers: const <String, String>{'authorization': invalidToken},
-        ),
-        'invalid-token metadata request',
-      );
-      await _expectDenied(
-        await sendCommand(
-          command: versionPath,
-          commandType: CommandType.pub,
-          authorised: false,
-          headers: const <String, String>{'authorization': invalidToken},
-        ),
-        'invalid-token version request',
-      );
-      await _expectArchiveDenied(
-        archiveUrl: archiveUrl,
-        authorization: invalidToken,
-        action: 'invalid-token archive request',
-      );
+        await _expectDenied(
+          await sendCommand(
+            command: packagePath,
+            commandType: CommandType.pub,
+            authorised: false,
+            headers: const <String, String>{'authorization': invalidToken},
+          ),
+          'invalid-token metadata request',
+        );
+        await _expectDenied(
+          await sendCommand(
+            command: versionPath,
+            commandType: CommandType.pub,
+            authorised: false,
+            headers: const <String, String>{'authorization': invalidToken},
+          ),
+          'invalid-token version request',
+        );
+        await _expectArchiveDenied(
+          archiveUrl: archiveUrl,
+          expectedOrigin: Uri.parse(config.stagingUrl),
+          authorization: invalidToken,
+          action: 'invalid-token archive request',
+        );
+      } finally {
+        await cleanupPackage(published.name);
+      }
     });
   },
       timeout: const Timeout(Duration(minutes: 10)),

@@ -7,6 +7,7 @@ import 'package:onepub/src/util/one_pub_token_store.dart';
 import 'package:onepub/src/util/send_command.dart';
 import 'package:test/test.dart';
 
+import 'cleanup_package.dart';
 import 'staging_common.dart';
 
 Future<void> _expectCrossOrgDenied(
@@ -29,11 +30,19 @@ Future<void> _expectCrossOrgDenied(
 
 Future<void> _expectCrossOrgArchiveDenied({
   required String archiveUrl,
+  required Uri expectedOrigin,
   required String token,
 }) async {
+  final archiveUri = Uri.parse(archiveUrl);
+  if (archiveUri.scheme != expectedOrigin.scheme ||
+      archiveUri.host != expectedOrigin.host ||
+      archiveUri.port != expectedOrigin.port) {
+    throw StateError('Archive URL left the configured staging host.');
+  }
   final client = HttpClient();
   try {
-    final request = await client.getUrl(Uri.parse(archiveUrl));
+    final request = await client.getUrl(archiveUri);
+    request.followRedirects = false;
     request.headers.set('authorization', token);
     final response = await request.close();
     await response.drain<void>();
@@ -52,43 +61,40 @@ Future<void> _expectCrossOrgArchiveDenied({
 
 void main() {
   final config = StagingConfig.fromEnv();
-  setUpAll(() => ensureTestUsers(config));
+  ProvisionedTestOrganisation? alternate;
+  setUpAll(() async {
+    await ensureTestUsers(config);
+    if (config.securityAlternateOrganisationId.trim().isEmpty) {
+      alternate = await createProvisionedTestOrganisation(config, plan: 'free');
+    }
+  });
+  tearDownAll(() async {
+    if (alternate case final provisioned?) {
+      await closeProvisionedTestOrganisation(config, provisioned);
+    }
+  });
 
   test('cross-organisation tokens cannot access package metadata or archive',
       () async {
-    final alternateOrgId = config.securityAlternateOrganisationId.trim();
-    if (alternateOrgId.isEmpty) {
-      stdout.writeln(
-        'Skipping cross-org isolation test: set ONEPUB_SECURITY_ALT_ORG_ID '
-        'to an alternate organisation id.',
-      );
-      return;
-    }
-
-    final hasAlternateAccess = await hasTokenForOrganisation(
-      config,
-      organisationId: alternateOrgId,
-    );
-    if (!hasAlternateAccess) {
-      stdout.writeln(
-        'Skipping cross-org isolation test: no token available for '
-        'organisation $alternateOrgId.',
-      );
-      return;
+    final alternateOrgId = alternate?.organisationId ??
+        config.securityAlternateOrganisationId.trim();
+    if (alternate == null &&
+        !await hasTokenForOrganisation(config,
+            organisationId: alternateOrgId)) {
+      throw StateError('No token available for alternate organisation.');
     }
 
     await withAdmin(config, (context) async {
       final published = await publishAndVerify(context, config);
-      final packagePath =
-          '${context.settings.obfuscatedOrganisationId}/api/packages/${published.name}';
-      final versionPath = '$packagePath/versions/${published.version}.json';
-      final archiveUrl = published.versionsBody.versions
-          .firstWhere((v) => v.version == published.version)
-          .archiveUrl;
+      try {
+        final packagePath =
+            '${context.settings.obfuscatedOrganisationId}/api/packages/${published.name}';
+        final versionPath = '$packagePath/versions/${published.version}.json';
+        final archiveUrl = published.versionsBody.versions
+            .firstWhere((v) => v.version == published.version)
+            .archiveUrl;
 
-      await withMember(
-        config,
-        (_) async {
+        Future<void> assertAlternateDenied(StagingContext _) async {
           final alternateToken = await OnePubTokenStore().load();
           await _expectCrossOrgDenied(
             await sendCommand(
@@ -106,11 +112,27 @@ void main() {
           );
           await _expectCrossOrgArchiveDenied(
             archiveUrl: archiveUrl,
+            expectedOrigin: Uri.parse(config.stagingUrl),
             token: alternateToken,
           );
-        },
-        preferredOrgId: alternateOrgId,
-      );
+        }
+
+        if (alternate case final provisioned?) {
+          await withScopedOrganisationToken(
+            onepubUrl: provisioned.onepubUrl,
+            operatorEmail: provisioned.operatorEmail,
+            organisationName: provisioned.organisationName,
+            organisationId: provisioned.organisationId,
+            token: provisioned.onepubToken,
+            action: assertAlternateDenied,
+          );
+        } else {
+          await withMember(config, assertAlternateDenied,
+              preferredOrgId: alternateOrgId);
+        }
+      } finally {
+        await cleanupPackage(published.name);
+      }
     });
   },
       timeout: const Timeout(Duration(minutes: 10)),

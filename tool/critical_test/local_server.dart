@@ -52,8 +52,7 @@ Future<void> stopLocalServer() async {
   while (!File(p.join(state.path, 'done')).existsSync() &&
       !File(p.join(state.path, 'failed')).existsSync()) {
     if (DateTime.now().isAfter(deadline)) {
-      throw StateError(
-          '''
+      throw StateError('''
 Timed out stopping the local test server; state retained at ${state.path}.''');
     }
     await Future<void>.delayed(const Duration(seconds: 1));
