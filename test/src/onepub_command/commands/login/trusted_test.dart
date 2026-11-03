@@ -77,6 +77,65 @@ void main() {
     });
   });
 
+  test('provider environments work without provider or token arguments',
+      () async {
+    for (final environment in [
+      {'TF_BUILD': 'True', 'idToken': assertion},
+      {'BITBUCKET_BUILD_NUMBER': '42', 'BITBUCKET_STEP_OIDC_TOKEN': assertion},
+      {
+        'CIRCLECI': 'true',
+        'CIRCLE_OIDC_TOKEN_V2': assertion,
+        'CIRCLE_OIDC_TOKEN': 'older.payload.signature',
+      },
+      {'GITLAB_CI': 'true', onepubOidcTokenEnv: assertion},
+    ]) {
+      final temp = Directory.systemTemp.createTempSync('onepub-auto-trusted-');
+      addTearDown(() => temp.deleteSync(recursive: true));
+      final exchange = _FakeExchangeApi();
+      final tokenStore = _FakeTokenStore();
+      final runner = CommandRunner<int>('onepub-test', 'test')
+        ..addCommand(TrustedLoginCommand(
+          environment: environment,
+          exchangeApi: exchange,
+          api: _FakeApi(),
+          tokenStore: tokenStore,
+        ));
+      await OnePubSettings.withPathTo<void>(temp.path, () async {
+        OnePubSettings.use().onepubUrl = testUrl;
+        expect(await runner.run(['trusted']), 0);
+      });
+      expect(exchange.assertion, assertion);
+      expect(tokenStore.token, 'short-lived-onepub-token');
+    }
+  });
+
+  test('an Azure task token does not bypass provider detection', () async {
+    final temp = Directory.systemTemp.createTempSync('onepub-no-ci-');
+    addTearDown(() => temp.deleteSync(recursive: true));
+    final exchange = _FakeExchangeApi();
+    final tokenStore = _FakeTokenStore();
+    final runner = CommandRunner<int>('onepub-test', 'test')
+      ..addCommand(TrustedLoginCommand(
+        environment: {'idToken': assertion},
+        exchangeApi: exchange,
+        api: _FakeApi(),
+        tokenStore: tokenStore,
+      ));
+    await OnePubSettings.withPathTo<void>(temp.path, () async {
+      OnePubSettings.use().onepubUrl = testUrl;
+      await expectLater(
+        runner.run(['trusted']),
+        throwsA(isA<ExitException>().having(
+          (error) => error.message,
+          'message',
+          contains('Unable to detect'),
+        )),
+      );
+    });
+    expect(exchange.assertion, isNull);
+    expect(tokenStore.token, isNull);
+  });
+
   test('trusted login installs without changing login settings', () async {
     final temp = Directory.systemTemp.createTempSync('onepub-oidc-publish-');
     addTearDown(() => temp.deleteSync(recursive: true));

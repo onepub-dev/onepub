@@ -123,8 +123,10 @@ Use `onepub export` to obtain the OnePub token.
         os: Platform.operatingSystem,
         shell: _firstEnv(['SHELL']),
       );
+    } on ExitException {
+      rethrow;
     } catch (e, st) {
-      // Logging import telemetry must never block token import.
+      // Transient import-audit failures do not block token import.
       verbose(() => 'Unable to write import audit log: $e');
       verbose(() => '$st');
     }

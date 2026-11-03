@@ -162,6 +162,60 @@ void main() {
     });
   }
 
+  for (final rejection in [
+    HttpStatus.badRequest,
+    HttpStatus.unauthorized,
+    HttpStatus.conflict
+  ]) {
+    test('audit HTTP $rejection rejects import and preserves current login',
+        () async {
+      handler = (request) async {
+        if (request.uri.path.endsWith('/status')) {
+          await reply(request, {
+            'body': {'message': 'Status normal', 'version': '5.15.18'}
+          });
+        } else if (request.uri.path.endsWith('/organisation/details')) {
+          await reply(request, {
+            'body': {
+              'organisationName': 'Imported Org',
+              'obfuscatedId': 'imported-org',
+            }
+          });
+        } else {
+          expect(request.uri.path, '/api/member/importToken');
+          expect(request.headers.value('x-onepub-initiator-token'),
+              'original-token');
+          await reply(
+              request,
+              {
+                'error': {
+                  'code': 'import_organisation_mismatch',
+                  'message':
+                      'Log out of the current organisation before importing it.'
+                }
+              },
+              status: rejection);
+        }
+      };
+
+      await scoped(() async {
+        final settings = OnePubSettings.use();
+        await OnePubTokenStore().addToken(
+            onepubApiUrl: settings.onepubApiUrlAsString,
+            onepubToken: 'original-token');
+        final before = File(settings.pathToSettings).readAsStringSync();
+
+        await expectLater(
+            importToken(),
+            throwsA(isA<ExitException>().having((error) => error.message,
+                'message', contains('Log out of the current organisation'))));
+        expect(await OnePubTokenStore().load(), 'original-token');
+        expect(File(settings.pathToSettings).readAsStringSync(), before);
+        expect(requests, contains('/api/member/importToken'));
+      });
+    });
+  }
+
   for (final endpoint in ['status', 'organisation/details']) {
     test('invalid $endpoint leaves stored settings and token unchanged',
         () async {

@@ -66,6 +66,12 @@ class OidcTokenAcquirer {
   }
 
   Future<String> _azure() async {
+    // AzureCLI@2 exports this when workload identity federation and
+    // addSpnToEnvironment are enabled. Only consume it after Azure detection.
+    final taskToken = environment['idToken'];
+    if (taskToken != null && taskToken.isNotEmpty) {
+      return _validate(taskToken);
+    }
     final requestUrl = _required('SYSTEM_OIDCREQUESTURI');
     final accessToken = _required('SYSTEM_ACCESSTOKEN');
     final serviceConnectionId =

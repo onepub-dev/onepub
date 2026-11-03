@@ -201,6 +201,10 @@ dart pub global activate onepub
       timeout: const Duration(seconds: 5),
     );
     if (!response.success) {
+      if (response.status >= HttpStatus.badRequest &&
+          response.status < HttpStatus.internalServerError) {
+        throw ExitException(exitCode: 1, message: response.errorMessage);
+      }
       throw APIException(response.errorMessage);
     }
   }
