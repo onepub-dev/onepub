@@ -441,6 +441,30 @@ Future<ProvisionedTestOrganisation> createProvisionedTestOrganisation(
   return provisioned;
 }
 
+Future<void> closeProvisionedTestOrganisation(
+  StagingConfig config,
+  ProvisionedTestOrganisation provisioned,
+) async {
+  await _withTokenScope(config, action: (_) async {
+    final response = await sendCommand(
+      command: testOrganisationCloseCommand(provisioned),
+      commandType: CommandType.cli,
+      method: Method.post,
+    );
+    if (!response.success) {
+      throw StateError('Test organisation closure failed: HTTP '
+          '${response.status}; organisation=${provisioned.organisationId}.');
+    }
+    stdout.writeln('Disposable test organisation closed: '
+        'id=${provisioned.organisationId} '
+        'name=${provisioned.organisationName}');
+  });
+}
+
+String testOrganisationCloseCommand(ProvisionedTestOrganisation provisioned) =>
+    'test/organisation/close/${Uri.encodeComponent(provisioned.organisationId)}'
+    '?name=${Uri.encodeQueryComponent(provisioned.organisationName)}';
+
 String stagingTestOrganisationName(String plan, int timestamp, String? runId) {
   final suffix = runId == null || runId.isEmpty ? '' : '${runId}_';
   if (suffix.isNotEmpty && !RegExp(r'^[a-z0-9_]{1,20}$').hasMatch(runId!)) {

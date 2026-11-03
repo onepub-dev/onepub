@@ -68,6 +68,11 @@ void main() {
       alternate = await createProvisionedTestOrganisation(config, plan: 'free');
     }
   });
+  tearDownAll(() async {
+    if (alternate case final provisioned?) {
+      await closeProvisionedTestOrganisation(config, provisioned);
+    }
+  });
 
   test('cross-organisation tokens cannot access package metadata or archive',
       () async {

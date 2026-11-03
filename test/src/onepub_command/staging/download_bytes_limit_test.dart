@@ -68,6 +68,11 @@ void main() {
       );
     }
   });
+  tearDownAll(() async {
+    for (final organisation in provisioned.values) {
+      await closeProvisionedTestOrganisation(config, organisation);
+    }
+  });
 
   for (final target in targets) {
     test('download limits: byte quota ${target.plan}', () async {

@@ -17,4 +17,20 @@ void main() {
       throwsArgumentError,
     );
   });
+
+  test('cleanup command binds both organisation ID and name', () {
+    final provisioned = ProvisionedTestOrganisation(
+      onepubUrl: 'http://localhost:8080',
+      organisationName: 'onepub_staging_test_20261103_a',
+      organisationId: 'abc-123',
+      operatorEmail: 'test@example.com',
+      onepubToken: 'synthetic-test-value',
+      plan: 'free',
+    );
+    expect(
+      testOrganisationCloseCommand(provisioned),
+      'test/organisation/close/abc-123'
+      '?name=onepub_staging_test_20261103_a',
+    );
+  });
 }
