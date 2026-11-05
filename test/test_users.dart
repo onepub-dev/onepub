@@ -14,6 +14,8 @@ import 'package:uuid/uuid.dart';
 
 import 'fixture_retry.dart';
 import 'fixture_roles.dart';
+import 'provisioning_fixture.dart';
+import 'scim_test_client.dart';
 import 'test_settings.dart';
 
 class TestUsers {
@@ -287,12 +289,22 @@ TestUsers: member "$emailAddress" already existed but lookup returned "${memberR
   }) async {
     late MemberCreate response;
     for (var attempt = 0; attempt < attempts; attempt++) {
-      response = await API().createMember(
-        userEmail: userEmail,
-        firstname: firstname,
-        lastname: lastname,
-        role: role,
-      );
+      try {
+        response = await ProvisioningFixture().createMember(
+          userEmail: userEmail,
+          firstname: firstname,
+          lastname: lastname,
+          role: role.name,
+        );
+      } on ScimTestException catch (error) {
+        if (!const [429, 502, 503, 504].contains(error.status) ||
+            attempt == attempts - 1) {
+          rethrow;
+        }
+        await sleepAsync(_retryDelayMs(attempt),
+            interval: Interval.milliseconds);
+        continue;
+      }
       if (response.success) {
         return response;
       }

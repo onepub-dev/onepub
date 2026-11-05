@@ -95,10 +95,7 @@ organisationId: production-org
     final result = await runHook();
     expect(result.exitCode, 0, reason: '${result.stdout}\n${result.stderr}');
     expect(requests, isNotEmpty);
-    expect(
-        requests
-            .every((path) => path == '/api/test/member/details/fixture-token'),
-        isTrue);
+    expect(requests.every((path) => path == '/api/member/whoami'), isTrue);
     expect(operatorSettings.readAsStringSync(), originalSettings);
     expect(operatorTokens.readAsStringSync(), originalTokens);
   });

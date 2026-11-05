@@ -60,8 +60,8 @@ void main() {
         expect(await OnePubTokenStore().load(), 'run-token');
       });
       expect(requests, [
-        '/api/test/member/details/run-token',
-        '/api/test/member/details/run-token',
+        '/api/member/whoami',
+        '/api/member/whoami',
       ]);
       expect(settings.save, throwsStateError);
     }, environment: {

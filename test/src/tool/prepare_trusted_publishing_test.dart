@@ -36,7 +36,7 @@ void main() {
         return;
       }
 
-      if (request.uri.path == '/api/test/team/list') {
+      if (request.uri.path == '/api/team/list') {
         expect(request.method, 'GET');
         expect(authorization, token);
         await _reply(request, {
@@ -103,7 +103,7 @@ void main() {
       requests,
       containsAllInOrder([
         'GET /api/organisation/details',
-        'GET /api/test/team/list',
+        'GET /api/team/list',
         'POST /api/test/package/create/$packageName',
       ]),
     );

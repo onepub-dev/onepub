@@ -1,4 +1,8 @@
+#! /usr/bin/env dcli
+
 import 'dart:io';
+
+import 'package:dcli/dcli.dart' show env;
 
 import 'package:onepub/src/api/api.dart';
 import 'package:onepub/src/api/cli_models.dart';
@@ -25,7 +29,7 @@ Future<void> main(List<String> args) async {
       throw ArgumentError(
           'The build bootstrap requires its isolated loopback stack.');
     }
-    final token = Platform.environment['ONEPUB_BOOTSTRAP_TEST_TOKEN'];
+    final token = env['ONEPUB_BOOTSTRAP_TEST_TOKEN'];
     if (token == null || token.isEmpty) {
       throw StateError('Missing isolated test bootstrap token.');
     }
@@ -69,7 +73,7 @@ Future<void> main(List<String> args) async {
           return;
         }
         final teams = (await sendCommand(
-          command: 'test/team/list',
+          command: 'team/list',
           commandType: CommandType.cli,
           timeout: const Duration(seconds: 15),
         ))

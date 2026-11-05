@@ -230,7 +230,7 @@ package "$packageName"; retrying with attempt ${attempt + 1} in ${backoffMs}ms..
 Future<void> _listTeamsAndExit() async {
   stdout.writeln('Listing teams via test endpoint...');
   final response = await sendCommand(
-    command: 'test/team/list',
+    command: 'team/list',
     commandType: CommandType.cli,
   );
 

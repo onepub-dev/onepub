@@ -446,7 +446,7 @@ Future<List<CliTeamInfo>> listAvailableTeams() async {
   const maxAttempts = 4;
   for (var attempt = 1; attempt <= maxAttempts; attempt++) {
     final response = await sendCommand(
-      command: 'test/team/list',
+      command: 'team/list',
       commandType: CommandType.cli,
     );
     if (response.success) {
