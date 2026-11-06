@@ -11,6 +11,7 @@ import 'package:onepub/src/token_store/io.dart';
 import 'package:onepub/src/util/one_pub_token_store.dart';
 import 'package:onepub/src/util/send_command.dart';
 
+import '../../../provisioning_fixture.dart';
 import '../../../test_settings.dart';
 import '../../../test_users.dart';
 import 'publish_test_package.dart';
@@ -393,21 +394,9 @@ Future<ProvisionedTestOrganisation> createProvisionedTestOrganisation(
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final organisationName =
         'onepub_staging_test_download_limit_${plan}_$timestamp';
-    final response = await sendCommand(
-      command:
-          'test/organisation/create/${Uri.encodeComponent(organisationName)}'
-          '?plan=${Uri.encodeQueryComponent(plan)}&dedicatedOwner=true',
-      commandType: CommandType.cli,
-    );
-    if (!response.success) {
-      throw StateError(
-        'Unable to create $plan test organisation: ${response.errorMessage}',
-      );
-    }
-    final body = response.parseCli(CliTestOrganisationBody.fromJson).body;
-    if (body == null) {
-      throw StateError('Missing body while creating $plan test organisation.');
-    }
+    final resource = await ProvisioningFixture()
+        .createOrganisation(name: organisationName, plan: plan);
+    final body = CliTestOrganisationBody.fromJson(resource);
     if (body.onepubToken.isEmpty ||
         body.obfuscatedId.isEmpty ||
         body.organisationName.isEmpty ||

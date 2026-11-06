@@ -8,7 +8,8 @@ import 'test_settings.dart';
 /// Credentials come from isolated fixture setup, never from a member token.
 /// Separate fixtures handle roles, identity ownership and token export.
 class ScimTestClient {
-  ScimTestClient({
+  /// Explicit advanced compatibility mode for organisation-local M2M clients.
+  ScimTestClient.clientCredentials({
     required String onepubUrl,
     required String clientId,
     required String clientSecret,
@@ -25,11 +26,35 @@ class ScimTestClient {
     }
   }
 
+  factory ScimTestClient.authorizationCode({
+    required String onepubUrl,
+    required String clientId,
+    required String clientSecret,
+    required String authorizationCode,
+    required String redirectUri,
+    String? codeVerifier,
+  }) {
+    if (authorizationCode.isEmpty || redirectUri.isEmpty) {
+      throw ArgumentError('Missing browser authorization.');
+    }
+    return ScimTestClient.clientCredentials(
+        onepubUrl: onepubUrl, clientId: clientId, clientSecret: clientSecret)
+      .._authorizationCode = authorizationCode
+      .._redirectUri = redirectUri
+      .._codeVerifier = codeVerifier
+      .._browserAuthorization = true;
+  }
+
   final Uri _base;
   final String _clientId;
   final String _clientSecret;
   String? _accessToken;
   DateTime? _expiresAt;
+  String? _authorizationCode;
+  late String _redirectUri;
+  String? _codeVerifier;
+  String? _refreshToken;
+  var _browserAuthorization = false;
 
   static const userSchema = 'urn:ietf:params:scim:schemas:core:2.0:User';
   static const groupSchema = 'urn:ietf:params:scim:schemas:core:2.0:Group';
@@ -135,6 +160,36 @@ class ScimTestClient {
         DateTime.now().isBefore(_expiresAt!)) {
       return;
     }
+    final Map<String, String> form;
+    if (_refreshToken != null) {
+      form = {'grant_type': 'refresh_token', 'refresh_token': _refreshToken!};
+    } else if (_authorizationCode != null) {
+      form = {
+        'grant_type': 'authorization_code',
+        'code': _authorizationCode!,
+        'redirect_uri': _redirectUri,
+        if (_codeVerifier != null) 'code_verifier': _codeVerifier!,
+      };
+    } else if (_browserAuthorization) {
+      throw const ScimTestException('Browser authorization must be renewed.');
+    } else {
+      form = {'grant_type': 'client_credentials', 'scope': 'scim'};
+    }
+    await _exchange(form);
+  }
+
+  /// Exercise rotation without waiting for the access token expiry.
+  Future<void> refresh() async {
+    await _authenticate();
+    final refreshToken = _refreshToken;
+    if (refreshToken == null) {
+      throw const ScimTestException('Refresh requires browser authorization.');
+    }
+    await _exchange(
+        {'grant_type': 'refresh_token', 'refresh_token': refreshToken});
+  }
+
+  Future<void> _exchange(Map<String, String> form) async {
     final basicCredentials =
         base64Encode(utf8.encode('${Uri.encodeQueryComponent(_clientId)}:'
             '${Uri.encodeQueryComponent(_clientSecret)}'));
@@ -144,20 +199,25 @@ class ScimTestClient {
           HttpHeaders.contentTypeHeader: 'application/x-www-form-urlencoded',
           HttpHeaders.acceptHeader: 'application/json',
         },
-        body: Uri(queryParameters: {
-          'grant_type': 'client_credentials',
-          'scope': 'scim',
-        }).query);
+        body: Uri(queryParameters: form).query);
     final token = response['access_token'];
     final expires = response['expires_in'];
     if (token is! String ||
         token.isEmpty ||
         expires is! int ||
         expires <= 0 ||
-        response['token_type'].toString().toLowerCase() != 'bearer') {
+        response['token_type'].toString().toLowerCase() != 'bearer' ||
+        (_browserAuthorization &&
+            (response['refresh_token'] is! String ||
+                (response['refresh_token'] as String).isEmpty ||
+                response['refresh_token'] == _refreshToken))) {
       throw const ScimTestException('Invalid provisioning token response.');
     }
     _accessToken = token;
+    _authorizationCode = null;
+    if (_browserAuthorization) {
+      _refreshToken = response['refresh_token'] as String;
+    }
     _expiresAt = DateTime.now()
         .add(Duration(seconds: expires > 10 ? expires - 10 : expires));
   }

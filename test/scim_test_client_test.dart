@@ -11,13 +11,60 @@ void main() {
 
   setUp(() async {
     server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-    client = ScimTestClient(
+    client = ScimTestClient.clientCredentials(
       onepubUrl: 'http://127.0.0.1:${server.port}',
       clientId: 'fixture:client',
       clientSecret: 'secret+canary',
     );
   });
   tearDown(() => server.close(force: true));
+
+  test('browser code exchange uses exact redirect and rotates newest refresh',
+      () async {
+    client = ScimTestClient.authorizationCode(
+        onepubUrl: 'http://127.0.0.1:${server.port}',
+        clientId: 'catalogue-client',
+        clientSecret: 'catalogue-secret',
+        authorizationCode: 'browser-consent-code',
+        redirectUri: 'http://127.0.0.1:45678/callback',
+        codeVerifier: 'verified-pkce');
+    var exchanges = 0;
+    server.listen((request) async {
+      if (request.uri.path == '/api/provisioning/oauth/token') {
+        final form =
+            Uri.splitQueryString(await utf8.decoder.bind(request).join());
+        expect(request.uri.hasQuery, isFalse);
+        if (exchanges == 0) {
+          expect(form, {
+            'grant_type': 'authorization_code',
+            'code': 'browser-consent-code',
+            'redirect_uri': 'http://127.0.0.1:45678/callback',
+            'code_verifier': 'verified-pkce',
+          });
+        } else {
+          expect(form, {
+            'grant_type': 'refresh_token',
+            'refresh_token': 'refresh-$exchanges',
+          });
+        }
+        exchanges++;
+        await _reply(request, {
+          'access_token': 'access-$exchanges',
+          'refresh_token': 'refresh-$exchanges',
+          'token_type': 'Bearer',
+          'expires_in': 300,
+        });
+      } else {
+        expect(request.headers.value(HttpHeaders.authorizationHeader),
+            'Bearer access-3');
+        await _reply(request, {'totalResults': 0, 'Resources': <dynamic>[]});
+      }
+    });
+    await client.refresh();
+    await client.refresh();
+    expect(await client.findUsers('human@example.test'), isEmpty);
+    expect(exchanges, 3);
+  });
 
   test('uses OAuth credentials and paginates more than 100 SCIM users',
       () async {
@@ -122,7 +169,7 @@ void main() {
 
   test('rejects unsafe destinations before authentication', () {
     expect(
-      () => ScimTestClient(
+      () => ScimTestClient.clientCredentials(
           onepubUrl: 'https://onepub.dev',
           clientId: 'client',
           clientSecret: 'secret'),
