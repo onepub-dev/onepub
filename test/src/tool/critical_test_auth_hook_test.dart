@@ -41,6 +41,8 @@ void main() {
       'tool/critical_test/pre_hook/auth.dart',
       'tool/check_system_test_prereqs.dart',
       'test/test_settings.dart',
+      'test/fixture_oauth.dart',
+      'test/scim_test_client.dart',
     ]) {
       final destination = File(p.join(fixture.path, path));
       destination.parent.createSync(recursive: true);

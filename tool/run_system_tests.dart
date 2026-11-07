@@ -2,7 +2,6 @@
 
 import 'dart:convert';
 import 'dart:io';
-
 import 'package:args/args.dart';
 import 'package:dcli/dcli.dart';
 import 'package:onepub/src/api/api.dart';
@@ -10,7 +9,7 @@ import 'package:onepub/src/api/cli_models.dart';
 import 'package:onepub/src/onepub_settings.dart';
 import 'package:onepub/src/util/one_pub_token_store.dart';
 import 'package:onepub/src/util/send_command.dart';
-
+import '../test/fixture_oauth.dart';
 import '../test/test_settings.dart';
 import 'system_test_inventory.dart';
 import 'test_evidence.dart';
@@ -38,6 +37,7 @@ enum TestSuite {
 }
 
 void main(List<String> args) async {
+  FixtureOAuthBroker? fixtureBroker;
   final parser = ArgParser()
     ..addOption('system',
         abbr: 's',
@@ -88,6 +88,10 @@ void main(List<String> args) async {
     final nameFilter = (results['name'] as String?)?.trim();
     final extra = List<String>.from(results['extra'] as List<dynamic>);
 
+    if (_suiteRequiresTestEndpoints(suite)) {
+      fixtureBroker = await FixtureOAuth.startHarness(targetUrl);
+    }
+
     final testToken = await _ensurePreconditions(
       targetUrl: targetUrl,
       suite: suite,
@@ -108,7 +112,7 @@ void main(List<String> args) async {
     if (!testMember.success) {
       throw StateError('Unable to resolve the validated system-test member.');
     }
-    final env = <String, String>{
+    var env = <String, String>{
       ...Platform.environment,
       'ONEPUB_STAGING_URL': targetUrl,
       'ONEPUB_TEST_ORG_ID': OnePubSettings.use().obfuscatedOrganisationId,
@@ -125,6 +129,9 @@ void main(List<String> args) async {
       }),
       ..._localSuiteEnvOverrides(targetUrl: targetUrl, suite: suite),
     };
+    if (fixtureBroker != null) {
+      env = fixtureBroker.workerEnvironment(env);
+    }
 
     print('');
     print(blue('Target URL: $targetUrl'));
@@ -142,20 +149,21 @@ void main(List<String> args) async {
       return;
     }
 
-    final exitCode = await _runDartTestCommand(
+    exitCode = await _runDartTestCommand(
       command: command,
       env: env,
       suite: suite,
     );
-    exit(exitCode);
     // We need to provide a nice message.
     // ignore: avoid_catching_errors
   } on StateError catch (e) {
     stderr.writeln(red(e.message));
-    exit(1);
+    exitCode = 1;
   } on Exception catch (e) {
     stderr.writeln(red(e.toString()));
-    exit(1);
+    exitCode = 1;
+  } finally {
+    await fixtureBroker?.close();
   }
 }
 
@@ -305,7 +313,6 @@ Future<String> _resolveConfiguredTestToken({
       targetUrl: targetUrl,
       orgId: orgId,
       memberEmail: testSettings.member,
-      systemToken: token,
     );
   } catch (_) {
     return '';
@@ -316,7 +323,6 @@ Future<String> _exportTestMemberToken({
   required String targetUrl,
   required String orgId,
   required String memberEmail,
-  required String systemToken,
 }) async {
   final tempDir = await Directory.systemTemp.createTemp('onepub_test_token_');
   try {
@@ -326,18 +332,13 @@ Future<String> _exportTestMemberToken({
         ..obfuscatedOrganisationId = orgId;
       await settings.save();
 
-      final response = await sendCommand(
-        command: 'test/member/exportToken/$orgId/'
-            '${Uri.encodeComponent(memberEmail)}',
-        commandType: CommandType.cli,
-        authorised: false,
-        headers: {'authorization': systemToken},
-      );
+      final response = await exportTestMemberToken(
+          obfuscatedOrganisationId: orgId, memberEmail: memberEmail);
       if (!response.success) {
-        throw StateError(response.errorMessage);
+        throw StateError(
+            response.errorMessage ?? 'Fixture token export failed.');
       }
-      final envelope = response.parseCli(CliExportTokenBody.fromJson);
-      final token = envelope.body?.onepubToken ?? '';
+      final token = response.token ?? '';
       if (token.isEmpty) {
         throw StateError('test/member/exportToken returned no token.');
       }
@@ -467,7 +468,7 @@ Future<void> _ensureTestEndpointsReady({
     return;
   }
 
-  final response = await sendCommand(
+  final response = await sendFixtureCommand(
     command: 'test/whoami',
     commandType: CommandType.cli,
   );

@@ -5,11 +5,10 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
-
 import 'package:onepub/src/util/one_pub_token_store.dart';
 import 'package:onepub/src/util/send_command.dart';
 import 'package:test/test.dart';
-
+import '../../../fixture_oauth.dart';
 import 'staging_common.dart';
 
 const _downloadLimitMessage = 'Monthly download limit exceeded for your plan. '
@@ -147,7 +146,7 @@ recoverable429=${summary.recoverable429Count}
 }
 
 Future<void> _seedDownloadUsage(int bytes) async {
-  final response = await sendCommand(
+  final response = await sendFixtureCommand(
     command: 'test/download/seed/$bytes',
     commandType: CommandType.cli,
     method: Method.post,

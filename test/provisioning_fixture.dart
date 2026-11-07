@@ -1,11 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
-
 import 'package:onepub/src/api/member_create.dart';
 import 'package:onepub/src/onepub_settings.dart';
 import 'package:onepub/src/util/one_pub_token_store.dart';
 import 'package:onepub/src/util/send_command.dart';
-
+import 'fixture_oauth.dart';
 import 'scim_test_client.dart';
 import 'test_settings.dart';
 
@@ -29,13 +28,18 @@ class ProvisioningFixture {
     final url = assertSafeOnePubTestUrl(
         settings.onepubUrl ?? OnePubSettings.defaultOnePubUrl,
         source: 'organisation fixture');
+    // Organisation creation is an explicit privileged setup operation.
     return await _resourceRequest(
-        url, await OnePubTokenStore().load(), 'TestOrganisations', {
-      'schemas': ['urn:onepub:params:scim:schemas:test:2.0:Organisation'],
-      'name': name,
-      'plan': plan,
-      'dedicatedOwner': true,
-    });
+        url,
+        null,
+        'TestOrganisations',
+        {
+          'schemas': ['urn:onepub:params:scim:schemas:test:2.0:Organisation'],
+          'name': name,
+          'plan': plan,
+          'dedicatedOwner': true,
+        },
+        root: true);
   }
 
   Future<MemberCreate> createMember({
@@ -111,14 +115,7 @@ class ProvisioningFixture {
 
   Future<_ProvisioningBootstrap> _bootstrap(String url, String token) async {
     final configured = _browserAuthorization ?? _authorizationFromEnvironment();
-    final advanced = configured == null &&
-        Platform.environment['ONEPUB_TEST_SCIM_ADVANCED_CLIENT_CREDENTIALS'] ==
-            'true';
-    if (configured == null && !advanced) {
-      throw const ScimTestException('Browser SCIM authorization is required.');
-    }
-    final body = await _fixtureRequest(
-        url, token, 'bootstrap', {'advancedClientCredentials': advanced});
+    final body = await _fixtureRequest(url, token, 'bootstrap', {});
     final roleGroups = body['roleGroups'];
     if (roleGroups is! Map<String, dynamic> ||
         !_mappedRoles.every((role) =>
@@ -147,13 +144,8 @@ class ProvisioningFixture {
           codeVerifier: configured['codeVerifier'] as String?);
       await client.refresh();
     } else {
-      if (body['clientId'] is! String || body['clientSecret'] is! String) {
-        throw const ScimTestException('Invalid advanced client credentials.');
-      }
-      client = ScimTestClient.clientCredentials(
-          onepubUrl: url,
-          clientId: body['clientId'] as String,
-          clientSecret: body['clientSecret'] as String);
+      client = ScimTestClient.accessTokenProvider(
+          onepubUrl: url, accessToken: () => FixtureOAuth.token(actor: token));
     }
     return _ProvisioningBootstrap(client,
         {for (final role in _mappedRoles) role: roleGroups[role] as String});
@@ -187,8 +179,10 @@ class ProvisioningFixture {
         ...body,
       });
 
-  Future<Map<String, dynamic>> _resourceRequest(String url, String token,
-      String resource, Map<String, dynamic> body) async {
+  Future<Map<String, dynamic>> _resourceRequest(
+      String url, String? token, String resource, Map<String, dynamic> body,
+      {bool root = false}) async {
+    final accessToken = await FixtureOAuth.token(actor: token, root: root);
     final client = HttpClient()
       ..connectionTimeout = const Duration(seconds: 15);
     try {
@@ -198,7 +192,7 @@ class ProvisioningFixture {
         request.followRedirects = false;
         request.headers
           ..contentType = ContentType.json
-          ..set(HttpHeaders.authorizationHeader, 'Bearer $token');
+          ..set(HttpHeaders.authorizationHeader, 'Bearer $accessToken');
         request.write(jsonEncode(body));
         final response = await request.close();
         if (response.statusCode != HttpStatus.ok &&
@@ -219,6 +213,7 @@ class ProvisioningFixture {
           throw const ScimTestException(
               'Invalid provisioning fixture response.');
         }
+        await FixtureOAuth.accept(envelope);
         return envelope;
       })()
           .timeout(const Duration(seconds: 30));

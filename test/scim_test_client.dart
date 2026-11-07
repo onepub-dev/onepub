@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-
 import 'test_settings.dart';
 
 /// An ordinary OAuth client for the production SCIM protocol on test servers.
@@ -45,6 +44,33 @@ class ScimTestClient {
       .._browserAuthorization = true;
   }
 
+  factory ScimTestClient.refreshToken({
+    required String onepubUrl,
+    required String clientId,
+    required String clientSecret,
+    required String refreshToken,
+  }) {
+    if (refreshToken.isEmpty) {
+      throw ArgumentError('Missing OAuth refresh authorization.');
+    }
+    return ScimTestClient.clientCredentials(
+        onepubUrl: onepubUrl, clientId: clientId, clientSecret: clientSecret)
+      .._refreshToken = refreshToken
+      .._browserAuthorization = true;
+  }
+
+  /// Shares an OAuth owner (for example the parent fixture harness) while
+  /// retaining the ordinary SCIM wire protocol and server scope checks.
+  factory ScimTestClient.accessTokenProvider({
+    required String onepubUrl,
+    required Future<String> Function() accessToken,
+  }) =>
+      ScimTestClient.clientCredentials(
+          onepubUrl: onepubUrl,
+          clientId: 'externally-owned',
+          clientSecret: 'externally-owned')
+        .._accessTokenProvider = accessToken;
+
   final Uri _base;
   final String _clientId;
   final String _clientSecret;
@@ -55,6 +81,25 @@ class ScimTestClient {
   String? _codeVerifier;
   String? _refreshToken;
   var _browserAuthorization = false;
+  var _tokenQueue = Future<void>.value();
+  Future<String> Function()? _accessTokenProvider;
+
+  /// All callers of a rotating grant share this queue, including explicit
+  /// refreshes. A failed exchange does not poison subsequent callers.
+  Future<T> _serializeToken<T>(Future<T> Function() action) {
+    final result = _tokenQueue.then((_) => action());
+    _tokenQueue = result.then<void>((_) {}, onError: (Object _) {});
+    return result;
+  }
+
+  Future<String> accessToken() => _serializeToken(() async {
+        final provider = _accessTokenProvider;
+        if (provider != null) {
+          return await provider();
+        }
+        await _authenticate();
+        return _accessToken!;
+      });
 
   static const userSchema = 'urn:ietf:params:scim:schemas:core:2.0:User';
   static const groupSchema = 'urn:ietf:params:scim:schemas:core:2.0:Group';
@@ -143,10 +188,10 @@ class ScimTestClient {
     if (!RegExp(r'^[A-Za-z]+(?:/[A-Za-z0-9%_.~-]+)?$').hasMatch(resource)) {
       throw ArgumentError('Invalid SCIM resource path.');
     }
-    await _authenticate();
+    final token = await accessToken();
     return await _send(method, '/api/scim/v2/$resource',
         headers: {
-          HttpHeaders.authorizationHeader: 'Bearer $_accessToken',
+          HttpHeaders.authorizationHeader: 'Bearer $token',
           HttpHeaders.contentTypeHeader: 'application/scim+json',
           HttpHeaders.acceptHeader: 'application/scim+json',
         },
@@ -179,15 +224,20 @@ class ScimTestClient {
   }
 
   /// Exercise rotation without waiting for the access token expiry.
-  Future<void> refresh() async {
-    await _authenticate();
-    final refreshToken = _refreshToken;
-    if (refreshToken == null) {
-      throw const ScimTestException('Refresh requires browser authorization.');
-    }
-    await _exchange(
-        {'grant_type': 'refresh_token', 'refresh_token': refreshToken});
-  }
+  Future<void> refresh() => _serializeToken(() async {
+        if (_accessTokenProvider != null) {
+          throw const ScimTestException(
+              'Refresh is managed by the OAuth owner.');
+        }
+        await _authenticate();
+        final refreshToken = _refreshToken;
+        if (refreshToken == null) {
+          throw const ScimTestException(
+              'Refresh requires browser authorization.');
+        }
+        await _exchange(
+            {'grant_type': 'refresh_token', 'refresh_token': refreshToken});
+      });
 
   Future<void> _exchange(Map<String, String> form) async {
     final basicCredentials =

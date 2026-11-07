@@ -6,6 +6,7 @@ import 'package:onepub/src/onepub_settings.dart';
 import 'package:onepub/src/util/one_pub_token_store.dart';
 import 'package:test/test.dart';
 
+import 'fixture_oauth.dart';
 import 'provisioning_fixture.dart';
 
 void main() {
@@ -13,6 +14,15 @@ void main() {
       () async {
     final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     addTearDown(() => server.close(force: true));
+    addTearDown(FixtureOAuth.reset);
+    FixtureOAuth.configure('http://127.0.0.1:${server.port}', {
+      'onepubUrl': 'http://127.0.0.1:${server.port}',
+      'clientId': 'fixture-client',
+      'clientSecret': 'fixture-secret',
+      'refreshToken': 'fixture-refresh',
+      'onepubToken': 'bootstrap-member-token',
+      'scopes': 'test:fixtures',
+    });
     final paths = <String>[];
     var exchanges = 0;
     server.listen((request) async {
@@ -22,7 +32,7 @@ void main() {
       Map<String, dynamic>? fixtureBody;
       if (path == '/api/scim/v2/TestProvisioningFixtures') {
         expect(request.headers.value(HttpHeaders.authorizationHeader),
-            'Bearer bootstrap-member-token');
+            'Bearer fixture-access');
         fixtureBody = jsonDecode(await utf8.decoder.bind(request).join())
             as Map<String, dynamic>;
         expect(fixtureBody['schemas'],
@@ -31,7 +41,7 @@ void main() {
       if (path == '/api/scim/v2/TestOrganisations') {
         expect(request.method, 'POST');
         expect(request.headers.value(HttpHeaders.authorizationHeader),
-            'Bearer bootstrap-member-token');
+            'Bearer fixture-access');
         expect(jsonDecode(await utf8.decoder.bind(request).join()), {
           'schemas': ['urn:onepub:params:scim:schemas:test:2.0:Organisation'],
           'name': 'onepub_test_organisation',
@@ -49,7 +59,7 @@ void main() {
         }));
       } else if (fixtureBody?['operation'] == 'bootstrap') {
         expect(request.method, 'POST');
-        expect(fixtureBody?['advancedClientCredentials'], false);
+        expect(fixtureBody!.containsKey('advancedClientCredentials'), isFalse);
         request.response.write(jsonEncode({
           'schemas': ['urn:onepub:params:scim:schemas:test:2.0:Fixture'],
           'id': 'test-org',
@@ -60,6 +70,26 @@ void main() {
           },
         }));
       } else if (path == '/api/provisioning/oauth/token') {
+        final fixtureBasic =
+            base64Encode(utf8.encode('fixture-client:fixture-secret'));
+        if (request.headers.value(HttpHeaders.authorizationHeader) ==
+            'Basic $fixtureBasic') {
+          final form =
+              Uri.splitQueryString(await utf8.decoder.bind(request).join());
+          expect(form, {
+            'grant_type': 'refresh_token',
+            'refresh_token': 'fixture-refresh'
+          });
+          request.response.write(jsonEncode({
+            'access_token': 'fixture-access',
+            'refresh_token': 'fixture-next',
+            'token_type': 'Bearer',
+            'expires_in': 300,
+            'scope': 'test:fixtures',
+          }));
+          await request.response.close();
+          return;
+        }
         expect(request.headers.value(HttpHeaders.authorizationHeader),
             'Basic ${base64Encode(utf8.encode('client:secret'))}');
         final form =
@@ -180,6 +210,7 @@ void main() {
       });
     });
     expect(paths, [
+      '/api/provisioning/oauth/token',
       '/api/scim/v2/TestOrganisations',
       '/api/scim/v2/TestProvisioningFixtures',
       '/api/provisioning/oauth/token',

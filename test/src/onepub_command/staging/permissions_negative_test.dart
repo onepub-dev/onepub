@@ -3,13 +3,11 @@ library;
 
 import 'dart:convert';
 import 'dart:io';
-
-import 'package:onepub/src/api/api.dart';
 import 'package:onepub/src/api/cli_models.dart';
 import 'package:onepub/src/api/member.dart';
 import 'package:onepub/src/util/send_command.dart';
 import 'package:test/test.dart';
-
+import '../../../fixture_oauth.dart';
 import '../../../fixture_retry.dart';
 import '../../../provisioning_fixture.dart';
 import '../../../scim_test_client.dart';
@@ -59,7 +57,7 @@ Future<String> _exportTokenOrThrow(String email, String organisationId) async {
   // Provisioning uses the administrator fixture and can exhaust its short
   // request window. Retry only transient setup failures, never auth assertions.
   final tokenResponse = await retryFixture(
-    () => API().exportTestMemberToken(
+    () => exportTestMemberToken(
       obfuscatedOrganisationId: organisationId,
       memberEmail: email,
     ),

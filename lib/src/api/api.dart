@@ -83,21 +83,6 @@ dart pub global activate onepub
     return OnePubToken(response);
   }
 
-  /// Test-only endpoint for obtaining a member token scoped to
-  /// [obfuscatedOrganisationId]. Requires test endpoints and a System
-  /// Administrator token on the server.
-  Future<OnePubToken> exportTestMemberToken({
-    required String obfuscatedOrganisationId,
-    required String memberEmail,
-  }) async {
-    final endpoint = 'test/member/exportToken/$obfuscatedOrganisationId/'
-        '${Uri.encodeComponent(memberEmail)}';
-    final response =
-        await sendCommand(command: endpoint, commandType: CommandType.cli);
-
-    return OnePubToken(response);
-  }
-
   /// Fetches the organisation details associated with the [onepubToken]
   Future<Organisation> fetchOrganisation(String onepubToken) async {
     // the import is an alternate (from login) form of getting

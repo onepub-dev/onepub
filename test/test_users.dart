@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-
 import 'package:dcli/dcli.dart';
 import 'package:onepub/src/api/api.dart';
 import 'package:onepub/src/api/member.dart';
@@ -8,10 +7,9 @@ import 'package:onepub/src/api/member_create.dart';
 import 'package:onepub/src/api/member_response.dart';
 import 'package:onepub/src/api/onepub_token.dart';
 import 'package:onepub/src/exceptions.dart';
-import 'package:onepub/src/util/one_pub_token_store.dart';
 import 'package:onepub/src/util/role_enum.dart';
 import 'package:uuid/uuid.dart';
-
+import 'fixture_oauth.dart';
 import 'fixture_retry.dart';
 import 'fixture_roles.dart';
 import 'provisioning_fixture.dart';
@@ -27,7 +25,6 @@ class TestUsers {
   // concurrent suites and earlier runs, even when they use the same server.
   static final String suiteId =
       const Uuid().v4().replaceAll('-', '').substring(0, 16);
-  static var _loggedReducedCoverageWarning = false;
 
   final _members = FixtureRoles<RoleEnum, Member>();
 
@@ -65,23 +62,7 @@ class TestUsers {
     if (!_members.containsAll(roles)) {
       await withTestServer(() async {
         _emailNamespace ??= _defaultNamespace();
-        if (!await _hasAdminPrivileges()) {
-          if (_requireAdmin()) {
-            throw StateError(
-                'TestUsers requires a system admin login. Run: onepub login');
-          }
-          final member = await _currentMember();
-          _logReducedCoverageWarning(member.email);
-          for (final role in [
-            RoleEnum.Administrator,
-            RoleEnum.TeamLeader,
-            RoleEnum.Collaborator
-          ]) {
-            _members.set(role, member);
-          }
-          initialised = true;
-          return;
-        }
+        await FixtureOAuth.token();
         await _members.ensure(
             roles,
             (role) => switch (role) {
@@ -250,7 +231,7 @@ TestUsers: member "$emailAddress" already existed but lookup returned "${memberR
     String emailAddress, {
     String? obfuscatedOrganisationId,
   }) =>
-      API().exportTestMemberToken(
+      exportTestMemberToken(
         obfuscatedOrganisationId:
             obfuscatedOrganisationId ?? TestSettings().organisationId,
         memberEmail: emailAddress,
@@ -452,42 +433,5 @@ TestUsers: member "$emailAddress" already existed but lookup returned "${memberR
       buffer.write((isAlpha || isDigit) ? char : '_');
     }
     return buffer.toString();
-  }
-
-  Future<bool> _hasAdminPrivileges() async {
-    final member = await _currentMember();
-    return member.roles.contains(RoleEnum.SystemAdministrator);
-  }
-
-  bool _requireAdmin() =>
-      (Platform.environment['ONEPUB_TEST_REQUIRE_ADMIN'] ?? '').toLowerCase() ==
-      'true';
-
-  Future<Member> _currentMember() async {
-    final token = await OnePubTokenStore().load();
-    final response = await retryTestSetup(
-      () => API().fetchMember(token),
-      (response) => response.success ? '' : response.errorMessage,
-    );
-    if (!response.success) {
-      final message = response.errorMessage.trim();
-      final effective = message.isEmpty || message == 'Empty response'
-          ? 'Unable to resolve current member from OnePub token. '
-              'The token may be invalid/expired or scoped to a different '
-              'organisation.'
-          : message;
-      throw APIException(effective);
-    }
-    return response.toMember();
-  }
-
-  void _logReducedCoverageWarning(String email) {
-    if (_loggedReducedCoverageWarning) {
-      return;
-    }
-    _loggedReducedCoverageWarning = true;
-    stderr.writeln('''
-TestUsers: reduced-coverage mode. Current member $email will be reused for Administrator, TeamLeader, and Collaborator test roles because the active token is not a System Administrator.
-TestUsers: dedicated role-based test users will not be provisioned, so role-separation coverage is reduced for this run.''');
   }
 }
