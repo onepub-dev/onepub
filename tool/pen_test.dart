@@ -178,7 +178,7 @@ class PenTestRunner {
             'results': results,
             'coverageLimits': [
               'Only listed cases ran; this is not a complete security audit.',
-              'Organisation/role/token suites await cleanup and SCIM adaptation.',
+              'Organisation/role/token suites require the separate isolated provisioning harness.',
               'Browser, XSS, payment and JWKS tests need separate fixtures.',
               'HTTP search responses do not establish search result isolation.',
             ],

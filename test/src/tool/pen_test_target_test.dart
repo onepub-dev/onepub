@@ -116,6 +116,8 @@ void main() {
       'https://test.example#fragment',
       'https://onepub.dev',
       'https://www.onepub.dev',
+      'https://onepub.dev.',
+      'https://WWW.ONEPUB.DEV.:8443',
     ]) {
       expect(() => PenTestTarget(value), throwsArgumentError);
     }

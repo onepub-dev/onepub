@@ -12,7 +12,9 @@ class PenTestTarget {
           'Target must be an HTTP(S) origin without credentials, '
           'a path, query or fragment.');
     }
-    if (['onepub.dev', 'www.onepub.dev'].contains(origin.host.toLowerCase())) {
+    final canonicalHost =
+        origin.host.toLowerCase().replaceFirst(RegExp(r'\.$'), '');
+    if (['onepub.dev', 'www.onepub.dev'].contains(canonicalHost)) {
       throw ArgumentError('Production OnePub is outside this pen test scope.');
     }
   }
