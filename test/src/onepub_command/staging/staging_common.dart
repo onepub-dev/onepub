@@ -11,6 +11,7 @@ import 'package:onepub/src/token_store/io.dart';
 import 'package:onepub/src/util/one_pub_token_store.dart';
 import 'package:onepub/src/util/send_command.dart';
 
+import '../../../provisioning_fixture.dart';
 import '../../../test_settings.dart';
 import '../../../test_users.dart';
 import 'publish_test_package.dart';
@@ -96,18 +97,24 @@ class StagingConfig {
         forbiddenTeam: _env('ONEPUB_FORBIDDEN_TEAM', ''),
         rateRoute: _env('ONEPUB_RATE_ROUTE', 'organisation/details'),
         rateRequests: int.parse(_env('ONEPUB_RATE_REQUESTS', '75')),
-        downloadLimitRequests:
-            int.parse(_env('ONEPUB_DOWNLOAD_LIMIT_REQUESTS', '75')),
-        downloadLimitPackageSizeMb:
-            int.parse(_env('ONEPUB_DOWNLOAD_LIMIT_PACKAGE_SIZE_MB', '8')),
-        downloadLimitConcurrency:
-            int.parse(_env('ONEPUB_DOWNLOAD_LIMIT_CONCURRENCY', '20')),
-        downloadStressRequests:
-            int.parse(_env('ONEPUB_DOWNLOAD_STRESS_REQUESTS', '50')),
-        downloadStressConcurrency:
-            int.parse(_env('ONEPUB_DOWNLOAD_STRESS_CONCURRENCY', '20')),
-        downloadStressPackageSizeMb:
-            int.parse(_env('ONEPUB_DOWNLOAD_STRESS_PACKAGE_SIZE_MB', '0')),
+        downloadLimitRequests: int.parse(
+          _env('ONEPUB_DOWNLOAD_LIMIT_REQUESTS', '75'),
+        ),
+        downloadLimitPackageSizeMb: int.parse(
+          _env('ONEPUB_DOWNLOAD_LIMIT_PACKAGE_SIZE_MB', '8'),
+        ),
+        downloadLimitConcurrency: int.parse(
+          _env('ONEPUB_DOWNLOAD_LIMIT_CONCURRENCY', '20'),
+        ),
+        downloadStressRequests: int.parse(
+          _env('ONEPUB_DOWNLOAD_STRESS_REQUESTS', '50'),
+        ),
+        downloadStressConcurrency: int.parse(
+          _env('ONEPUB_DOWNLOAD_STRESS_CONCURRENCY', '20'),
+        ),
+        downloadStressPackageSizeMb: int.parse(
+          _env('ONEPUB_DOWNLOAD_STRESS_PACKAGE_SIZE_MB', '0'),
+        ),
         securityAlternateOrganisationId: _env('ONEPUB_SECURITY_ALT_ORG_ID', ''),
         skipPackageCreate: _flag('ONEPUB_SKIP_PACKAGE_CREATE'),
         skipCleanup: _flag('ONEPUB_SKIP_CLEANUP'),
@@ -172,8 +179,11 @@ class ProvisionedTestOrganisation {
 
 var _loggedReducedCoverageWarning = false;
 
-Future<void> ensureTestUsers(StagingConfig config,
-    {String? preferredOrgId, bool provisionAllRoles = false}) async {
+Future<void> ensureTestUsers(
+  StagingConfig config, {
+  String? preferredOrgId,
+  bool provisionAllRoles = false,
+}) async {
   final isAdmin = await hasSystemAdminToken(
     config,
     preferredOrgId: preferredOrgId,
@@ -183,16 +193,21 @@ Future<void> ensureTestUsers(StagingConfig config,
     return;
   }
 
-  await _withTokenScope(config, preferredOrgId: preferredOrgId,
-      action: (settings) async {
-    final namespace = _sanitizeNamespace('''
+  await _withTokenScope(
+    config,
+    preferredOrgId: preferredOrgId,
+    action: (settings) async {
+      final namespace = _sanitizeNamespace(
+        '''
 ${Uri.parse(settings.onepubUrl ?? OnePubSettings.defaultOnePubUrl).host}'''
-        '-${settings.obfuscatedOrganisationId}-${TestUsers.suiteId}');
-    await _respectProvisionCooldown(namespace);
-    TestUsers.configureEmailNamespace(namespace);
-    await TestUsers(init: true).init(provisionAllRoles: provisionAllRoles);
-    await _recordProvisionTimestamp(namespace);
-  });
+        '-${settings.obfuscatedOrganisationId}-${TestUsers.suiteId}',
+      );
+      await _respectProvisionCooldown(namespace);
+      TestUsers.configureEmailNamespace(namespace);
+      await TestUsers(init: true).init(provisionAllRoles: provisionAllRoles);
+      await _recordProvisionTimestamp(namespace);
+    },
+  );
 }
 
 Future<bool> hasSystemAdminToken(
@@ -200,19 +215,23 @@ Future<bool> hasSystemAdminToken(
   String? preferredOrgId,
 }) async {
   var isAdmin = false;
-  await _withTokenScope(config, preferredOrgId: preferredOrgId,
-      action: (_) async {
-    final token = await OnePubTokenStore().load();
-    final response = await retryTestSetup(
-      () => API().fetchMember(token),
-      (response) => response.success ? '' : response.errorMessage,
-    );
-    if (!response.success) {
-      throw StateError(
-          'Unable to check test administrator: ${response.errorMessage}');
-    }
-    isAdmin = response.roles.contains('SystemAdministrator');
-  });
+  await _withTokenScope(
+    config,
+    preferredOrgId: preferredOrgId,
+    action: (_) async {
+      final token = await OnePubTokenStore().load();
+      final response = await retryTestSetup(
+        () => API().fetchMember(token),
+        (response) => response.success ? '' : response.errorMessage,
+      );
+      if (!response.success) {
+        throw StateError(
+          'Unable to check test administrator: ${response.errorMessage}',
+        );
+      }
+      isAdmin = response.roles.contains('SystemAdministrator');
+    },
+  );
   return isAdmin;
 }
 
@@ -230,9 +249,11 @@ void _logReducedCoverageWarning(
       ? 'current organisation'
       : 'organisation $preferredOrgId';
 
-  stderr.writeln('''
+  stderr.writeln(
+    '''
 TestUsers: reduced-coverage mode. Current token for $targetUrl is not a System Administrator, so staging tests cannot provision dedicated Administrator/TeamLeader/Collaborator users for $scopedOrg.
-TestUsers: admin-backed setup will be skipped and some role-separation assertions will run against the current member instead.''');
+TestUsers: admin-backed setup will be skipped and some role-separation assertions will run against the current member instead.''',
+  );
 }
 
 Future<void> _respectProvisionCooldown(String namespace) async {
@@ -263,20 +284,23 @@ Future<void> _recordProvisionTimestamp(String namespace) async {
   await marker.writeAsString('${DateTime.now().millisecondsSinceEpoch}');
 }
 
-File _provisionCooldownFile(String namespace) => File(
-      '${Directory.systemTemp.path}/onepub_test_user_cooldown_$namespace',
-    );
+File _provisionCooldownFile(String namespace) =>
+    File('${Directory.systemTemp.path}/onepub_test_user_cooldown_$namespace');
 
 Future<void> withAdmin(
-    StagingConfig config, Future<void> Function(StagingContext context) action,
-    {String? preferredOrgId}) async {
+  StagingConfig config,
+  Future<void> Function(StagingContext context) action, {
+  String? preferredOrgId,
+}) async {
   await withMember(config, action, preferredOrgId: preferredOrgId);
 }
 
 /// Use a suite-owned administrator so rate limits and token
 /// invalidation cannot affect another suite or the bootstrap administrator.
 Future<void> withSuiteAdministrator(
-    StagingConfig config, Future<void> Function(StagingContext) action) async {
+  StagingConfig config,
+  Future<void> Function(StagingContext) action,
+) async {
   if (!TestUsers.initialised) {
     await ensureTestUsers(config);
   }
@@ -293,22 +317,29 @@ Future<void> withSuiteAdministrator(
 }
 
 Future<void> withMember(
-    StagingConfig config, Future<void> Function(StagingContext context) action,
-    {String? preferredOrgId}) async {
+  StagingConfig config,
+  Future<void> Function(StagingContext context) action, {
+  String? preferredOrgId,
+}) async {
   final orgId = (preferredOrgId != null && preferredOrgId.trim().isNotEmpty)
       ? preferredOrgId.trim()
       : null;
 
-  await _withTokenScope(config, preferredOrgId: orgId,
-      action: (settings) async {
-    await assertLoggedIn(settings);
-    await _withContext(settings, action);
-  });
+  await _withTokenScope(
+    config,
+    preferredOrgId: orgId,
+    action: (settings) async {
+      await assertLoggedIn(settings);
+      await _withContext(settings, action);
+    },
+  );
 }
 
 Future<PublishedPackage> publishAndVerify(
-    StagingContext context, StagingConfig config,
-    {int largeNativeAssetMb = 0}) async {
+  StagingContext context,
+  StagingConfig config, {
+  int largeNativeAssetMb = 0,
+}) async {
   final publishResult = await publishTestPackage(
     packagePrefix: config.packagePrefix,
     apiUrl: context.apiUrl,
@@ -359,25 +390,29 @@ Future<void> withScopedOrganisationToken({
         ..operatorEmail = operatorEmail
         ..organisationName = organisationName
         ..obfuscatedOrganisationId = organisationId
-        ..onepubUrl =
-            assertSafeOnePubTestUrl(onepubUrl, source: 'withScopedMemberToken');
+        ..onepubUrl = assertSafeOnePubTestUrl(
+          onepubUrl,
+          source: 'withScopedMemberToken',
+        );
       await settings.save();
 
-      await OnePubTokenStore.withPathTo('${tempDir.path}/config/dart',
-          () async {
-        await OnePubTokenStore().addToken(
-          onepubApiUrl: settings.onepubApiUrlAsString,
-          onepubToken: token,
-        );
-        await core.withEnvironmentAsync(
-          () => _withContext(settings, action),
-          environment: {
-            OnePubSettings.onepubPathEnvKey: tempDir.path,
-            pubTestsConfigDirKey: '${tempDir.path}/config/dart',
-            'XDG_CONFIG_HOME': '${tempDir.path}/config',
-          },
-        );
-      });
+      await OnePubTokenStore.withPathTo(
+        '${tempDir.path}/config/dart',
+        () async {
+          await OnePubTokenStore().addToken(
+            onepubApiUrl: settings.onepubApiUrlAsString,
+            onepubToken: token,
+          );
+          await core.withEnvironmentAsync(
+            () => _withContext(settings, action),
+            environment: {
+              OnePubSettings.onepubPathEnvKey: tempDir.path,
+              pubTestsConfigDirKey: '${tempDir.path}/config/dart',
+              'XDG_CONFIG_HOME': '${tempDir.path}/config',
+            },
+          );
+        },
+      );
     });
   } finally {
     await tempDir.delete(recursive: true);
@@ -389,55 +424,51 @@ Future<ProvisionedTestOrganisation> createProvisionedTestOrganisation(
   required String plan,
 }) async {
   late final ProvisionedTestOrganisation provisioned;
-  await _withTokenScope(config, action: (settings) async {
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final organisationName = stagingTestOrganisationName(
-      plan,
-      timestamp,
-      Platform.environment['ONEPUB_PENTEST_RUN_ID'],
-    );
-    final response = await sendCommand(
-      command:
-          'test/organisation/create/${Uri.encodeComponent(organisationName)}'
-          '?plan=${Uri.encodeQueryComponent(plan)}&dedicatedOwner=true',
-      commandType: CommandType.cli,
-    );
-    if (!response.success) {
-      throw StateError(
-        'Unable to create $plan test organisation: ${response.errorMessage}',
+  await _withTokenScope(
+    config,
+    action: (settings) async {
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final organisationName = stagingTestOrganisationName(
+        plan,
+        timestamp,
+        Platform.environment['ONEPUB_PENTEST_RUN_ID'],
       );
-    }
-    final body = response.parseCli(CliTestOrganisationBody.fromJson).body;
-    if (body == null) {
-      throw StateError('Missing body while creating $plan test organisation.');
-    }
-    if (body.onepubToken.isEmpty ||
-        body.obfuscatedId.isEmpty ||
-        body.organisationName.isEmpty ||
-        body.operatorEmail.isEmpty) {
-      throw StateError(
-        'Incomplete response while creating $plan test organisation.',
+      final resource = await ProvisioningFixture().createOrganisation(
+        name: organisationName,
+        plan: plan,
       );
-    }
-    if (body.plan != plan) {
-      throw StateError(
-        'Created organisation plan mismatch. Expected $plan, got ${body.plan}.',
-      );
-    }
+      final body = CliTestOrganisationBody.fromJson(resource);
+      if (body.onepubToken.isEmpty ||
+          body.obfuscatedId.isEmpty ||
+          body.organisationName.isEmpty ||
+          body.operatorEmail.isEmpty) {
+        throw StateError(
+          'Incomplete response while creating $plan test organisation.',
+        );
+      }
+      if (body.plan != plan) {
+        throw StateError(
+          'Created organisation plan mismatch. '
+          'Expected $plan, got ${body.plan}.',
+        );
+      }
 
-    provisioned = ProvisionedTestOrganisation(
-      onepubUrl: settings.onepubUrl ?? OnePubSettings.defaultOnePubUrl,
-      organisationName: body.organisationName,
-      organisationId: body.obfuscatedId,
-      operatorEmail: body.operatorEmail,
-      onepubToken: body.onepubToken,
-      plan: body.plan,
-    );
-    stdout.writeln('Disposable test organisation created: '
+      provisioned = ProvisionedTestOrganisation(
+        onepubUrl: settings.onepubUrl ?? OnePubSettings.defaultOnePubUrl,
+        organisationName: body.organisationName,
+        organisationId: body.obfuscatedId,
+        operatorEmail: body.operatorEmail,
+        onepubToken: body.onepubToken,
+        plan: body.plan,
+      );
+      stdout.writeln(
+        'Disposable test organisation created: '
         'run=${Platform.environment['ONEPUB_PENTEST_RUN_ID'] ?? 'unlabelled'} '
         'id=${provisioned.organisationId} '
-        'name=${provisioned.organisationName}');
-  });
+        'name=${provisioned.organisationName}',
+      );
+    },
+  );
   return provisioned;
 }
 
@@ -445,31 +476,29 @@ Future<void> closeProvisionedTestOrganisation(
   StagingConfig config,
   ProvisionedTestOrganisation provisioned,
 ) async {
-  await _withTokenScope(config, action: (_) async {
-    final response = await sendCommand(
-      command: testOrganisationCloseCommand(provisioned),
-      commandType: CommandType.cli,
-      method: Method.post,
-    );
-    if (!response.success) {
-      throw StateError('Test organisation closure failed: HTTP '
-          '${response.status}; organisation=${provisioned.organisationId}.');
-    }
-    stdout.writeln('Disposable test organisation closed: '
+  await _withTokenScope(
+    config,
+    action: (_) async {
+      await ProvisioningFixture().closeOrganisation(
+        id: provisioned.organisationId,
+        name: provisioned.organisationName,
+      );
+      stdout.writeln(
+        'Disposable test organisation closed: '
         'id=${provisioned.organisationId} '
-        'name=${provisioned.organisationName}');
-  });
+        'name=${provisioned.organisationName}',
+      );
+    },
+  );
 }
-
-String testOrganisationCloseCommand(ProvisionedTestOrganisation provisioned) =>
-    'test/organisation/close/${Uri.encodeComponent(provisioned.organisationId)}'
-    '?name=${Uri.encodeQueryComponent(provisioned.organisationName)}';
 
 String stagingTestOrganisationName(String plan, int timestamp, String? runId) {
   final suffix = runId == null || runId.isEmpty ? '' : '${runId}_';
   if (suffix.isNotEmpty && !RegExp(r'^[a-z0-9_]{1,20}$').hasMatch(runId!)) {
-    throw ArgumentError('ONEPUB_PENTEST_RUN_ID must be 1..20 lowercase '
-        'letters, digits or underscores.');
+    throw ArgumentError(
+      'ONEPUB_PENTEST_RUN_ID must be 1..20 lowercase '
+      'letters, digits or underscores.',
+    );
   }
   return 'onepub_staging_test_download_limit_${plan}_$suffix$timestamp';
 }
@@ -486,7 +515,7 @@ Future<List<CliTeamInfo>> listAvailableTeams() async {
   const maxAttempts = 4;
   for (var attempt = 1; attempt <= maxAttempts; attempt++) {
     final response = await sendCommand(
-      command: 'test/team/list',
+      command: 'team/list',
       commandType: CommandType.cli,
     );
     if (response.success) {
@@ -587,11 +616,15 @@ String _env(String key, String fallback) =>
 bool _flag(String key) =>
     (Platform.environment[key] ?? '').toLowerCase() == 'true';
 
-Future<void> _withTokenScope(StagingConfig config,
-    {required Future<void> Function(OnePubSettings settings) action,
-    String? preferredOrgId}) async {
-  final tokenInfo =
-      await _loadStagingToken(config, preferredOrgIdOverride: preferredOrgId);
+Future<void> _withTokenScope(
+  StagingConfig config, {
+  required Future<void> Function(OnePubSettings settings) action,
+  String? preferredOrgId,
+}) async {
+  final tokenInfo = await _loadStagingToken(
+    config,
+    preferredOrgIdOverride: preferredOrgId,
+  );
   final tempDir = await Directory.systemTemp.createTemp('onepub_admin_');
   try {
     await OnePubSettings.withPathTo(tempDir.path, () async {
@@ -600,44 +633,48 @@ Future<void> _withTokenScope(StagingConfig config,
         ..obfuscatedOrganisationId = tokenInfo.organisationId;
       await settings.save();
 
-      await OnePubTokenStore.withPathTo('${tempDir.path}/config/dart',
-          () async {
-        await OnePubTokenStore().addToken(
-          onepubApiUrl: settings.onepubApiUrlAsString,
-          onepubToken: tokenInfo.token,
-        );
-        await core.withEnvironmentAsync(
-          () => action(settings),
-          environment: {
-            OnePubSettings.onepubPathEnvKey: tempDir.path,
-            pubTestsConfigDirKey: '${tempDir.path}/config/dart',
-            'XDG_CONFIG_HOME': '${tempDir.path}/config',
-          },
-        );
-      });
+      await OnePubTokenStore.withPathTo(
+        '${tempDir.path}/config/dart',
+        () async {
+          await OnePubTokenStore().addToken(
+            onepubApiUrl: settings.onepubApiUrlAsString,
+            onepubToken: tokenInfo.token,
+          );
+          await core.withEnvironmentAsync(
+            () => action(settings),
+            environment: {
+              OnePubSettings.onepubPathEnvKey: tempDir.path,
+              pubTestsConfigDirKey: '${tempDir.path}/config/dart',
+              'XDG_CONFIG_HOME': '${tempDir.path}/config',
+            },
+          );
+        },
+      );
     });
   } finally {
     await tempDir.delete(recursive: true);
   }
 }
 
-Future<void> _withContext(OnePubSettings settings,
-    Future<void> Function(StagingContext) action) async {
+Future<void> _withContext(
+  OnePubSettings settings,
+  Future<void> Function(StagingContext) action,
+) async {
   final onepubUrl = settings.onepubUrl ?? OnePubSettings.defaultOnePubUrl;
   final apiUrl = settings.onepubApiUrlAsString;
   stdout
     ..writeln('OnePub URL: $onepubUrl')
     ..writeln('API URL: $apiUrl');
 
-  await action(StagingContext(
-    settings: settings,
-    apiUrl: apiUrl,
-    onepubUrl: onepubUrl,
-  ));
+  await action(
+    StagingContext(settings: settings, apiUrl: apiUrl, onepubUrl: onepubUrl),
+  );
 }
 
-Future<_StagingTokenInfo> _loadStagingToken(StagingConfig config,
-    {String? preferredOrgIdOverride}) async {
+Future<_StagingTokenInfo> _loadStagingToken(
+  StagingConfig config, {
+  String? preferredOrgIdOverride,
+}) async {
   final testSettings = TestSettings();
   final onepubUrl = TestSettings.resolveOnePubUrl(override: config.stagingUrl);
   final target = Uri.parse(onepubUrl);
@@ -697,23 +734,27 @@ Future<_StagingTokenInfo> _loadStagingToken(StagingConfig config,
     }
   }
   if (match == null && explicitOrgId.isNotEmpty) {
-    throw StateError('No OnePub token found for host $host '
-        'and organisationId $explicitOrgId. '
-        'Run: onepub login for the Team-plan organisation and retry.');
+    throw StateError(
+      'No OnePub token found for host $host '
+      'and organisationId $explicitOrgId. '
+      'Run: onepub login for the Team-plan organisation and retry.',
+    );
   }
   match ??= credentials.firstWhere(
     (credential) =>
         credential.url.origin == target.origin &&
         _hasResolvableToken(credential),
     orElse: () => throw StateError(
-        'No OnePub token found for host $host. Run: onepub login'),
+      'No OnePub token found for host $host. Run: onepub login',
+    ),
   );
 
   final token = await _extractToken(match);
   final organisationId = _extractOrganisationId(match.url);
   if (organisationId == null || organisationId.isEmpty) {
     throw StateError(
-        'Unable to determine organisationId from token url ${match.url}.');
+      'Unable to determine organisationId from token url ${match.url}.',
+    );
   }
 
   return _StagingTokenInfo(

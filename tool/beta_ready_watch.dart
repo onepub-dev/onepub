@@ -3,7 +3,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-
 import 'dart:typed_data';
 
 import 'package:args/args.dart';
@@ -11,6 +10,7 @@ import 'package:dcli/dcli.dart' as dcli;
 import 'package:onepub/src/util/one_pub_token_store.dart';
 import 'package:pub_semver/pub_semver.dart';
 
+import '../test/fixture_oauth.dart';
 import 'pen_test_target.dart';
 
 Future<void> main(List<String> arguments) async {
@@ -64,7 +64,7 @@ Future<void> main(List<String> arguments) async {
           previous = state;
         }
         if (servedVersion == targetVersion) {
-          final gate = await check(client, '/api/test/whoami', token: token);
+          final gate = await checkFixtureActivation(client, token);
           print('test endpoint: HTTP ${gate.statusCode}');
           if (gate.statusCode == HttpStatus.ok) {
             print('READY: $targetVersion and activation confirmed.');
@@ -88,6 +88,13 @@ Future<void> main(List<String> arguments) async {
   } finally {
     client.close(force: true);
   }
+}
+
+Future<({int statusCode, String body})> checkFixtureActivation(
+    HttpClient client, String actor) async {
+  final access =
+      await FixtureOAuth.token(actor: actor, onepubUrl: penTestTarget.url);
+  return await check(client, '/api/test/whoami', token: 'Bearer $access');
 }
 
 Future<({int statusCode, String body})> check(HttpClient client, String path,

@@ -1,3 +1,7 @@
+# Unreleased
+
+- Check the current member using their authenticated session without putting their access token in the request URL. Requires the updated OnePub server.
+
 # 7.1.2
 
 - Automatically use the publishing identity supplied by Azure Pipelines' AzureCLI

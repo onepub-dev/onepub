@@ -20,16 +20,18 @@ void main() {
       requests.add(request.uri.path);
       expect(request.headers.value('authorization'), 'run-token');
       request.response.headers.contentType = ContentType.json;
-      request.response.write(jsonEncode({
-        'body': {
-          'email': 'run-admin@example.test',
-          'firstname': 'Run',
-          'lastname': 'Administrator',
-          'roles': ['SystemAdministrator'],
-          'organisationName': 'Run organisation',
-          'obfuscateOrganisationId': 'run-org',
-        },
-      }));
+      request.response.write(
+        jsonEncode({
+          'body': {
+            'email': 'run-admin@example.test',
+            'firstname': 'Run',
+            'lastname': 'Administrator',
+            'roles': ['SystemAdministrator'],
+            'organisationName': 'Run organisation',
+            'obfuscateOrganisationId': 'run-org',
+          },
+        }),
+      );
       await request.response.close();
     });
   });
@@ -45,60 +47,72 @@ void main() {
         'onepub_token': 'run-token',
       };
 
-  test('nested setup keeps the validated run token without shared YAML',
-      () async {
-    await core.withEnvironmentAsync(() async {
-      final settings = TestSettings();
-      expect(settings.member, 'run-admin@example.test');
-      expect(settings.organisationId, 'run-org');
-      await withTestServer(() async {
-        expect(await OnePubTokenStore().load(), 'run-token');
-        // Staging setup nests TestUsers.init inside its outer token scope.
-        await withTestServer(() async {
-          expect(await OnePubTokenStore().load(), 'run-token');
-        });
-        expect(await OnePubTokenStore().load(), 'run-token');
-      });
-      expect(requests, [
-        '/api/test/member/details/run-token',
-        '/api/test/member/details/run-token',
-      ]);
-      expect(settings.save, throwsStateError);
-    }, environment: {
-      TestSettings.runSettingsEnvironmentKey: jsonEncode(snapshot()),
-      'ONEPUB_STAGING_URL': target,
-      'ONEPUB_TOKEN': 'unrelated-publishing-token',
-    });
-  });
+  test(
+    'nested setup keeps the validated run token without shared YAML',
+    () async {
+      await core.withEnvironmentAsync(
+        () async {
+          final settings = TestSettings();
+          expect(settings.member, 'run-admin@example.test');
+          expect(settings.organisationId, 'run-org');
+          await withTestServer(() async {
+            expect(await OnePubTokenStore().load(), 'run-token');
+            // Staging setup nests TestUsers.init inside its outer token scope.
+            await withTestServer(() async {
+              expect(await OnePubTokenStore().load(), 'run-token');
+            });
+            expect(await OnePubTokenStore().load(), 'run-token');
+          });
+          expect(requests, ['/api/member/whoami', '/api/member/whoami']);
+          expect(settings.save, throwsStateError);
+        },
+        environment: {
+          TestSettings.runSettingsEnvironmentKey: jsonEncode(snapshot()),
+          'ONEPUB_STAGING_URL': target,
+          'ONEPUB_TOKEN': 'unrelated-publishing-token',
+        },
+      );
+    },
+  );
 
-  test('run snapshot still rejects production before making requests',
-      () async {
-    await core.withEnvironmentAsync(() async {
-      expect(TestSettings.new, throwsStateError);
-      expect(requests, isEmpty);
-    }, environment: {
-      TestSettings.runSettingsEnvironmentKey:
-          jsonEncode(snapshot(url: 'https://onepub.dev')),
-    });
-  });
+  test(
+    'run snapshot still rejects production before making requests',
+    () async {
+      await core.withEnvironmentAsync(
+        () async {
+          expect(TestSettings.new, throwsStateError);
+          expect(requests, isEmpty);
+        },
+        environment: {
+          TestSettings.runSettingsEnvironmentKey: jsonEncode(
+            snapshot(url: 'https://onepub.dev'),
+          ),
+        },
+      );
+    },
+  );
 
-  test('malformed run snapshot fails closed without disclosing its content',
-      () async {
-    for (final content in [
-      'secret-canary',
-      '{"onepub_token":"secret-canary"}'
-    ]) {
-      await core.withEnvironmentAsync(() async {
-        expect(
-          TestSettings.new,
-          throwsA(isA<StateError>().having(
-            (error) => error.message,
-            'message',
-            'Invalid isolated system-test settings.',
-          )),
-        );
-        expect(requests, isEmpty);
-      }, environment: {TestSettings.runSettingsEnvironmentKey: content});
-    }
-  });
+  test(
+    'malformed run snapshot fails closed without disclosing its content',
+    () async {
+      for (final content in [
+        'secret-canary',
+        '{"onepub_token":"secret-canary"}',
+      ]) {
+        await core.withEnvironmentAsync(() async {
+          expect(
+            TestSettings.new,
+            throwsA(
+              isA<StateError>().having(
+                (error) => error.message,
+                'message',
+                'Invalid isolated system-test settings.',
+              ),
+            ),
+          );
+          expect(requests, isEmpty);
+        }, environment: {TestSettings.runSettingsEnvironmentKey: content});
+      }
+    },
+  );
 }

@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:dcli/posix.dart' show chmod;
 import 'package:path/path.dart' as p;
 
 String get _root => Directory.current.path;
@@ -9,21 +10,29 @@ Directory get _state =>
 Future<void> startLocalServer() async {
   final state = _state;
   if (state.existsSync()) {
-    throw StateError('''
-A critical_test server is already active. Run the post-hook to stop it first.''');
+    throw StateError(
+      '''
+A critical_test server is already active. Run the post-hook to stop it first.''',
+    );
+  }
+  if (await state.parent.resolveSymbolicLinks() != state.parent.absolute.path) {
+    throw StateError(
+      'Critical-test metadata must not traverse symbolic links.',
+    );
   }
   state.createSync(recursive: true);
-  final deploy = p.normalize(p.join(_root, '..', 'onepub-deploy'));
+  chmod(state.path, permission: '700');
+  final deploy = p.normalize(
+    Platform.environment['ONEPUB_DEPLOY_TEST_REPOSITORY'] ??
+        p.join(_root, '..', 'onepub-deploy'),
+  );
   try {
     final process = await Process.start(
-        Platform.resolvedExecutable,
-        [
-          '--packages=$deploy/.dart_tool/package_config.json',
-          p.join(_root, 'tool', 'critical_test', 'fixture_host.dart'),
-          deploy,
-          state.path,
-        ],
-        mode: ProcessStartMode.detached);
+      p.join(deploy, 'tool', 'serve_cli_test_fixture.dart'),
+      [deploy, _root, state.path],
+      workingDirectory: deploy,
+      mode: ProcessStartMode.detached,
+    );
     final deadline = DateTime.now().add(const Duration(minutes: 10));
     while (!File(p.join(state.path, 'ready')).existsSync()) {
       if (Platform.isLinux && !Directory('/proc/${process.pid}').existsSync()) {
@@ -32,6 +41,27 @@ A critical_test server is already active. Run the post-hook to stop it first.'''
       }
       if (File(p.join(state.path, 'failed')).existsSync() ||
           DateTime.now().isAfter(deadline)) {
+        final failure = File(p.join(state.path, 'failed'));
+        final marker = failure.existsSync() ? failure.readAsStringSync() : '';
+        const phases = {
+          'host-start',
+          'settings',
+          'stack-create',
+          'database-start',
+          'database-plan',
+          'server-start',
+          'server-ready',
+          'member-bootstrap',
+          'identity-settings',
+          'oauth-bootstrap',
+          'broker-start',
+        };
+        final phase = marker.startsWith('fixture-phase:')
+            ? marker.substring('fixture-phase:'.length)
+            : 'host-start';
+        stderr.writeln(
+          'fixture-phase:${phases.contains(phase) ? phase : 'host-start'}',
+        );
         throw StateError('The local Docker test server failed to start.');
       }
       await Future<void>.delayed(const Duration(seconds: 1));

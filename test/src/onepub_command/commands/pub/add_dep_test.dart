@@ -1,5 +1,6 @@
 @Tags(['onepub_command', 'integration'])
 library;
+
 /* Copyright (C) OnePub IP Pty Ltd - All Rights Reserved
  * licensed under the GPL v2.
  * Written by Brett Sutton <bsutton@onepub.dev>, Jan 2022
@@ -18,6 +19,7 @@ import 'package:pubspec_manager/pubspec_manager.dart';
 import 'package:scope/scope.dart';
 import 'package:test/test.dart';
 
+import '../../../../fixture_oauth.dart';
 import '../../../../impersonate_user.dart';
 import '../../../../test_users.dart';
 import '../test_utils.dart';
@@ -34,39 +36,46 @@ void main() {
       // await withTestSettings((testSettings) async {
       final member = TestUsers().administrator;
       await impersonateMember(
-          member: member,
-          action: () async {
-            await _ensurePackageExists(dependencyPackageName);
-            final pathToOnePub =
-                join(DartProject.self.pathToBinDir, 'onepub.dart');
-            final pathToProjectRoot = dartProject.pathToProjectRoot;
+        member: member,
+        action: () async {
+          await _ensurePackageExists(dependencyPackageName);
+          final pathToOnePub = join(
+            DartProject.self.pathToBinDir,
+            'onepub.dart',
+          );
+          final pathToProjectRoot = dartProject.pathToProjectRoot;
 
-            // increment the package 2 version number so we can publish it.
-            final pathToPackage2Pubspec = dartProject.pathToPubSpec;
-            final pubspec = PubSpec.loadFromPath(pathToPackage2Pubspec);
+          // increment the package 2 version number so we can publish it.
+          final pathToPackage2Pubspec = dartProject.pathToPubSpec;
+          final pubspec = PubSpec.loadFromPath(pathToPackage2Pubspec);
 
-            final next = await _nextPublishVersion(
-              member.obfuscatedOrganisationId,
-              dependencyPackageName,
-              pubspec,
-            );
+          final next = await _nextPublishVersion(
+            member.obfuscatedOrganisationId,
+            dependencyPackageName,
+            pubspec,
+          );
 
-            pubspec
-              ..name.set(dependencyPackageName)
-              ..version.set(next.canonicalizedVersion)
-              ..saveTo(pathToPackage2Pubspec);
+          pubspec
+            ..name.set(dependencyPackageName)
+            ..version.set(next.canonicalizedVersion)
+            ..saveTo(pathToPackage2Pubspec);
 
-            // add new version to change log to stop pub publish complaining.
-            join(pathToProjectRoot, 'CHANGELOG.md')
-                .append('# ${pubspec.version}');
+          // add new version to change log to stop pub publish complaining.
+          join(
+            pathToProjectRoot,
+            'CHANGELOG.md',
+          ).append('# ${pubspec.version}');
 
-            '$pathToOnePub pub private'.start(
-                workingDirectory: pathToProjectRoot,
-                progress: Progress.printStdErr());
-            'dart pub publish --force'.start(
-                workingDirectory: pathToProjectRoot,
-                progress: Progress.printStdErr());
-          });
+          '$pathToOnePub pub private'.start(
+            workingDirectory: pathToProjectRoot,
+            progress: Progress.printStdErr(),
+          );
+          'dart pub publish --force'.start(
+            workingDirectory: pathToProjectRoot,
+            progress: Progress.printStdErr(),
+          );
+        },
+      );
     });
   });
   test('add_dependency ...', () async {
@@ -76,21 +85,23 @@ void main() {
       // await withTestSettings((testSettings) async {
       final member = TestUsers().administrator;
       await impersonateMember(
-          member: member,
-          action: () async {
-            var pubSpec = dartProject.pubSpec;
-            expect(pubSpec.dependencies.exists(dependencyPackageName), isFalse);
+        member: member,
+        action: () async {
+          var pubSpec = dartProject.pubSpec;
+          expect(pubSpec.dependencies.exists(dependencyPackageName), isFalse);
 
-            // run onepub add <dep>
-            final progress =
-                'dart $pathToOnePubScript pub add $dependencyPackageName'
-                    .start(workingDirectory: dartProject.pathToProjectRoot);
-            expect(progress.exitCode, equals(0));
+          // run onepub add <dep>
+          final progress =
+              'dart $pathToOnePubScript pub add $dependencyPackageName'.start(
+            workingDirectory: dartProject.pathToProjectRoot,
+          );
+          expect(progress.exitCode, equals(0));
 
-            // load the updated pubspec
-            pubSpec = PubSpec.loadFromPath(dartProject.pathToPubSpec);
-            expect(pubSpec.dependencies.exists(dependencyPackageName), isTrue);
-          });
+          // load the updated pubspec
+          pubSpec = PubSpec.loadFromPath(dartProject.pathToPubSpec);
+          expect(pubSpec.dependencies.exists(dependencyPackageName), isTrue);
+        },
+      );
     });
   });
 
@@ -100,25 +111,26 @@ void main() {
       /// await withTestSettings((testSettings) async {
       final member = TestUsers().administrator;
       await impersonateMember(
-          member: member,
-          action: () async {
-            final size = stat(dartProject.pathToPubSpec).size;
-            final scope = Scope()
-              ..value(
-                  unitTestWorkingDirectoryKey, dartProject.pathToProjectRoot);
-            await scope.run(() async {
-              await entrypoint(
-                  args: ['pub', 'add', dependencyPackageName],
-                  executableName: 'onepub');
-            });
-            expect(stat(dartProject.pathToPubSpec).size, greaterThan(size));
+        member: member,
+        action: () async {
+          final size = stat(dartProject.pathToPubSpec).size;
+          final scope = Scope()
+            ..value(unitTestWorkingDirectoryKey, dartProject.pathToProjectRoot);
+          await scope.run(() async {
+            await entrypoint(
+              args: ['pub', 'add', dependencyPackageName],
+              executableName: 'onepub',
+            );
           });
+          expect(stat(dartProject.pathToPubSpec).size, greaterThan(size));
+        },
+      );
     });
   }, skip: true);
 }
 
 Future<void> _ensurePackageExists(String packageName) async {
-  final response = await sendCommand(
+  final response = await sendFixtureCommand(
     command: 'test/package/create/$packageName?team=everyone',
     commandType: CommandType.cli,
     method: Method.post,

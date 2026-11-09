@@ -11,6 +11,7 @@ import 'package:onepub/src/util/send_command.dart';
 import 'package:path/path.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../fixture_oauth.dart';
 import 'publish_result.dart';
 
 Future<PublishResult> publishTestPackage({
@@ -74,7 +75,8 @@ Copyright (c) 2025 OnePub
       final assetPath = join(nativeDir, 'large_asset.bin');
       await _writeRandomAsset(assetPath, largeNativeAssetBytes);
       stdout.writeln(
-          'Created native asset $assetPath ($largeNativeAssetBytes bytes).');
+        'Created native asset $assetPath ($largeNativeAssetBytes bytes).',
+      );
     }
 
     final publishToken = await OnePubTokenStore().load();
@@ -91,18 +93,15 @@ Copyright (c) 2025 OnePub
     };
 
     final tokenProgress = Progress.capture();
-    await core.withEnvironmentAsync(
-      () async {
-        '${Platform.resolvedExecutable} pub token add $apiUrl '
-                '--env-var $publishTokenEnv'
-            .start(
-          workingDirectory: tempDir,
-          progress: tokenProgress,
-          nothrow: true,
-        );
-      },
-      environment: publishEnv,
-    );
+    await core.withEnvironmentAsync(() async {
+      '${Platform.resolvedExecutable} pub token add $apiUrl '
+              '--env-var $publishTokenEnv'
+          .start(
+        workingDirectory: tempDir,
+        progress: tokenProgress,
+        nothrow: true,
+      );
+    }, environment: publishEnv);
     if (tokenProgress.exitCode != 0) {
       throw StateError('''
 dart pub token add failed for $apiUrl (exit code ${tokenProgress.exitCode})
@@ -111,18 +110,17 @@ ${tokenProgress.toParagraph()}''');
     }
 
     final progress = Progress.capture();
-    await core.withEnvironmentAsync(
-      () async {
-        '${Platform.resolvedExecutable} pub publish --force'.start(
-          workingDirectory: tempDir,
-          progress: progress,
-          nothrow: true,
+    await core.withEnvironmentAsync(() async {
+      '${Platform.resolvedExecutable} pub publish --force'.start(
+        workingDirectory: tempDir,
+        progress: progress,
+        nothrow: true,
+      );
+    }, environment: publishEnv);
+    final publishOutput = progress.toParagraph().replaceAll(
+          publishToken,
+          '<redacted>',
         );
-      },
-      environment: publishEnv,
-    );
-    final publishOutput =
-        progress.toParagraph().replaceAll(publishToken, '<redacted>');
     stdout.writeln(publishOutput);
     if (progress.exitCode != 0) {
       if (publishOutput.contains('must create the package first')) {
@@ -178,7 +176,7 @@ Future<void> _ensurePackageCreated(String packageName, String? team) async {
   var attempt = 0;
   while (true) {
     attempt++;
-    response = await sendCommand(
+    response = await sendFixtureCommand(
       command: 'test/package/create/$packageName?team=$encodedTeam',
       commandType: CommandType.cli,
       method: Method.post,
@@ -189,9 +187,11 @@ Future<void> _ensurePackageCreated(String packageName, String? team) async {
     if (response.status == HttpStatus.tooManyRequests &&
         attempt < maxAttempts) {
       final backoffMs = 500 * attempt;
-      stderr.writeln('''
+      stderr.writeln(
+        '''
 Warning: package create hit HTTP 429 on attempt $attempt of $maxAttempts for
-package "$packageName"; retrying with attempt ${attempt + 1} in ${backoffMs}ms...''');
+package "$packageName"; retrying with attempt ${attempt + 1} in ${backoffMs}ms...''',
+      );
       await Future<void>.delayed(Duration(milliseconds: backoffMs));
       continue;
     }
@@ -202,35 +202,41 @@ package "$packageName"; retrying with attempt ${attempt + 1} in ${backoffMs}ms..
     final message = response.errorMessage.trim();
     if (response.status == HttpStatus.tooManyRequests) {
       throw StateError(
-          'Package create failed (HTTP 429) after $maxAttempts attempts. '
-          'Rate limited by server; retry later.');
+        'Package create failed (HTTP 429) after $maxAttempts attempts. '
+        'Rate limited by server; retry later.',
+      );
     }
     if (response.status == HttpStatus.forbidden) {
       throw StateError(
-          'Package create failed (HTTP 403): you are not permitted to create '
-          'a package for team "$teamName". Ensure this token is a member of '
-          'that team (or set ONEPUB_TEAM to a team the token belongs to). '
-          'Server message: $message');
+        'Package create failed (HTTP 403): you are not permitted to create '
+        'a package for team "$teamName". Ensure this token is a member of '
+        'that team (or set ONEPUB_TEAM to a team the token belongs to). '
+        'Server message: $message',
+      );
     }
     if (response.status == HttpStatus.badRequest && message.isNotEmpty) {
-      throw StateError('Package create failed (HTTP 400): $message '
-          '(team="$teamName").');
+      throw StateError(
+        'Package create failed (HTTP 400): $message '
+        '(team="$teamName").',
+      );
     }
     if (message.isNotEmpty && message != 'Empty response') {
       throw StateError(
-          'Package create failed (HTTP ${response.status}): $message');
+        'Package create failed (HTTP ${response.status}): $message',
+      );
     }
     throw StateError(
-        'Package create failed (HTTP ${response.status}) with empty server '
-        'message. Check team membership for "$teamName" and test-endpoint '
-        'access.');
+      'Package create failed (HTTP ${response.status}) with empty server '
+      'message. Check team membership for "$teamName" and test-endpoint '
+      'access.',
+    );
   }
 }
 
 Future<void> _listTeamsAndExit() async {
   stdout.writeln('Listing teams via test endpoint...');
   final response = await sendCommand(
-    command: 'test/team/list',
+    command: 'team/list',
     commandType: CommandType.cli,
   );
 

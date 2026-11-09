@@ -39,7 +39,7 @@ class MemberResponse {
   var notFound = false;
 
   /// if [success] is false this will contain the error message.
-  late final String? _errorMessage;
+  String? _errorMessage;
 
   /// Builds a [MemberResponse] from a raw API [response].
   MemberResponse(EndpointResponse response, this.onepubToken) {
@@ -83,12 +83,13 @@ class MemberResponse {
       enumRoles.add(RoleEnumHelper.byName(role));
     }
     return Member(
-        onepubToken: onepubToken,
-        email: email,
-        firstname: firstname,
-        lastname: lastname,
-        roles: enumRoles,
-        organisationName: organisationName,
-        obfuscatedOrganisationId: obfuscatedOrganisationId);
+      onepubToken: onepubToken,
+      email: email,
+      firstname: firstname,
+      lastname: lastname,
+      roles: enumRoles,
+      organisationName: organisationName,
+      obfuscatedOrganisationId: obfuscatedOrganisationId,
+    );
   }
 }

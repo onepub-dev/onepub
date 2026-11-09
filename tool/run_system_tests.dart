@@ -11,6 +11,7 @@ import 'package:onepub/src/onepub_settings.dart';
 import 'package:onepub/src/util/one_pub_token_store.dart';
 import 'package:onepub/src/util/send_command.dart';
 
+import '../test/fixture_oauth.dart';
 import '../test/test_settings.dart';
 import 'system_test_inventory.dart';
 import 'test_evidence.dart';
@@ -19,9 +20,8 @@ const _localUrl = 'https://squarephone.biz';
 const _stagingUrl = 'https://beta.onepub.dev';
 const _downloadLimitOrgIdDefault = '326';
 const _dartTestConfigPath = 'dart_test.yaml';
-final String _onepubRepoRoot = Directory.fromUri(
-  Platform.script.resolve('..'),
-).absolute.path;
+final String _onepubRepoRoot =
+    Directory.fromUri(Platform.script.resolve('..')).absolute.path;
 
 enum TestSuite {
   onepubCommand,
@@ -38,29 +38,41 @@ enum TestSuite {
 }
 
 void main(List<String> args) async {
+  FixtureOAuthBroker? fixtureBroker;
   final parser = ArgParser()
-    ..addOption('system',
-        abbr: 's',
-        help: 'Target system: local|staging|custom',
-        allowed: ['local', 'staging', 'custom'])
+    ..addOption(
+      'system',
+      abbr: 's',
+      help: 'Target system: local|staging|custom',
+      allowed: ['local', 'staging', 'custom'],
+    )
     ..addOption('url', help: 'Custom target URL (required for --system custom)')
-    ..addOption('suite', abbr: 't', help: 'Which tests to run', allowed: [
-      'onepub-command',
-      'staging',
-      'integration',
-      'unit',
-      'manual',
-      'download-rate',
-      'download-bytes',
-      'download-pub-flow',
-      'download-stress',
-      'download-pub-flow-stress',
-      'all',
-    ])
-    ..addOption('name',
-        help: 'Optional dart test --plain-name filter for a single test')
-    ..addMultiOption('extra',
-        help: 'Additional args passed to dart test (repeatable)')
+    ..addOption(
+      'suite',
+      abbr: 't',
+      help: 'Which tests to run',
+      allowed: [
+        'onepub-command',
+        'staging',
+        'integration',
+        'unit',
+        'manual',
+        'download-rate',
+        'download-bytes',
+        'download-pub-flow',
+        'download-stress',
+        'download-pub-flow-stress',
+        'all',
+      ],
+    )
+    ..addOption(
+      'name',
+      help: 'Optional dart test --plain-name filter for a single test',
+    )
+    ..addMultiOption(
+      'extra',
+      help: 'Additional args passed to dart test (repeatable)',
+    )
     ..addFlag('yes', abbr: 'y', help: 'Skip confirmation prompt')
     ..addFlag('dry-run', help: 'Print command and exit')
     ..addFlag('help', abbr: 'h', negatable: false);
@@ -88,6 +100,10 @@ void main(List<String> args) async {
     final nameFilter = (results['name'] as String?)?.trim();
     final extra = List<String>.from(results['extra'] as List<dynamic>);
 
+    if (_suiteRequiresTestEndpoints(suite)) {
+      fixtureBroker = await FixtureOAuth.startHarness(targetUrl);
+    }
+
     final testToken = await _ensurePreconditions(
       targetUrl: targetUrl,
       suite: suite,
@@ -108,7 +124,7 @@ void main(List<String> args) async {
     if (!testMember.success) {
       throw StateError('Unable to resolve the validated system-test member.');
     }
-    final env = <String, String>{
+    var env = <String, String>{
       ...Platform.environment,
       'ONEPUB_STAGING_URL': targetUrl,
       'ONEPUB_TEST_ORG_ID': OnePubSettings.use().obfuscatedOrganisationId,
@@ -125,6 +141,9 @@ void main(List<String> args) async {
       }),
       ..._localSuiteEnvOverrides(targetUrl: targetUrl, suite: suite),
     };
+    if (fixtureBroker != null) {
+      env = fixtureBroker.workerEnvironment(env);
+    }
 
     print('');
     print(blue('Target URL: $targetUrl'));
@@ -142,20 +161,21 @@ void main(List<String> args) async {
       return;
     }
 
-    final exitCode = await _runDartTestCommand(
+    exitCode = await _runDartTestCommand(
       command: command,
       env: env,
       suite: suite,
     );
-    exit(exitCode);
     // We need to provide a nice message.
     // ignore: avoid_catching_errors
   } on StateError catch (e) {
     stderr.writeln(red(e.message));
-    exit(1);
+    exitCode = 1;
   } on Exception catch (e) {
     stderr.writeln(red(e.toString()));
-    exit(1);
+    exitCode = 1;
+  } finally {
+    await fixtureBroker?.close();
   }
 }
 
@@ -174,10 +194,7 @@ Future<String> _ensurePreconditions({
     targetUrl: targetUrl,
     nonInteractive: nonInteractive,
   );
-  await _ensureTestEndpointsReady(
-    targetUrl: targetUrl,
-    suite: suite,
-  );
+  await _ensureTestEndpointsReady(targetUrl: targetUrl, suite: suite);
   return token;
 }
 
@@ -226,11 +243,7 @@ Future<String> _ensurePrimaryTokenForTests({
     return false;
   }
 
-  final candidates = <String>[
-    bootstrapToken,
-    settingsToken,
-    storedToken,
-  ];
+  final candidates = <String>[bootstrapToken, settingsToken, storedToken];
   final seen = <String>{};
 
   for (final candidate in candidates) {
@@ -305,7 +318,6 @@ Future<String> _resolveConfiguredTestToken({
       targetUrl: targetUrl,
       orgId: orgId,
       memberEmail: testSettings.member,
-      systemToken: token,
     );
   } catch (_) {
     return '';
@@ -316,7 +328,6 @@ Future<String> _exportTestMemberToken({
   required String targetUrl,
   required String orgId,
   required String memberEmail,
-  required String systemToken,
 }) async {
   final tempDir = await Directory.systemTemp.createTemp('onepub_test_token_');
   try {
@@ -326,18 +337,16 @@ Future<String> _exportTestMemberToken({
         ..obfuscatedOrganisationId = orgId;
       await settings.save();
 
-      final response = await sendCommand(
-        command: 'test/member/exportToken/$orgId/'
-            '${Uri.encodeComponent(memberEmail)}',
-        commandType: CommandType.cli,
-        authorised: false,
-        headers: {'authorization': systemToken},
+      final response = await exportTestMemberToken(
+        obfuscatedOrganisationId: orgId,
+        memberEmail: memberEmail,
       );
       if (!response.success) {
-        throw StateError(response.errorMessage);
+        throw StateError(
+          response.errorMessage ?? 'Fixture token export failed.',
+        );
       }
-      final envelope = response.parseCli(CliExportTokenBody.fromJson);
-      final token = envelope.body?.onepubToken ?? '';
+      final token = response.token ?? '';
       if (token.isEmpty) {
         throw StateError('test/member/exportToken returned no token.');
       }
@@ -444,10 +453,14 @@ Future<void> _ensureDartPubToken({
   required String token,
 }) async {
   final process = await Process.start(
-    'dart',
-    ['pub', 'token', 'add', apiUrl],
-    runInShell: true,
-  );
+      'dart',
+      [
+        'pub',
+        'token',
+        'add',
+        apiUrl,
+      ],
+      runInShell: true);
   process.stdin.writeln(token);
   await process.stdin.close();
   final exitCode = await process.exitCode;
@@ -467,7 +480,7 @@ Future<void> _ensureTestEndpointsReady({
     return;
   }
 
-  final response = await sendCommand(
+  final response = await sendFixtureCommand(
     command: 'test/whoami',
     commandType: CommandType.cli,
   );
@@ -513,24 +526,29 @@ bool _suiteRequiresTestEndpoints(TestSuite suite) {
   }
 }
 
-String _chooseSystem() => menu('Select target system',
-    options: ['local', 'staging', 'custom'], defaultOption: 'local');
+String _chooseSystem() => menu(
+      'Select target system',
+      options: ['local', 'staging', 'custom'],
+      defaultOption: 'local',
+    );
 
-String _chooseSuite() => menu('Select test suite',
-    options: [
-      'onepub-command',
-      'staging',
-      'integration',
-      'unit',
-      'manual',
-      'download-rate',
-      'download-bytes',
-      'download-pub-flow',
-      'download-stress',
-      'download-pub-flow-stress',
-      'all',
-    ],
-    defaultOption: 'all');
+String _chooseSuite() => menu(
+      'Select test suite',
+      options: [
+        'onepub-command',
+        'staging',
+        'integration',
+        'unit',
+        'manual',
+        'download-rate',
+        'download-bytes',
+        'download-pub-flow',
+        'download-stress',
+        'download-pub-flow-stress',
+        'all',
+      ],
+      defaultOption: 'all',
+    );
 
 String _resolveUrl(String system, String? customUrl) {
   switch (system) {
@@ -645,15 +663,18 @@ List<String> _buildDartTestCommand({
       args.add('test/src/onepub_command/staging/rate_limit_test.dart');
     case TestSuite.downloadBytes:
       args.add(
-          'test/src/onepub_command/staging/download_bytes_limit_test.dart');
+        'test/src/onepub_command/staging/download_bytes_limit_test.dart',
+      );
     case TestSuite.downloadPubFlow:
       args.add(
-          'test/src/onepub_command/staging/download_rate_limit_pub_get_api_flow_test.dart');
+        'test/src/onepub_command/staging/download_rate_limit_pub_get_api_flow_test.dart',
+      );
     case TestSuite.downloadStress:
       args.add('test/src/onepub_command/staging/download_stress_test.dart');
     case TestSuite.downloadPubFlowStress:
       args.add(
-          'test/src/onepub_command/staging/download_pub_flow_stress_test.dart');
+        'test/src/onepub_command/staging/download_pub_flow_stress_test.dart',
+      );
     case TestSuite.all:
       break;
   }
@@ -712,27 +733,32 @@ Future<int> _runDartTestCommand({
   final run = await root.createTemp('${suite.name}-');
   final configuration = File('${run.path}/dart_test.yaml')
     ..writeAsStringSync(
-        _rewriteExcludeTags(original, _excludeTagsForSuite(suite)));
+      _rewriteExcludeTags(original, _excludeTagsForSuite(suite)),
+    );
   final inventory = systemTestInventory(_onepubRepoRoot);
   // A caller's positive filter may match only one lane. Keep that selected run
   // together so an intentionally unmatched lane is not counted as an empty run.
   final splitAll = suite == TestSuite.all &&
-      !command.any((arg) =>
-          ['--plain-name', '--name', '-N', '--tags', '-t'].contains(arg) ||
-          arg.startsWith('--plain-name=') ||
-          arg.startsWith('--name=') ||
-          arg.startsWith('--tags='));
+      !command.any(
+        (arg) =>
+            ['--plain-name', '--name', '-N', '--tags', '-t'].contains(arg) ||
+            arg.startsWith('--plain-name=') ||
+            arg.startsWith('--name=') ||
+            arg.startsWith('--tags='),
+      );
   final lanes = splitAll
       ? <String, List<String>>{
           'independent': inventory.independent,
-          'serial': inventory.serial
+          'serial': inventory.serial,
         }
       : <String, List<String>>{'selected': []};
   var result = 0;
   final secrets = <String>{
     for (final entry in env.entries)
-      if (RegExp('token|secret|password|credential', caseSensitive: false)
-          .hasMatch(entry.key))
+      if (RegExp(
+        'token|secret|password|credential',
+        caseSensitive: false,
+      ).hasMatch(entry.key))
         entry.value,
   };
   final runSettings = env[TestSettings.runSettingsEnvironmentKey];
@@ -753,8 +779,13 @@ Future<int> _runDartTestCommand({
     // isolation cannot be disabled by a caller's optional extra arguments.
     for (var index = 0; index < args.length;) {
       final arg = args[index];
-      if (['-r', '--reporter', '--concurrency', '-j', '--configuration']
-          .contains(arg)) {
+      if ([
+        '-r',
+        '--reporter',
+        '--concurrency',
+        '-j',
+        '--configuration',
+      ].contains(arg)) {
         args.removeRange(index, index + 2);
       } else if (arg.startsWith('--reporter=') ||
           arg.startsWith('--concurrency=') ||
@@ -771,7 +802,7 @@ Future<int> _runDartTestCommand({
       'json',
       '--concurrency',
       if (lane.key == 'independent') '4' else '1',
-      ...lane.value
+      ...lane.value,
     ]);
     final evidence = TestEvidence(secrets, rootDirectory: _onepubRepoRoot);
     final discovered = [...inventory.independent, ...inventory.serial];
@@ -779,18 +810,30 @@ Future<int> _runDartTestCommand({
     final candidateFiles = lane.value.isNotEmpty
         ? lane.value
         : discovered
-            .where((file) =>
-                selectors.isEmpty ||
-                selectors.any((selector) =>
-                    file == selector || file.startsWith('$selector/')))
+            .where(
+              (file) =>
+                  selectors.isEmpty ||
+                  selectors.any(
+                    (selector) =>
+                        file == selector || file.startsWith('$selector/'),
+                  ),
+            )
             .toList();
     final effective = effectiveTestInventory(
-        _onepubRepoRoot, candidateFiles, args, _excludeTagsForSuite(suite));
+      _onepubRepoRoot,
+      candidateFiles,
+      args,
+      _excludeTagsForSuite(suite),
+    );
     final timer = Stopwatch()..start();
     var code = 1;
     try {
-      final process = await Process.start(command.first, args,
-          workingDirectory: _onepubRepoRoot, environment: env);
+      final process = await Process.start(
+        command.first,
+        args,
+        workingDirectory: _onepubRepoRoot,
+        environment: env,
+      );
       final output = process.stdout
           .transform(utf8.decoder)
           .transform(const LineSplitter())
@@ -806,7 +849,10 @@ Future<int> _runDartTestCommand({
         if (event is Map &&
             (event['type'] == 'error' || event['type'] == 'print')) {
           stdout.writeln(
-              evidence.sanitize('${event['message'] ?? event['error'] ?? ''}'));
+            evidence.sanitize(
+              '${event['message'] ?? event['error'] ?? ''}',
+            ),
+          );
         }
       });
       final errors = process.stderr
@@ -822,14 +868,16 @@ Future<int> _runDartTestCommand({
       }
     } finally {
       timer.stop();
-      evidence.write(Directory('${run.path}/${lane.key}'),
-          exitCode: code,
-          elapsedMs: timer.elapsedMilliseconds,
-          candidateFiles: candidateFiles,
-          requiredFiles: effective.requiredFiles,
-          excludedFiles: effective.excludedFiles,
-          discoveredInventory: discovered,
-          selectionArguments: args);
+      evidence.write(
+        Directory('${run.path}/${lane.key}'),
+        exitCode: code,
+        elapsedMs: timer.elapsedMilliseconds,
+        candidateFiles: candidateFiles,
+        requiredFiles: effective.requiredFiles,
+        excludedFiles: effective.excludedFiles,
+        discoveredInventory: discovered,
+        selectionArguments: args,
+      );
     }
     if (code != 0) {
       result = code;
@@ -932,9 +980,11 @@ void _printUsage(ArgParser parser) {
   print('  dart run tool/run_system_tests.dart');
   print('  dart run tool/run_system_tests.dart --system local --suite staging');
   print(
-      '  dart run tool/run_system_tests.dart --system staging --suite download-bytes');
+    '  dart run tool/run_system_tests.dart --system staging --suite download-bytes',
+  );
   print(
-      '  dart run tool/run_system_tests.dart --system custom --url https://my-host --suite integration');
+    '  dart run tool/run_system_tests.dart --system custom --url https://my-host --suite integration',
+  );
   print('  dart run tool/run_system_tests.dart --system local --suite all');
   print('');
   print(parser.usage);
