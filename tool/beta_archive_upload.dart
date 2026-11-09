@@ -83,7 +83,20 @@ Future<void> main(List<String> arguments) async {
       final deleted = await send(client, 'POST',
           Uri.https(betaHost, '/api/test/package/delete/$package'), token);
       print('cleanup disposable package: ${deleted.statusCode}');
-      if (deleted.statusCode < 200 || deleted.statusCode >= 300) {
+      if (deleted.statusCode != HttpStatus.notFound &&
+          (deleted.statusCode < 200 || deleted.statusCode >= 300)) {
+        exitCode = 2;
+        return;
+      }
+      // A removed test delete route also returns 404. Independently verify
+      // absence through the package API before claiming cleanup succeeded.
+      final remaining = await send(
+          client,
+          'GET',
+          Uri.https(betaHost, '/api/$organisation/api/packages/$package'),
+          token);
+      print('verify disposable package absent: ${remaining.statusCode}');
+      if (remaining.statusCode != HttpStatus.notFound) {
         exitCode = 2;
       }
       return;
