@@ -10,28 +10,34 @@ import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
 import 'beta_ready_watch.dart' as readiness;
+import 'pen_test_target.dart';
 
 /// One entry point for repeatable beta assessments. Never schedules a run.
 Future<void> main(List<String> arguments) async {
   final parser = ArgParser()
+    ..addOption('target',
+        defaultsTo: 'https://beta.onepub.dev',
+        help: 'OnePub test server origin, including optional port.')
     ..addFlag('help', abbr: 'h', negatable: false)
     ..addOption('output', help: 'New directory for private run evidence.')
     ..addOption('version', help: 'Require this exact deployed version.')
     ..addFlag('packages',
-        negatable: false,
+        defaultsTo: true,
         help: 'Include disposable archive tests; requires activation.')
     ..addFlag('stress',
-        negatable: false,
+        defaultsTo: true,
         help: 'End with 1,000 homepage requests at concurrency 10.');
   final options = parser.parse(arguments);
   if (options['help'] as bool) {
-    print('Usage: ./tool/beta_assessment.dart --output=NEW_DIRECTORY '
-        '[--version=X.Y.Z] [--packages] [--stress]\n${parser.usage}\n'
-        'Target: https://beta.onepub.dev. No redirects to other hosts.\n'
+    print('Usage: ./tool/pen_test.dart --output=NEW_DIRECTORY '
+        '[--target=URL] [--version=X.Y.Z] '
+        '[--no-packages] [--no-stress]\n${parser.usage}\n'
+        'Default target: https://beta.onepub.dev. Redirects stay disabled.\n'
         'Exit: 0 selected checks passed; 2 review needed; '
         '3 blocked or incomplete. See report.json for coverage limits.');
     return;
   }
+  selectPenTestTarget(options['target'] as String);
   final output = options['output'] as String?;
   if (output == null || output.isEmpty) {
     throw ArgumentError('--output must name a new evidence directory.');
@@ -49,14 +55,14 @@ Future<void> main(List<String> arguments) async {
   dcli.chmod(directory.path, permission: '700');
   final root = p.dirname(p.dirname(Platform.script.toFilePath()));
   final runId = DateTime.now().toUtc().microsecondsSinceEpoch.toRadixString(36);
-  final runner = AssessmentRunner(root, directory, runId)..save();
+  final runner = PenTestRunner(root, directory, runId)..save();
   try {
-    final version = await betaVersion();
+    final version = await targetVersion();
     runner.version = version;
     if (expected != null && version != expected) {
       throw StateError('Deployed version does not match --version.');
     }
-    print('Beta assessment $runId: version $version');
+    print('Pen test $runId: ${penTestTarget.url}, version $version');
     await runner.run(
         'security', 'beta_pentest.dart', ['--security', '--authenticated']);
     await runner.run('surface', 'beta_surface_paths.dart', []);
@@ -66,15 +72,18 @@ Future<void> main(List<String> arguments) async {
       await runner.packages();
     }
     if (options['stress'] as bool) {
-      if (runner.results.any((result) => result['status'] != 'passed')) {
+      if (runner.results.any((result) => result['status'] == 'blocked')) {
         runner.record('stress', 'blocked',
-            detail: 'Earlier checks require review; stress was not run.');
+            detail: 'Earlier checks are incomplete; stress was not run.');
       } else {
+        if (await targetVersion() != version) {
+          throw StateError('Target version changed before stress tests.');
+        }
         await runner.run('stress', 'beta_pentest.dart',
             ['--stress', '--requests=1000', '--concurrency=10']);
       }
     }
-    if (await betaVersion() != version) {
+    if (await targetVersion() != version) {
       runner.record('postflight', 'blocked',
           detail: 'Deployed version changed during the assessment.');
     } else {
@@ -87,19 +96,19 @@ Future<void> main(List<String> arguments) async {
     runner
       ..finished = DateTime.now().toUtc().toIso8601String()
       ..save();
-    exitCode = assessmentExitCode(runner.results);
+    exitCode = penTestExitCode(runner.results);
     print('Report: ${p.join(directory.path, 'report.json')} (exit $exitCode)');
   }
 }
 
-int assessmentExitCode(List<Map<String, Object?>> results) {
+int penTestExitCode(List<Map<String, Object?>> results) {
   if (results.any((result) => result['status'] == 'blocked')) {
     return 3;
   }
   return results.any((result) => result['status'] != 'passed') ? 2 : 0;
 }
 
-Future<String> betaVersion() async {
+Future<String> targetVersion() async {
   final client = HttpClient()..connectionTimeout = const Duration(seconds: 8);
   try {
     final response = await readiness.check(client, '/api/status');
@@ -115,8 +124,8 @@ Future<String> betaVersion() async {
   }
 }
 
-class AssessmentRunner {
-  AssessmentRunner(this.root, this.directory, this.runId,
+class PenTestRunner {
+  PenTestRunner(this.root, this.directory, this.runId,
       {this.timeout = const Duration(minutes: 10)});
 
   final String root;
@@ -145,7 +154,7 @@ class AssessmentRunner {
       ..writeAsStringSync(
           const JsonEncoder.withIndent('  ').convert({
             'schemaVersion': 1,
-            'target': 'https://beta.onepub.dev',
+            'target': penTestTarget.url,
             'runId': runId,
             'version': version,
             'started': started,
@@ -174,7 +183,10 @@ class AssessmentRunner {
       process = await Process.start(
           'setsid', [p.join(root, 'tool', script), ...arguments],
           workingDirectory: root,
-          environment: {'ONEPUB_PENTEST_RUN_ID': runId});
+          environment: {
+            'ONEPUB_PENTEST_RUN_ID': runId,
+            'ONEPUB_PENTEST_TARGET': penTestTarget.url
+          });
       // Drain both streams while retaining bounded logs.
       var retained = 0;
       void capture(List<int> bytes) {

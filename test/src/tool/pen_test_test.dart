@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:test/test.dart';
 
-import '../../../tool/beta_assessment.dart';
+import '../../../tool/pen_test.dart';
 
 void main() {
   test('a stalled child is terminated and recorded as incomplete', () async {
@@ -11,7 +11,7 @@ void main() {
     addTearDown(() => directory.deleteSync(recursive: true));
     Directory('${directory.path}/tool').createSync();
     Link('${directory.path}/tool/stalled').createSync('/bin/sleep');
-    final runner = AssessmentRunner(directory.path, directory, 'localtest',
+    final runner = PenTestRunner(directory.path, directory, 'localtest',
         timeout: const Duration(milliseconds: 100));
     final watch = Stopwatch()..start();
     expect(await runner.run('stalled', 'stalled', ['30']), isFalse);
@@ -32,22 +32,22 @@ void main() {
       'archive_traversal',
       'cleanup_traversal'
     ]);
-    expect(assessmentExitCode(runner.results), 3);
+    expect(penTestExitCode(runner.results), 3);
   });
 
   test('incomplete coverage takes precedence over review and passes', () {
     expect(
-        assessmentExitCode([
+        penTestExitCode([
           {'status': 'passed'}
         ]),
         0);
     expect(
-        assessmentExitCode([
+        penTestExitCode([
           {'status': 'review'}
         ]),
         2);
     expect(
-        assessmentExitCode([
+        penTestExitCode([
           {'status': 'review'},
           {'status': 'blocked'}
         ]),
@@ -57,7 +57,7 @@ void main() {
   test('failed process launch leaves a readable incomplete report', () async {
     final directory = Directory.systemTemp.createTempSync('beta-run-test-');
     addTearDown(() => directory.deleteSync(recursive: true));
-    final runner = AssessmentRunner(directory.path, directory, 'localtest');
+    final runner = PenTestRunner(directory.path, directory, 'localtest');
     expect(await runner.run('missing', 'absent.dart', []), isFalse);
     final report =
         jsonDecode(File('${directory.path}/report.json').readAsStringSync())
@@ -71,16 +71,16 @@ void main() {
   test('package fixture work stops when activation cannot run', () async {
     final directory = Directory.systemTemp.createTempSync('beta-gate-test-');
     addTearDown(() => directory.deleteSync(recursive: true));
-    final runner = AssessmentRunner(directory.path, directory, 'localtest')
+    final runner = PenTestRunner(directory.path, directory, 'localtest')
       ..version = '5.73.3';
     await runner.packages();
     expect(runner.results.map((result) => result['case']),
         ['activation', 'packages']);
-    expect(assessmentExitCode(runner.results), 3);
+    expect(penTestExitCode(runner.results), 3);
   });
 }
 
-class FailingArchiveRunner extends AssessmentRunner {
+class FailingArchiveRunner extends PenTestRunner {
   FailingArchiveRunner(Directory directory)
       : super(directory.path, directory, 'localtest');
 

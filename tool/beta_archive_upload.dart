@@ -6,7 +6,7 @@ import 'package:args/args.dart';
 import 'package:dcli/dcli.dart' as dcli;
 import 'package:onepub/src/util/one_pub_token_store.dart';
 
-const betaHost = 'beta.onepub.dev';
+import 'pen_test_target.dart';
 
 Future<void> main(List<String> arguments) async {
   final parser = ArgParser()
@@ -53,9 +53,9 @@ Future<void> main(List<String> arguments) async {
     throw ArgumentError('Use the fixture x.y.z version.');
   }
   final credentials = await OnePubTokenStore().credentials;
-  final matches = credentials.where((item) => item.url.host == betaHost);
+  final matches = credentials.where((item) => penTestTarget.owns(item.url));
   if (matches.isEmpty) {
-    throw StateError('No beta credential found.');
+    throw StateError('No credential found for the selected target.');
   }
   final credential = matches.first;
   final token = credential.token ?? dcli.env[credential.env ?? ''];
@@ -66,22 +66,22 @@ Future<void> main(List<String> arguments) async {
       segments.length < 2 ||
       segments[0] != 'api' ||
       !RegExp(r'^[A-Za-z0-9_-]+$').hasMatch(segments[1])) {
-    throw StateError('Beta credential is incomplete.');
+    throw StateError('Target credential is incomplete.');
   }
   final organisation = segments[1];
   final client = HttpClient()..connectionTimeout = const Duration(seconds: 8);
   var created = false;
   var retained = false;
   try {
-    final ready = await send(
-        client, 'GET', Uri.https(betaHost, '/api/test/whoami'), token);
+    final ready =
+        await send(client, 'GET', penTestTarget.uri('/api/test/whoami'), token);
     print('activation check: ${ready.statusCode}');
     if (ready.statusCode != 200) {
-      throw StateError('Beta test endpoints are not enabled.');
+      throw StateError('Target test endpoints are not enabled.');
     }
     if (cleanupOnly) {
       final deleted = await send(client, 'POST',
-          Uri.https(betaHost, '/api/test/package/delete/$package'), token);
+          penTestTarget.uri('/api/test/package/delete/$package'), token);
       print('cleanup disposable package: ${deleted.statusCode}');
       if (deleted.statusCode != HttpStatus.notFound &&
           (deleted.statusCode < 200 || deleted.statusCode >= 300)) {
@@ -90,11 +90,8 @@ Future<void> main(List<String> arguments) async {
       }
       // A removed test delete route also returns 404. Independently verify
       // absence through the package API before claiming cleanup succeeded.
-      final remaining = await send(
-          client,
-          'GET',
-          Uri.https(betaHost, '/api/$organisation/api/packages/$package'),
-          token);
+      final remaining = await send(client, 'GET',
+          penTestTarget.uri('/api/$organisation/api/packages/$package'), token);
       print('verify disposable package absent: ${remaining.statusCode}');
       if (remaining.statusCode != HttpStatus.notFound) {
         exitCode = 2;
@@ -104,8 +101,7 @@ Future<void> main(List<String> arguments) async {
     final create = await send(
         client,
         'POST',
-        Uri.https(
-            betaHost, '/api/test/package/create/$package', {'team': team}),
+        penTestTarget.uri('/api/test/package/create/$package', {'team': team}),
         token);
     print('create disposable package: ${create.statusCode}');
     if (create.statusCode < 200 || create.statusCode >= 300) {
@@ -113,8 +109,8 @@ Future<void> main(List<String> arguments) async {
     }
     created = true;
 
-    final uploadUri = Uri.https(
-        betaHost, '/api/$organisation/api/packages/versions/newUpload');
+    final uploadUri =
+        penTestTarget.uri('/api/$organisation/api/packages/versions/newUpload');
     final boundary =
         'onepub-beta-pentest-${DateTime.now().microsecondsSinceEpoch}';
     final request = await client.postUrl(uploadUri);
@@ -144,8 +140,8 @@ Future<void> main(List<String> arguments) async {
     }
     if (location != null && uploadStatus >= 200 && uploadStatus < 300) {
       final completion = uploadUri.resolve(location);
-      if (completion.scheme != 'https' || completion.host != betaHost) {
-        throw StateError('Completion URL left beta; refusing to follow it.');
+      if (!penTestTarget.owns(completion)) {
+        throw StateError('Completion URL left the selected target.');
       }
       final completed = await send(client, 'GET', completion, token,
           timeout: Duration(seconds: completionTimeout));
@@ -178,7 +174,7 @@ Future<void> main(List<String> arguments) async {
     try {
       if (created && !retained) {
         final deleted = await send(client, 'POST',
-            Uri.https(betaHost, '/api/test/package/delete/$package'), token);
+            penTestTarget.uri('/api/test/package/delete/$package'), token);
         print('cleanup disposable package: ${deleted.statusCode}');
         if (deleted.statusCode < 200 || deleted.statusCode >= 300) {
           exitCode = 2;
@@ -196,8 +192,8 @@ Future<void> main(List<String> arguments) async {
 
 Future<bool> verifyPublishedArchive(HttpClient client, String organisation,
     String package, String version, String token, List<int> expected) async {
-  final archiveUri = Uri.https(betaHost,
-      '/api/$organisation/api/packages/$package/versions/$version.tar.gz');
+  final archiveUri = penTestTarget
+      .uri('/api/$organisation/api/packages/$package/versions/$version.tar.gz');
   final redirect = await send(client, 'GET', archiveUri, token);
   if (redirect.statusCode != HttpStatus.temporaryRedirect) {
     throw StateError('Published archive did not issue a download grant.');
@@ -207,10 +203,9 @@ Future<bool> verifyPublishedArchive(HttpClient client, String organisation,
     throw StateError('Published archive grant has no Location.');
   }
   final grant = archiveUri.resolve(location);
-  if (grant.scheme != 'https' ||
-      grant.host != betaHost ||
+  if (!penTestTarget.owns(grant) ||
       !grant.path.startsWith('/api_download/private/')) {
-    throw StateError('Archive grant left beta or was not private.');
+    throw StateError('Archive grant left the target or was not private.');
   }
   final request =
       await client.getUrl(grant).timeout(const Duration(seconds: 10));
@@ -241,7 +236,7 @@ Future<bool> verifyPublishedArchive(HttpClient client, String organisation,
 Future<HttpClientResponse> send(
     HttpClient client, String method, Uri uri, String token,
     {Duration timeout = const Duration(seconds: 30)}) async {
-  if (uri.scheme != 'https' || uri.host != betaHost) {
+  if (!penTestTarget.owns(uri)) {
     throw StateError('Target guard failed: $uri');
   }
   final request =

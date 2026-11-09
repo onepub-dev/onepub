@@ -3,6 +3,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+
 import 'dart:typed_data';
 
 import 'package:args/args.dart';
@@ -10,7 +11,7 @@ import 'package:dcli/dcli.dart' as dcli;
 import 'package:onepub/src/util/one_pub_token_store.dart';
 import 'package:pub_semver/pub_semver.dart';
 
-const betaHost = 'beta.onepub.dev';
+import 'pen_test_target.dart';
 
 Future<void> main(List<String> arguments) async {
   final parser = ArgParser()
@@ -31,15 +32,14 @@ Future<void> main(List<String> arguments) async {
   }
 
   final credentials = await OnePubTokenStore().credentials;
-  final matches = credentials
-      .where((item) => item.url.scheme == 'https' && item.url.host == betaHost);
+  final matches = credentials.where((item) => penTestTarget.owns(item.url));
   if (matches.isEmpty) {
-    throw StateError('No HTTPS beta credential found.');
+    throw StateError('No credential found for the selected target.');
   }
   final credential = matches.first;
   final token = credential.token ?? dcli.env[credential.env ?? ''];
   if (token == null || token.isEmpty) {
-    throw StateError('Beta credential is incomplete.');
+    throw StateError('Target credential is incomplete.');
   }
 
   final deadline = DateTime.now().toUtc().add(Duration(minutes: minutes));
@@ -47,8 +47,8 @@ Future<void> main(List<String> arguments) async {
     ..connectionTimeout = const Duration(seconds: 5)
     ..idleTimeout = const Duration(seconds: 5);
   String? previous;
-  print(
-      'Watching https://$betaHost for $targetVersion, at most $minutes minutes.');
+  print('Watching ${penTestTarget.url} for $targetVersion, '
+      'at most $minutes minutes.');
   try {
     while (DateTime.now().toUtc().isBefore(deadline)) {
       try {
@@ -65,7 +65,7 @@ Future<void> main(List<String> arguments) async {
         }
         if (servedVersion == targetVersion) {
           final gate = await check(client, '/api/test/whoami', token: token);
-          print('beta test endpoint: HTTP ${gate.statusCode}');
+          print('test endpoint: HTTP ${gate.statusCode}');
           if (gate.statusCode == HttpStatus.ok) {
             print('READY: $targetVersion and activation confirmed.');
           } else {
@@ -92,8 +92,8 @@ Future<void> main(List<String> arguments) async {
 
 Future<({int statusCode, String body})> check(HttpClient client, String path,
     {String? token}) async {
-  final uri = Uri.https(betaHost, path);
-  if (uri.scheme != 'https' || uri.host != betaHost) {
+  final uri = penTestTarget.uri(path);
+  if (!penTestTarget.owns(uri)) {
     throw StateError('Beta target guard failed.');
   }
   final request = await client.getUrl(uri).timeout(const Duration(seconds: 8));

@@ -6,14 +6,13 @@ import 'dart:io';
 import 'package:dcli/dcli.dart' as dcli;
 import 'package:onepub/src/util/one_pub_token_store.dart';
 
-const betaHost = 'beta.onepub.dev';
+import 'pen_test_target.dart';
 
 Future<void> main() async {
   final credentials = await OnePubTokenStore().credentials;
-  final matches = credentials
-      .where((item) => item.url.scheme == 'https' && item.url.host == betaHost);
+  final matches = credentials.where((item) => penTestTarget.owns(item.url));
   if (matches.isEmpty) {
-    throw StateError('No HTTPS beta credential found.');
+    throw StateError('No credential found for the selected target.');
   }
   final credential = matches.first;
   final token = credential.token ?? dcli.env[credential.env ?? ''];
@@ -24,7 +23,7 @@ Future<void> main() async {
       token.isEmpty ||
       segments.length < 2 ||
       segments.first != 'api') {
-    throw StateError('Beta credential is incomplete.');
+    throw StateError('Target credential is incomplete.');
   }
   final organisation = segments[1];
   final client = HttpClient()
@@ -35,27 +34,27 @@ Future<void> main() async {
     final cases = <({String name, Uri uri})>[
       (
         name: 'baseline organisation lookup',
-        uri: Uri.https(betaHost, '/api/organisation/details/$organisation'),
+        uri: penTestTarget.uri('/api/organisation/details/$organisation'),
       ),
       (
         name: 'organisation quote canary',
-        uri: Uri.https(betaHost, "/api/organisation/details/'"),
+        uri: penTestTarget.uri("/api/organisation/details/'"),
       ),
       (
         name: 'organisation SQL-style canary',
-        uri: Uri.https(betaHost, "/api/organisation/details/' OR '1'='1"),
+        uri: penTestTarget.uri("/api/organisation/details/' OR '1'='1"),
       ),
       (
         name: 'package quote canary',
-        uri: Uri.https(betaHost, "/api/$organisation/api/packages/'"),
+        uri: penTestTarget.uri("/api/$organisation/api/packages/'"),
       ),
       (
         name: 'package SQL-style canary',
-        uri: Uri.https(betaHost, "/api/$organisation/api/packages/' OR '1'='1"),
+        uri: penTestTarget.uri("/api/$organisation/api/packages/' OR '1'='1"),
       ),
       (
         name: 'package encoded-null canary',
-        uri: Uri.parse('https://$betaHost/api/$organisation/api/packages/%00'),
+        uri: penTestTarget.encodedPath('/api/$organisation/api/packages/%00'),
       ),
     ];
     for (final item in cases) {
@@ -78,7 +77,7 @@ Future<void> main() async {
 
 Future<({int statusCode, String type})> probe(
     HttpClient client, Uri uri, String token) async {
-  if (uri.scheme != 'https' || uri.host != betaHost) {
+  if (!penTestTarget.owns(uri)) {
     throw StateError('Beta target guard failed.');
   }
   final request = await client.getUrl(uri).timeout(const Duration(seconds: 10));

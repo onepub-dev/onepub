@@ -3,7 +3,8 @@
 import 'dart:convert';
 import 'dart:io';
 
-const betaHost = 'beta.onepub.dev';
+import 'pen_test_target.dart';
+
 const int maxInspectedBytes = 256 * 1024;
 const paths = <String>[
   '/.env',
@@ -44,15 +45,16 @@ const secretMarkers = <String>[
 ];
 
 Future<void> main() async {
-  print('Beta surface path sweep: ${DateTime.now().toUtc().toIso8601String()}');
+  print('Surface path sweep on ${penTestTarget.url}: '
+      '${DateTime.now().toUtc().toIso8601String()}');
   final client = HttpClient()
     ..connectionTimeout = const Duration(seconds: 5)
     ..maxConnectionsPerHost = 4;
   var reviewed = 0;
   try {
     for (final path in paths) {
-      final uri = Uri.https(betaHost, path);
-      if (uri.scheme != 'https' || uri.host != betaHost) {
+      final uri = penTestTarget.uri(path);
+      if (!penTestTarget.owns(uri)) {
         throw StateError('Target guard failed.');
       }
       try {
@@ -81,7 +83,7 @@ Future<void> main() async {
         final redirect = response.headers.value(HttpHeaders.locationHeader);
         final escaped = redirect != null &&
             Uri.parse(redirect).hasAuthority &&
-            Uri.parse(redirect).host != betaHost;
+            !penTestTarget.owns(uri.resolve(redirect));
         final exposed =
             markers || escaped || (response.statusCode == 200 && !shell);
         print('$path: ${response.statusCode} $type shell=$shell '

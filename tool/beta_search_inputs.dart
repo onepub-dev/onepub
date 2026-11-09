@@ -4,7 +4,7 @@ import 'dart:io';
 
 import 'package:args/args.dart';
 
-const betaHost = 'beta.onepub.dev';
+import 'pen_test_target.dart';
 
 Future<void> main(List<String> arguments) async {
   final parser = ArgParser()..addFlag('heavy', negatable: false);
@@ -22,7 +22,7 @@ Future<void> main(List<String> arguments) async {
       'clause-flood': List.generate(1100, (index) => 't$index').join(' '),
     if (heavy) 'long-expression': 'a' * 20000,
   };
-  print('Beta search input probe: ${DateTime.now().toUtc().toIso8601String()} '
+  print('Search input probe: ${DateTime.now().toUtc().toIso8601String()} '
       'heavy=$heavy');
   final client = HttpClient()
     ..connectionTimeout = const Duration(seconds: 5)
@@ -30,8 +30,8 @@ Future<void> main(List<String> arguments) async {
   var failures = 0;
   try {
     for (final entry in cases.entries) {
-      final uri = Uri.https(betaHost, '/search', {'query': entry.value});
-      if (uri.scheme != 'https' || uri.host != betaHost) {
+      final uri = penTestTarget.uri('/search', {'query': entry.value});
+      if (!penTestTarget.owns(uri)) {
         throw StateError('Target guard failed.');
       }
       final watch = Stopwatch()..start();
