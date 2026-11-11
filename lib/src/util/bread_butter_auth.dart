@@ -11,6 +11,7 @@ import 'package:uuid/uuid.dart';
 
 import '../api/api.dart';
 import '../api/auth_response.dart';
+import '../api/login_request.dart';
 import '../exceptions.dart';
 import '../onepub_settings.dart';
 import 'send_command.dart';
@@ -20,15 +21,17 @@ class BreadButter {
   late final Completer<EndpointResponse?> completer;
 
   /// Return the auth token or null if the auth failed.
-  Future<AuthResponse> auth() {
+  Future<AuthResponse> auth({LoginRequest? routing}) async {
     final settings = OnePubSettings.use();
     final authToken = const Uuid().v4();
     final authUrl = settings.resolveWebEndPoint('clilogin/$authToken');
     final encodedUrl = Uri.encodeFull(authUrl);
     final api = API();
+    final effectiveRouting = routing?.forServer(
+        supportsEnterpriseSso: (await api.status()).supportsEnterpriseSso);
 
-    return waitForLoginResponse(
-      () => api.awaitLogin(authToken),
+    final result = await waitForLoginResponse(
+      () => api.awaitLogin(authToken, routing: effectiveRouting),
       onReady: () => print('''
 To login to OnePub...
 
@@ -37,6 +40,18 @@ ${blue(encodedUrl)}
 
 Waiting for your authorisation...'''),
     );
+    if (routing?.method == 'sso' &&
+        routing?.mode == 'fixed' &&
+        (result.loginRouting?.method != 'sso' ||
+            result.loginRouting?.organisationCode !=
+                routing?.organisationCode)) {
+      throw ExitException(
+          exitCode: 1,
+          message:
+              'The server did not confirm SSO for the requested organisation. '
+              'Your existing login has not been changed.');
+    }
+    return result;
   }
 }
 
@@ -46,14 +61,22 @@ Future<AuthResponse> waitForLoginResponse(
   void Function()? onReady,
   Future<void> Function(Duration) delay = Future<void>.delayed,
   DateTime Function() now = DateTime.now,
-  Duration timeout = const Duration(minutes: 2),
+  Duration timeout = const Duration(minutes: 5),
 }) async {
   final deadline = now().add(timeout);
   var reportedLimit = false;
   var consecutiveLimits = 0;
   var ready = false;
   while (now().isBefore(deadline)) {
-    final auth = await poll();
+    final AuthResponse auth;
+    try {
+      auth = await poll().timeout(deadline.difference(now()));
+    } on TimeoutException {
+      break;
+    }
+    if (!now().isBefore(deadline)) {
+      break;
+    }
     if (auth.status != AwaitLoginStatus.rateLimited && !ready) {
       onReady?.call();
       ready = true;
