@@ -6,6 +6,7 @@ import 'package:args/args.dart';
 import 'package:dcli/dcli.dart' as dcli;
 import 'package:onepub/src/util/one_pub_token_store.dart';
 
+import '../test/fixture_oauth.dart';
 import 'pen_test_target.dart';
 
 Future<void> main(List<String> arguments) async {
@@ -69,19 +70,23 @@ Future<void> main(List<String> arguments) async {
     throw StateError('Target credential is incomplete.');
   }
   final organisation = segments[1];
+  final fixtureToken = 'Bearer ${await FixtureOAuth.token(
+    actor: token,
+    onepubUrl: penTestTarget.url,
+  )}';
   final client = HttpClient()..connectionTimeout = const Duration(seconds: 8);
   var created = false;
   var retained = false;
   try {
-    final ready =
-        await send(client, 'GET', penTestTarget.uri('/api/test/whoami'), token);
+    final ready = await send(
+        client, 'GET', penTestTarget.uri('/api/test/whoami'), fixtureToken);
     print('activation check: ${ready.statusCode}');
     if (ready.statusCode != 200) {
       throw StateError('Target test endpoints are not enabled.');
     }
     if (cleanupOnly) {
       final deleted = await send(client, 'POST',
-          penTestTarget.uri('/api/test/package/delete/$package'), token);
+          penTestTarget.uri('/api/test/package/delete/$package'), fixtureToken);
       print('cleanup disposable package: ${deleted.statusCode}');
       if (deleted.statusCode != HttpStatus.notFound &&
           (deleted.statusCode < 200 || deleted.statusCode >= 300)) {
@@ -102,7 +107,7 @@ Future<void> main(List<String> arguments) async {
         client,
         'POST',
         penTestTarget.uri('/api/test/package/create/$package', {'team': team}),
-        token);
+        fixtureToken);
     print('create disposable package: ${create.statusCode}');
     if (create.statusCode < 200 || create.statusCode >= 300) {
       throw StateError('Could not create the disposable package.');
@@ -173,8 +178,11 @@ Future<void> main(List<String> arguments) async {
   } finally {
     try {
       if (created && !retained) {
-        final deleted = await send(client, 'POST',
-            penTestTarget.uri('/api/test/package/delete/$package'), token);
+        final deleted = await send(
+            client,
+            'POST',
+            penTestTarget.uri('/api/test/package/delete/$package'),
+            fixtureToken);
         print('cleanup disposable package: ${deleted.statusCode}');
         if (deleted.statusCode < 200 || deleted.statusCode >= 300) {
           exitCode = 2;

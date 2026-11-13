@@ -25,16 +25,18 @@ Future<void> impersonateMemberByEmail({
     if (!onepubTokenResponse.success) {
       // member doesn't exists so lets create them.
       await ProvisioningFixture().createMember(
-          userEmail: userEmailAddress,
-          firstname: 'Test',
-          lastname: 'User',
-          role: RoleEnum.Collaborator.name);
+        userEmail: userEmailAddress,
+        firstname: 'Test',
+        lastname: 'User',
+        role: RoleEnum.Collaborator.name,
+      );
       onepubTokenResponse = await API().exportMemberToken(userEmailAddress);
     }
 
     if (!onepubTokenResponse.success) {
       throw OnePubCliException(
-          'Unable to fetch user: ${onepubTokenResponse.errorMessage}');
+        'Unable to fetch user: ${onepubTokenResponse.errorMessage}',
+      );
     }
     final onepubToken = onepubTokenResponse.token!;
 
@@ -78,21 +80,24 @@ Future<void> impersonateMember({
       await settings.save();
 
       // set an alternate location for the token store
-      await OnePubTokenStore.withPathTo('$tempSettingsDir/config/dart',
-          () async {
-        await OnePubTokenStore().addToken(
+      await OnePubTokenStore.withPathTo(
+        '$tempSettingsDir/config/dart',
+        () async {
+          await OnePubTokenStore().addToken(
             onepubApiUrl: settings.onepubApiUrlAsString,
-            onepubToken: member.onepubToken);
+            onepubToken: member.onepubToken,
+          );
 
-        await core.withEnvironmentAsync(
-          environment: {
-            OnePubSettings.onepubPathEnvKey: tempSettingsDir,
-            pubTestsConfigDirKey: '$tempSettingsDir/config/dart',
-            'XDG_CONFIG_HOME': '$tempSettingsDir/config',
-          },
-          action,
-        );
-      });
+          await core.withEnvironmentAsync(
+            environment: {
+              OnePubSettings.onepubPathEnvKey: tempSettingsDir,
+              pubTestsConfigDirKey: '$tempSettingsDir/config/dart',
+              'XDG_CONFIG_HOME': '$tempSettingsDir/config',
+            },
+            action,
+          );
+        },
+      );
     });
   });
 }
@@ -107,16 +112,18 @@ Future<void> withTestZone({
     var onepubTokenResponse = await API().exportMemberToken(userEmailAddress);
     if (!onepubTokenResponse.success) {
       await ProvisioningFixture().createMember(
-          userEmail: userEmailAddress,
-          firstname: 'Test',
-          lastname: 'User',
-          role: RoleEnum.Collaborator.name);
+        userEmail: userEmailAddress,
+        firstname: 'Test',
+        lastname: 'User',
+        role: RoleEnum.Collaborator.name,
+      );
       onepubTokenResponse = await API().exportMemberToken(userEmailAddress);
     }
 
     if (!onepubTokenResponse.success) {
       throw OnePubCliException(
-          'Unable to fetch user: ${onepubTokenResponse.errorMessage}');
+        'Unable to fetch user: ${onepubTokenResponse.errorMessage}',
+      );
     }
     final onepubToken = onepubTokenResponse.token!;
 
@@ -140,7 +147,8 @@ Future<Member> fetchTestUser({required String userEmailAddress}) =>
       final response = await API().fetchMember(onepubTokenOfTargetMember);
       if (!response.success) {
         throw ImpersonationException(
-            'Unable to fetch Member: ${response.errorMessage}');
+          'Unable to fetch Member: ${response.errorMessage}',
+        );
       }
 
       return response.toMember();

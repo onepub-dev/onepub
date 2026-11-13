@@ -83,12 +83,13 @@ class MemberResponse {
       enumRoles.add(RoleEnumHelper.byName(role));
     }
     return Member(
-        onepubToken: onepubToken,
-        email: email,
-        firstname: firstname,
-        lastname: lastname,
-        roles: enumRoles,
-        organisationName: organisationName,
-        obfuscatedOrganisationId: obfuscatedOrganisationId);
+      onepubToken: onepubToken,
+      email: email,
+      firstname: firstname,
+      lastname: lastname,
+      roles: enumRoles,
+      organisationName: organisationName,
+      obfuscatedOrganisationId: obfuscatedOrganisationId,
+    );
   }
 }

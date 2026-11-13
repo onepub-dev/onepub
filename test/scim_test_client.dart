@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+
 import 'test_settings.dart';
 
 /// An ordinary OAuth client for the production SCIM protocol on test servers.
@@ -13,7 +14,8 @@ class ScimTestClient {
     required String clientId,
     required String clientSecret,
   })  : _base = Uri.parse(
-            assertSafeOnePubTestUrl(onepubUrl, source: 'SCIM test client')),
+          assertSafeOnePubTestUrl(onepubUrl, source: 'SCIM test client'),
+        ),
         _clientId = clientId,
         _clientSecret = clientSecret {
     if (_base.userInfo.isNotEmpty ||
@@ -37,7 +39,10 @@ class ScimTestClient {
       throw ArgumentError('Missing browser authorization.');
     }
     return ScimTestClient.clientCredentials(
-        onepubUrl: onepubUrl, clientId: clientId, clientSecret: clientSecret)
+      onepubUrl: onepubUrl,
+      clientId: clientId,
+      clientSecret: clientSecret,
+    )
       .._authorizationCode = authorizationCode
       .._redirectUri = redirectUri
       .._codeVerifier = codeVerifier
@@ -54,7 +59,10 @@ class ScimTestClient {
       throw ArgumentError('Missing OAuth refresh authorization.');
     }
     return ScimTestClient.clientCredentials(
-        onepubUrl: onepubUrl, clientId: clientId, clientSecret: clientSecret)
+      onepubUrl: onepubUrl,
+      clientId: clientId,
+      clientSecret: clientSecret,
+    )
       .._refreshToken = refreshToken
       .._browserAuthorization = true;
   }
@@ -66,10 +74,10 @@ class ScimTestClient {
     required Future<String> Function() accessToken,
   }) =>
       ScimTestClient.clientCredentials(
-          onepubUrl: onepubUrl,
-          clientId: 'externally-owned',
-          clientSecret: 'externally-owned')
-        .._accessTokenProvider = accessToken;
+        onepubUrl: onepubUrl,
+        clientId: 'externally-owned',
+        clientSecret: 'externally-owned',
+      ).._accessTokenProvider = accessToken;
 
   final Uri _base;
   final String _clientId;
@@ -111,57 +119,78 @@ class ScimTestClient {
     required String lastname,
     String? externalId,
   }) =>
-      request('POST', 'Users', body: {
-        'schemas': [userSchema],
-        'userName': email,
-        if (externalId != null) 'externalId': externalId,
-        'name': {'givenName': firstname, 'familyName': lastname},
-        'active': true,
-      });
+      request(
+        'POST',
+        'Users',
+        body: {
+          'schemas': [userSchema],
+          'userName': email,
+          if (externalId != null) 'externalId': externalId,
+          'name': {'givenName': firstname, 'familyName': lastname},
+          'active': true,
+        },
+      );
 
   Future<List<Map<String, dynamic>>> findUsers(String email) =>
       list('Users', filter: 'userName eq ${jsonEncode(email)}');
 
   Future<Map<String, dynamic>> setActive(String id, {required bool active}) =>
-      request('PATCH', 'Users/${Uri.encodeComponent(id)}', body: {
-        'schemas': [patchSchema],
-        'Operations': [
-          {'op': 'replace', 'path': 'active', 'value': active}
-        ],
-      });
+      request(
+        'PATCH',
+        'Users/${Uri.encodeComponent(id)}',
+        body: {
+          'schemas': [patchSchema],
+          'Operations': [
+            {'op': 'replace', 'path': 'active', 'value': active},
+          ],
+        },
+      );
 
-  Future<Map<String, dynamic>> createGroup(String name) =>
-      request('POST', 'Groups', body: {
-        'schemas': [groupSchema],
-        'displayName': name,
-        'members': <Map<String, String>>[],
-      });
+  Future<Map<String, dynamic>> createGroup(String name) => request(
+        'POST',
+        'Groups',
+        body: {
+          'schemas': [groupSchema],
+          'displayName': name,
+          'members': <Map<String, String>>[],
+        },
+      );
 
   Future<Map<String, dynamic>> addGroupMember(String groupId, String userId) =>
-      request('PATCH', 'Groups/${Uri.encodeComponent(groupId)}', body: {
-        'schemas': [patchSchema],
-        'Operations': [
-          {
-            'op': 'add',
-            'path': 'members',
-            'value': [
-              {'value': userId}
-            ],
-          }
-        ],
-      });
+      request(
+        'PATCH',
+        'Groups/${Uri.encodeComponent(groupId)}',
+        body: {
+          'schemas': [patchSchema],
+          'Operations': [
+            {
+              'op': 'add',
+              'path': 'members',
+              'value': [
+                {'value': userId},
+              ],
+            },
+          ],
+        },
+      );
 
   /// Reads every page; fixture lookup must work beyond the first 100 users.
-  Future<List<Map<String, dynamic>>> list(String resource,
-      {String? filter}) async {
+  Future<List<Map<String, dynamic>>> list(
+    String resource, {
+    String? filter,
+  }) async {
     final resources = <Map<String, dynamic>>[];
     var start = 1;
     while (true) {
-      final page = await request('GET', resource, query: {
-        'startIndex': '$start',
-        'count': '100',
-        if (filter != null) 'filter': filter,
-      });
+      final page = await request(
+        'GET',
+        resource,
+        query: {
+          'startIndex': '$start',
+          'count': '100',
+          if (filter != null) 'filter': filter,
+        },
+      );
       final total = page['totalResults'];
       final rows = page['Resources'];
       if (total is! int || total < 0 || rows is! List<dynamic>) {
@@ -183,20 +212,27 @@ class ScimTestClient {
     }
   }
 
-  Future<Map<String, dynamic>> request(String method, String resource,
-      {Map<String, dynamic>? body, Map<String, String>? query}) async {
+  Future<Map<String, dynamic>> request(
+    String method,
+    String resource, {
+    Map<String, dynamic>? body,
+    Map<String, String>? query,
+  }) async {
     if (!RegExp(r'^[A-Za-z]+(?:/[A-Za-z0-9%_.~-]+)?$').hasMatch(resource)) {
       throw ArgumentError('Invalid SCIM resource path.');
     }
     final token = await accessToken();
-    return await _send(method, '/api/scim/v2/$resource',
-        headers: {
-          HttpHeaders.authorizationHeader: 'Bearer $token',
-          HttpHeaders.contentTypeHeader: 'application/scim+json',
-          HttpHeaders.acceptHeader: 'application/scim+json',
-        },
-        body: body == null ? null : jsonEncode(body),
-        query: query);
+    return await _send(
+      method,
+      '/api/scim/v2/$resource',
+      headers: {
+        HttpHeaders.authorizationHeader: 'Bearer $token',
+        HttpHeaders.contentTypeHeader: 'application/scim+json',
+        HttpHeaders.acceptHeader: 'application/scim+json',
+      },
+      body: body == null ? null : jsonEncode(body),
+      query: query,
+    );
   }
 
   Future<void> _authenticate() async {
@@ -235,21 +271,29 @@ class ScimTestClient {
           throw const ScimTestException(
               'Refresh requires browser authorization.');
         }
-        await _exchange(
-            {'grant_type': 'refresh_token', 'refresh_token': refreshToken});
+        await _exchange({
+          'grant_type': 'refresh_token',
+          'refresh_token': refreshToken,
+        });
       });
 
   Future<void> _exchange(Map<String, String> form) async {
-    final basicCredentials =
-        base64Encode(utf8.encode('${Uri.encodeQueryComponent(_clientId)}:'
-            '${Uri.encodeQueryComponent(_clientSecret)}'));
-    final response = await _send('POST', '/api/provisioning/oauth/token',
-        headers: {
-          HttpHeaders.authorizationHeader: 'Basic $basicCredentials',
-          HttpHeaders.contentTypeHeader: 'application/x-www-form-urlencoded',
-          HttpHeaders.acceptHeader: 'application/json',
-        },
-        body: Uri(queryParameters: form).query);
+    final basicCredentials = base64Encode(
+      utf8.encode(
+        '${Uri.encodeQueryComponent(_clientId)}:'
+        '${Uri.encodeQueryComponent(_clientSecret)}',
+      ),
+    );
+    final response = await _send(
+      'POST',
+      '/api/provisioning/oauth/token',
+      headers: {
+        HttpHeaders.authorizationHeader: 'Basic $basicCredentials',
+        HttpHeaders.contentTypeHeader: 'application/x-www-form-urlencoded',
+        HttpHeaders.acceptHeader: 'application/json',
+      },
+      body: Uri(queryParameters: form).query,
+    );
     final token = response['access_token'];
     final expires = response['expires_in'];
     if (token is! String ||
@@ -268,14 +312,18 @@ class ScimTestClient {
     if (_browserAuthorization) {
       _refreshToken = response['refresh_token'] as String;
     }
-    _expiresAt = DateTime.now()
-        .add(Duration(seconds: expires > 10 ? expires - 10 : expires));
+    _expiresAt = DateTime.now().add(
+      Duration(seconds: expires > 10 ? expires - 10 : expires),
+    );
   }
 
-  Future<Map<String, dynamic>> _send(String method, String path,
-      {required Map<String, String> headers,
-      String? body,
-      Map<String, String>? query}) async {
+  Future<Map<String, dynamic>> _send(
+    String method,
+    String path, {
+    required Map<String, String> headers,
+    String? body,
+    Map<String, String>? query,
+  }) async {
     final client = HttpClient()
       ..connectionTimeout = const Duration(seconds: 15);
     try {
@@ -290,8 +338,10 @@ class ScimTestClient {
         final response = await request.close();
         if (response.statusCode < 200 || response.statusCode >= 300) {
           // Error bodies and redirects may contain secrets or diagnostics.
-          throw ScimTestException('SCIM request failed.',
-              status: response.statusCode);
+          throw ScimTestException(
+            'SCIM request failed.',
+            status: response.statusCode,
+          );
         }
         if (response.statusCode == HttpStatus.noContent) {
           return <String, dynamic>{};

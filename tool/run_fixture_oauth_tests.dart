@@ -12,11 +12,13 @@ import '../test/fixture_oauth.dart';
 Future<void> main(List<String> args) async {
   FixtureOAuthBroker? broker;
   try {
-    final authorization = jsonDecode(env[FixtureOAuth.authorizationKey] ?? '')
-        as Map<String, dynamic>;
+    final authorization = jsonDecode(
+      env[FixtureOAuth.authorizationKey] ?? '',
+    ) as Map<String, dynamic>;
     broker = await FixtureOAuth.startHarness(
-        authorization['onepubUrl'] as String,
-        authorization: authorization);
+      authorization['onepubUrl'] as String,
+      authorization: authorization,
+    );
     final process = await Process.start(
       DartSdk().pathToDartExe!,
       ['test', ...args],

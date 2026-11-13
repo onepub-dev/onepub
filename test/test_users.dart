@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+
 import 'package:dcli/dcli.dart';
 import 'package:onepub/src/api/api.dart';
 import 'package:onepub/src/api/member.dart';
@@ -9,6 +10,7 @@ import 'package:onepub/src/api/onepub_token.dart';
 import 'package:onepub/src/exceptions.dart';
 import 'package:onepub/src/util/role_enum.dart';
 import 'package:uuid/uuid.dart';
+
 import 'fixture_oauth.dart';
 import 'fixture_retry.dart';
 import 'fixture_roles.dart';
@@ -47,7 +49,8 @@ class TestUsers {
   static void configureEmailNamespace(String? namespace) {
     if (initialised && namespace != _emailNamespace) {
       throw StateError(
-          'TestUsers already initialised; cannot change email namespace.');
+        'TestUsers already initialised; cannot change email namespace.',
+      );
     }
     _emailNamespace =
         (namespace == null || namespace.isEmpty) ? null : namespace;
@@ -57,23 +60,27 @@ class TestUsers {
   Future<void> init({bool provisionAllRoles = false}) async {
     final roles = [
       RoleEnum.Administrator,
-      if (provisionAllRoles) ...[RoleEnum.TeamLeader, RoleEnum.Collaborator]
+      if (provisionAllRoles) ...[RoleEnum.TeamLeader, RoleEnum.Collaborator],
     ];
     if (!_members.containsAll(roles)) {
       await withTestServer(() async {
         _emailNamespace ??= _defaultNamespace();
         await FixtureOAuth.token();
         await _members.ensure(
-            roles,
-            (role) => switch (role) {
-                  RoleEnum.Administrator => createAdministrator(
-                      _scopedEmail('sysadmin@testdomain.com')),
-                  RoleEnum.TeamLeader => createTeamLeader(
-                      _scopedEmail('teamleader-on-sys@testdomain.com')),
-                  RoleEnum.Collaborator => createBasicMember(
-                      _scopedEmail('basicmember-on-sys@testdomain.com')),
-                  _ => throw StateError('Unsupported fixture role $role'),
-                });
+          roles,
+          (role) => switch (role) {
+            RoleEnum.Administrator => createAdministrator(
+                _scopedEmail('sysadmin@testdomain.com'),
+              ),
+            RoleEnum.TeamLeader => createTeamLeader(
+                _scopedEmail('teamleader-on-sys@testdomain.com'),
+              ),
+            RoleEnum.Collaborator => createBasicMember(
+                _scopedEmail('basicmember-on-sys@testdomain.com'),
+              ),
+            _ => throw StateError('Unsupported fixture role $role'),
+          },
+        );
         initialised = true;
         // cicdMember = await createCICD('cicd@testdomain.com');
       });
@@ -81,28 +88,32 @@ class TestUsers {
   }
 
   Future<Member> createAdministrator(String emailAddress) => _fetchOrCreate(
-      emailAddress: emailAddress,
-      firstname: 'One',
-      lastname: 'Administrator',
-      role: RoleEnum.Administrator);
+        emailAddress: emailAddress,
+        firstname: 'One',
+        lastname: 'Administrator',
+        role: RoleEnum.Administrator,
+      );
 
   Future<Member> createTeamLeader(String emailAddress) => _fetchOrCreate(
-      emailAddress: emailAddress,
-      firstname: 'One',
-      lastname: 'TeamLeader',
-      role: RoleEnum.TeamLeader);
+        emailAddress: emailAddress,
+        firstname: 'One',
+        lastname: 'TeamLeader',
+        role: RoleEnum.TeamLeader,
+      );
 
   Future<Member> createBasicMember(String emailAddress) => _fetchOrCreate(
-      emailAddress: emailAddress,
-      firstname: 'One',
-      lastname: 'Member',
-      role: RoleEnum.Collaborator);
+        emailAddress: emailAddress,
+        firstname: 'One',
+        lastname: 'Member',
+        role: RoleEnum.Collaborator,
+      );
 
-  Future<Member> _fetchOrCreate(
-      {required String emailAddress,
-      required String firstname,
-      required String lastname,
-      required RoleEnum role}) async {
+  Future<Member> _fetchOrCreate({
+    required String emailAddress,
+    required String firstname,
+    required String lastname,
+    required RoleEnum role,
+  }) async {
     final tokenResponse = await _exportMemberTokenWithRetry(emailAddress);
     if (env['ONEPUB_TEST_FIXTURE_DEBUG'] == '1') {
       stderr.writeln(
@@ -127,15 +138,18 @@ class TestUsers {
         role: role,
       );
       if (fallbackMember != null) {
-        stderr.writeln('''
-TestUsers: existing member lookup for $emailAddress returned "${memberResponse.errorMessage}". Created fresh fallback user ${fallbackMember.email}.''');
+        stderr.writeln(
+          '''
+TestUsers: existing member lookup for $emailAddress returned "${memberResponse.errorMessage}". Created fresh fallback user ${fallbackMember.email}.''',
+        );
         return fallbackMember;
       }
       throw APIException(memberResponse.errorMessage);
     } else {
       if (!isAbsentFixtureMember(tokenResponse.errorMessage)) {
         throw APIException(
-            tokenResponse.errorMessage ?? 'Member token lookup failed.');
+          tokenResponse.errorMessage ?? 'Member token lookup failed.',
+        );
       }
       // create new member
       final createResponse = await _createMemberWithRetry(
@@ -152,24 +166,27 @@ TestUsers: existing member lookup for $emailAddress returned "${memberResponse.e
         );
         if (!onepubToken.success) {
           throw APIException(
-              'Unable to fetch the OnePubToken for $emailAddress ');
+            'Unable to fetch the OnePubToken for $emailAddress ',
+          );
         }
         return Member(
-            email: emailAddress,
-            firstname: firstname,
-            lastname: lastname,
-            roles: {role},
-            organisationName: createResponse.organisationName,
-            obfuscatedOrganisationId: createResponse.obfuscateOrganisationId,
-            onepubToken: onepubToken.token!);
+          email: emailAddress,
+          firstname: firstname,
+          lastname: lastname,
+          roles: {role},
+          organisationName: createResponse.organisationName,
+          obfuscatedOrganisationId: createResponse.obfuscateOrganisationId,
+          onepubToken: onepubToken.token!,
+        );
       }
 
       final errorMessage = createResponse.errorMessage ?? '';
       if (errorMessage.toLowerCase().contains('already exists')) {
         final existingToken = await _exportMemberTokenWithRetry(emailAddress);
         if (existingToken.success) {
-          final memberResponse =
-              await _fetchMemberWithRetry(existingToken.token!);
+          final memberResponse = await _fetchMemberWithRetry(
+            existingToken.token!,
+          );
           if (memberResponse.success) {
             return memberResponse.toMember();
           }
@@ -184,8 +201,10 @@ TestUsers: existing member lookup for $emailAddress returned "${memberResponse.e
             role: role,
           );
           if (fallbackMember != null) {
-            stderr.writeln('''
-TestUsers: member "$emailAddress" already existed but lookup returned "${memberResponse.errorMessage}". Created fresh fallback user ${fallbackMember.email}.''');
+            stderr.writeln(
+              '''
+TestUsers: member "$emailAddress" already existed but lookup returned "${memberResponse.errorMessage}". Created fresh fallback user ${fallbackMember.email}.''',
+            );
             return fallbackMember;
           }
           throw APIException(memberResponse.errorMessage);
@@ -205,8 +224,10 @@ TestUsers: member "$emailAddress" already existed but lookup returned "${memberR
         if (fallbackMember != null) {
           return fallbackMember;
         }
-        throw APIException(existingToken.errorMessage ??
-            'Unable to export member token for $emailAddress.');
+        throw APIException(
+          existingToken.errorMessage ??
+              'Unable to export member token for $emailAddress.',
+        );
       }
 
       throw APIException(errorMessage);
@@ -219,8 +240,10 @@ TestUsers: member "$emailAddress" already existed but lookup returned "${memberR
     int attempts = 5,
   }) =>
       retryFixture(
-        () => _exportMemberToken(emailAddress,
-            obfuscatedOrganisationId: obfuscatedOrganisationId),
+        () => _exportMemberToken(
+          emailAddress,
+          obfuscatedOrganisationId: obfuscatedOrganisationId,
+        ),
         shouldRetry: (response) =>
             !response.success &&
             isTransientFixtureFailure(response.errorMessage),
@@ -282,8 +305,10 @@ TestUsers: member "$emailAddress" already existed but lookup returned "${memberR
             attempt == attempts - 1) {
           rethrow;
         }
-        await sleepAsync(_retryDelayMs(attempt),
-            interval: Interval.milliseconds);
+        await sleepAsync(
+          _retryDelayMs(attempt),
+          interval: Interval.milliseconds,
+        );
         continue;
       }
       if (response.success) {
@@ -307,11 +332,12 @@ TestUsers: member "$emailAddress" already existed but lookup returned "${memberR
     return response;
   }
 
-  Future<Member?> _createFreshMember(
-      {required String emailAddress,
-      required String firstname,
-      required String lastname,
-      required RoleEnum role}) async {
+  Future<Member?> _createFreshMember({
+    required String emailAddress,
+    required String firstname,
+    required String lastname,
+    required RoleEnum role,
+  }) async {
     stderr.writeln(
       'TestUsers: creating fresh fallback user "$emailAddress" for '
       'role ${role.name}.',
@@ -341,13 +367,14 @@ TestUsers: member "$emailAddress" already existed but lookup returned "${memberR
       return null;
     }
     return Member(
-        email: emailAddress,
-        firstname: firstname,
-        lastname: lastname,
-        roles: {role},
-        organisationName: createResponse.organisationName,
-        obfuscatedOrganisationId: createResponse.obfuscateOrganisationId,
-        onepubToken: onepubToken.token!);
+      email: emailAddress,
+      firstname: firstname,
+      lastname: lastname,
+      roles: {role},
+      organisationName: createResponse.organisationName,
+      obfuscatedOrganisationId: createResponse.obfuscateOrganisationId,
+      onepubToken: onepubToken.token!,
+    );
   }
 
   bool _isRetryableApiFailure(String? message) =>

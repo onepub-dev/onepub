@@ -1,6 +1,7 @@
 #! /usr/bin/env dcli
 
 import 'dart:io';
+
 import 'package:dcli/dcli.dart' show env;
 import 'package:onepub/src/api/api.dart';
 import 'package:onepub/src/api/cli_models.dart';
@@ -8,6 +9,7 @@ import 'package:onepub/src/onepub_settings.dart';
 import 'package:onepub/src/util/one_pub_token_store.dart';
 import 'package:onepub/src/util/send_command.dart';
 import 'package:path/path.dart' as p;
+
 import '../test/fixture_oauth.dart';
 import '../test/test_settings.dart';
 
@@ -20,13 +22,17 @@ Future<void> main(List<String> args) async {
     if ((!verify && args.length != 2) ||
         !RegExp(r'^onepub_test_trusted_[a-f0-9]+$').hasMatch(args[1])) {
       throw ArgumentError(
-          'Expected a local test URL and generated package name.');
+        'Expected a local test URL and generated package name.',
+      );
     }
-    final url =
-        assertSafeOnePubTestUrl(args[0], source: 'trusted test bootstrap');
+    final url = assertSafeOnePubTestUrl(
+      args[0],
+      source: 'trusted test bootstrap',
+    );
     if (Uri.parse(url).host != '127.0.0.1') {
       throw ArgumentError(
-          'The build bootstrap requires its isolated loopback stack.');
+        'The build bootstrap requires its isolated loopback stack.',
+      );
     }
     final token = env['ONEPUB_BOOTSTRAP_TEST_TOKEN'];
     if (token == null || token.isEmpty) {
@@ -45,27 +51,36 @@ Future<void> main(List<String> args) async {
       settings.obfuscatedOrganisationId = org.obfuscatedId!;
       await OnePubTokenStore.withPathTo(p.join(temp!.path, 'tokens'), () async {
         await OnePubTokenStore().addToken(
-            onepubApiUrl: settings.onepubApiUrlAsString, onepubToken: token);
+          onepubApiUrl: settings.onepubApiUrlAsString,
+          onepubToken: token,
+        );
         if (verify) {
-          final versions =
-              await API().fetchVersions(org.obfuscatedId!, args[1]);
+          final versions = await API().fetchVersions(
+            org.obfuscatedId!,
+            args[1],
+          );
           final expectedVersions =
               (Platform.environment['ONEPUB_E2E_EXPECTED_VERSIONS'] ?? '1.0.0')
                   .split(',');
           if (expectedVersions.isEmpty ||
               expectedVersions.any(
-                  (version) => !const ['1.0.0', '1.0.1'].contains(version))) {
+                (version) => !const ['1.0.0', '1.0.1'].contains(version),
+              )) {
             throw StateError('Invalid expected test package versions.');
           }
           if (versions.versions.length != expectedVersions.length) {
             throw StateError(
-                'Published versions do not match the isolated test.');
+              'Published versions do not match the isolated test.',
+            );
           }
           for (final expectedVersion in expectedVersions) {
-            final published = versions.versions
-                .singleWhere((version) => version.version == expectedVersion);
-            final archive = assertSafeOnePubTestUrl(published.archiveUrl,
-                source: 'trusted test published archive');
+            final published = versions.versions.singleWhere(
+              (version) => version.version == expectedVersion,
+            );
+            final archive = assertSafeOnePubTestUrl(
+              published.archiveUrl,
+              source: 'trusted test published archive',
+            );
             if (Uri.parse(archive).origin != Uri.parse(url).origin) {
               throw StateError('Archive is not on the isolated test stack.');
             }
@@ -109,15 +124,21 @@ Future<void> main(List<String> args) async {
 Future<void> verifyPublishedArchive(Uri archive, String token) async {
   final client = HttpClient();
   try {
-    await _downloadArchive(client, archive, token)
-        .timeout(const Duration(seconds: 30));
+    await _downloadArchive(
+      client,
+      archive,
+      token,
+    ).timeout(const Duration(seconds: 30));
   } finally {
     client.close(force: true);
   }
 }
 
 Future<void> _downloadArchive(
-    HttpClient client, Uri archive, String token) async {
+  HttpClient client,
+  Uri archive,
+  String token,
+) async {
   var current = archive;
   for (var redirects = 0; redirects <= 5; redirects++) {
     final request = await client.getUrl(current);
@@ -148,7 +169,8 @@ Future<void> _downloadArchive(
     }
     if (response.statusCode != HttpStatus.ok) {
       throw StateError(
-          'Published archive download failed (HTTP ${response.statusCode}).');
+        'Published archive download failed (HTTP ${response.statusCode}).',
+      );
     }
     final bytes = await response.fold<int>(
       0,

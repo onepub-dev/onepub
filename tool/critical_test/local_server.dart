@@ -10,12 +10,15 @@ Directory get _state =>
 Future<void> startLocalServer() async {
   final state = _state;
   if (state.existsSync()) {
-    throw StateError('''
-A critical_test server is already active. Run the post-hook to stop it first.''');
+    throw StateError(
+      '''
+A critical_test server is already active. Run the post-hook to stop it first.''',
+    );
   }
   if (await state.parent.resolveSymbolicLinks() != state.parent.absolute.path) {
     throw StateError(
-        'Critical-test metadata must not traverse symbolic links.');
+      'Critical-test metadata must not traverse symbolic links.',
+    );
   }
   state.createSync(recursive: true);
   chmod(state.path, permission: '700');
@@ -27,14 +30,11 @@ A critical_test server is already active. Run the post-hook to stop it first.'''
                 p.join(_root, '..', 'onepub-deploy'))
         .resolveSymbolicLinksSync();
     final process = await Process.start(
-        p.join(deploy, 'tool', 'serve_cli_test_fixture.dart'),
-        [
-          deploy,
-          _root,
-          state.path,
-        ],
-        workingDirectory: deploy,
-        mode: ProcessStartMode.detached);
+      p.join(deploy, 'tool', 'serve_cli_test_fixture.dart'),
+      [deploy, _root, state.path],
+      workingDirectory: deploy,
+      mode: ProcessStartMode.detached,
+    );
     final deadline = DateTime.now().add(const Duration(minutes: 10));
     while (!File(p.join(state.path, 'ready')).existsSync()) {
       if (Platform.isLinux && !Directory('/proc/${process.pid}').existsSync()) {
@@ -62,7 +62,8 @@ A critical_test server is already active. Run the post-hook to stop it first.'''
             ? marker.substring('fixture-phase:'.length)
             : 'host-start';
         stderr.writeln(
-            'fixture-phase:${phases.contains(phase) ? phase : 'host-start'}');
+          'fixture-phase:${phases.contains(phase) ? phase : 'host-start'}',
+        );
         throw StateError('The local Docker test server failed to start.');
       }
       await Future<void>.delayed(const Duration(seconds: 1));

@@ -25,16 +25,18 @@ void main() {
       requests.add(request.uri.path);
       expect(request.headers.value('authorization'), 'fixture-token');
       request.response.headers.contentType = ContentType.json;
-      request.response.write(jsonEncode({
-        'body': {
-          'email': 'admin@example.test',
-          'firstname': 'Test',
-          'lastname': 'Admin',
-          'roles': [if (administrator) 'SystemAdministrator'],
-          'organisationName': 'Fixture',
-          'obfuscateOrganisationId': 'fixture-org',
-        },
-      }));
+      request.response.write(
+        jsonEncode({
+          'body': {
+            'email': 'admin@example.test',
+            'firstname': 'Test',
+            'lastname': 'Admin',
+            'roles': [if (administrator) 'SystemAdministrator'],
+            'organisationName': 'Fixture',
+            'obfuscateOrganisationId': 'fixture-org',
+          },
+        }),
+      );
       await request.response.close();
     });
     for (final path in [
@@ -63,8 +65,9 @@ onepub_token: fixture-token
 onepubUrl: https://onepub.dev
 organisationId: production-org
 ''');
-    operatorTokens =
-        File(p.join(fixture.path, 'operator-tokens/pub-tokens.json'));
+    operatorTokens = File(
+      p.join(fixture.path, 'operator-tokens/pub-tokens.json'),
+    );
     operatorTokens.parent.createSync();
     operatorTokens.writeAsStringSync('{"version":1,"hosted":[]}');
   });
@@ -90,17 +93,19 @@ organisationId: production-org
         },
       );
 
-  test('uses isolated test credentials despite production operator settings',
-      () async {
-    final originalSettings = operatorSettings.readAsStringSync();
-    final originalTokens = operatorTokens.readAsStringSync();
-    final result = await runHook();
-    expect(result.exitCode, 0, reason: '${result.stdout}\n${result.stderr}');
-    expect(requests, isNotEmpty);
-    expect(requests.every((path) => path == '/api/member/whoami'), isTrue);
-    expect(operatorSettings.readAsStringSync(), originalSettings);
-    expect(operatorTokens.readAsStringSync(), originalTokens);
-  });
+  test(
+    'uses isolated test credentials despite production operator settings',
+    () async {
+      final originalSettings = operatorSettings.readAsStringSync();
+      final originalTokens = operatorTokens.readAsStringSync();
+      final result = await runHook();
+      expect(result.exitCode, 0, reason: '${result.stdout}\n${result.stderr}');
+      expect(requests, isNotEmpty);
+      expect(requests.every((path) => path == '/api/member/whoami'), isTrue);
+      expect(operatorSettings.readAsStringSync(), originalSettings);
+      expect(operatorTokens.readAsStringSync(), originalTokens);
+    },
+  );
 
   test('rejects production test target before any request', () async {
     final result = await runHook(override: 'https://onepub.dev');

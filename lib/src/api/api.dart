@@ -26,12 +26,15 @@ class API {
     }
 
     if (server.version.major > Version.parse(packageVersion).major) {
-      throw ExitException(exitCode: -1, message: '''
+      throw ExitException(
+        exitCode: -1,
+        message: '''
 The server's major version "${server.version.major}" does not match your onepub version.
 
 Please upgrade onepub by running:
 dart pub global activate onepub
-          ''');
+          ''',
+      );
     }
   }
 
@@ -40,7 +43,10 @@ dart pub global activate onepub
       const endpoint = '/status';
 
       final response = await sendCommand(
-          command: endpoint, authorised: false, commandType: CommandType.cli);
+        command: endpoint,
+        authorised: false,
+        commandType: CommandType.cli,
+      );
 
       final body = response.requireCliBody(CliStatusBody.fromJson);
       final message = body.message;
@@ -72,8 +78,10 @@ dart pub global activate onepub
 
   Future<Logout> logout() async {
     const endpoint = '/member/logout';
-    final response =
-        await sendCommand(command: endpoint, commandType: CommandType.cli);
+    final response = await sendCommand(
+      command: endpoint,
+      commandType: CommandType.cli,
+    );
 
     return Logout(response);
   }
@@ -83,8 +91,10 @@ dart pub global activate onepub
   /// Only an Administrator can export another person token.
   Future<OnePubToken> exportMemberToken(String memberEmail) async {
     final endpoint = 'member/exportToken/${Uri.encodeComponent(memberEmail)}';
-    final response =
-        await sendCommand(command: endpoint, commandType: CommandType.cli);
+    final response = await sendCommand(
+      command: endpoint,
+      commandType: CommandType.cli,
+    );
 
     return OnePubToken(response);
   }
@@ -101,18 +111,17 @@ dart pub global activate onepub
     const endpoint = '/organisation/details';
 
     final response = await sendCommand(
-        command: endpoint,
-        authorised: false,
-        headers: headers,
-        commandType: CommandType.cli);
+      command: endpoint,
+      authorised: false,
+      headers: headers,
+      commandType: CommandType.cli,
+    );
 
     return Organisation(response);
   }
 
   /// Fetches the member details associated with the [onepubTokenOfTargetMember]
-  Future<MemberResponse> fetchMember(
-    String onepubTokenOfTargetMember,
-  ) async {
+  Future<MemberResponse> fetchMember(String onepubTokenOfTargetMember) async {
     final response = await sendCommand(
       command: 'member/whoami',
       commandType: CommandType.cli,
@@ -126,8 +135,10 @@ dart pub global activate onepub
   Future<Organisation> fetchOrganisationById(String obfuscatedId) async {
     final endpoint =
         'organisation/details/${Uri.encodeComponent(obfuscatedId)}';
-    final response =
-        await sendCommand(command: endpoint, commandType: CommandType.cli);
+    final response = await sendCommand(
+      command: endpoint,
+      commandType: CommandType.cli,
+    );
 
     final organisation = Organisation(response);
     return organisation;
@@ -207,10 +218,14 @@ dart pub global activate onepub
 
   /// Fetches the list of published version for [packageName]
   Future<Versions> fetchVersions(
-      String obfuscatedOrganisationId, String packageName) async {
+    String obfuscatedOrganisationId,
+    String packageName,
+  ) async {
     final endpoint = '$obfuscatedOrganisationId/api/packages/$packageName';
-    final response =
-        await sendCommand(command: endpoint, commandType: CommandType.pub);
+    final response = await sendCommand(
+      command: endpoint,
+      commandType: CommandType.pub,
+    );
     if (!response.success) {
       throw APIException(response.errorMessage);
     }

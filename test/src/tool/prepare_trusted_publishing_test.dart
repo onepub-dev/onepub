@@ -20,14 +20,17 @@ void main() {
     const token = 'bootstrap-token';
     const packageName = 'onepub_test_trusted_deadbeef';
     final requests = <String>[];
-    final broker = await FixtureOAuth.startHarness(url, authorization: {
-      'onepubUrl': url,
-      'clientId': 'fixture-client',
-      'clientSecret': 'fixture-secret',
-      'refreshToken': 'fixture-refresh',
-      'onepubToken': token,
-      'scopes': 'test:fixtures',
-    });
+    final broker = await FixtureOAuth.startHarness(
+      url,
+      authorization: {
+        'onepubUrl': url,
+        'clientId': 'fixture-client',
+        'clientSecret': 'fixture-secret',
+        'refreshToken': 'fixture-refresh',
+        'onepubToken': token,
+        'scopes': 'test:fixtures',
+      },
+    );
     addTearDown(broker.close);
 
     server.listen((request) async {
@@ -35,21 +38,23 @@ void main() {
       final authorization = request.headers.value('authorization');
 
       if (request.uri.path == '/api/provisioning/oauth/token') {
-        final basic =
-            base64Encode(utf8.encode('fixture-client:fixture-secret'));
+        final basic = base64Encode(
+          utf8.encode('fixture-client:fixture-secret'),
+        );
         expect(authorization, 'Basic $basic');
-        final form =
-            Uri.splitQueryString(await utf8.decoder.bind(request).join());
+        final form = Uri.splitQueryString(
+          await utf8.decoder.bind(request).join(),
+        );
         expect(form, {
           'grant_type': 'refresh_token',
-          'refresh_token': 'fixture-refresh'
+          'refresh_token': 'fixture-refresh',
         });
         await _reply(request, {
           'access_token': 'fixture-access',
           'refresh_token': 'fixture-next',
           'token_type': 'Bearer',
           'expires_in': 300,
-          'scope': 'test:fixtures'
+          'scope': 'test:fixtures',
         });
         return;
       }
@@ -89,12 +94,11 @@ void main() {
         expect(request.uri.queryParameters['team'], 'Everyone Team');
         if (request.method == 'GET') {
           await _reply(
-            request,
-            {
-              'error': {'message': 'Package create requires POST'}
-            },
-            status: HttpStatus.notFound,
-          );
+              request,
+              {
+                'error': {'message': 'Package create requires POST'},
+              },
+              status: HttpStatus.notFound);
         } else {
           expect(request.method, 'POST');
           await _reply(request, {
@@ -105,12 +109,11 @@ void main() {
       }
 
       await _reply(
-        request,
-        {
-          'error': {'message': 'Unexpected bootstrap route'}
-        },
-        status: HttpStatus.notFound,
-      );
+          request,
+          {
+            'error': {'message': 'Unexpected bootstrap route'},
+          },
+          status: HttpStatus.notFound);
     });
 
     final script = p.join(
@@ -139,43 +142,56 @@ void main() {
     );
     expect(
       requests.where(
-          (request) => request.startsWith('GET /api/test/package/create/')),
+        (request) => request.startsWith('GET /api/test/package/create/'),
+      ),
       isEmpty,
     );
   });
 
-  test('rejects verification when the second expected version is missing',
-      () async {
-    final server = await _startVerificationServer(
-      publishedVersions: const ['1.0.0'],
-    );
-    addTearDown(() => server.close(force: true));
+  test(
+    'rejects verification when the second expected version is missing',
+    () async {
+      final server = await _startVerificationServer(
+        publishedVersions: const ['1.0.0'],
+      );
+      addTearDown(() => server.close(force: true));
 
-    final result =
-        await _runVerification(server, expectedVersions: '1.0.0,1.0.1')
-            .timeout(const Duration(seconds: 30));
+      final result = await _runVerification(
+        server,
+        expectedVersions: '1.0.0,1.0.1',
+      ).timeout(const Duration(seconds: 30));
 
-    expect(result.exitCode, isNonZero,
-        reason: '${result.stdout}\n${result.stderr}');
-    expect(result.stderr, contains('Published versions do not match'));
-  });
+      expect(
+        result.exitCode,
+        isNonZero,
+        reason: '${result.stdout}\n${result.stderr}',
+      );
+      expect(result.stderr, contains('Published versions do not match'));
+    },
+  );
 
-  test('rejects verification when the second archive cannot be downloaded',
-      () async {
-    final server = await _startVerificationServer(
-      publishedVersions: const ['1.0.0', '1.0.1'],
-      unavailableArchives: const {'1.0.1'},
-    );
-    addTearDown(() => server.close(force: true));
+  test(
+    'rejects verification when the second archive cannot be downloaded',
+    () async {
+      final server = await _startVerificationServer(
+        publishedVersions: const ['1.0.0', '1.0.1'],
+        unavailableArchives: const {'1.0.1'},
+      );
+      addTearDown(() => server.close(force: true));
 
-    final result =
-        await _runVerification(server, expectedVersions: '1.0.0,1.0.1')
-            .timeout(const Duration(seconds: 30));
+      final result = await _runVerification(
+        server,
+        expectedVersions: '1.0.0,1.0.1',
+      ).timeout(const Duration(seconds: 30));
 
-    expect(result.exitCode, isNonZero,
-        reason: '${result.stdout}\n${result.stderr}');
-    expect(result.stderr, contains('Published archive download failed'));
-  });
+      expect(
+        result.exitCode,
+        isNonZero,
+        reason: '${result.stdout}\n${result.stderr}',
+      );
+      expect(result.stderr, contains('Published archive download failed'));
+    },
+  );
 
   test('verifies both published versions and archives', () async {
     final server = await _startVerificationServer(
@@ -183,9 +199,10 @@ void main() {
     );
     addTearDown(() => server.close(force: true));
 
-    final result =
-        await _runVerification(server, expectedVersions: '1.0.0,1.0.1')
-            .timeout(const Duration(seconds: 30));
+    final result = await _runVerification(
+      server,
+      expectedVersions: '1.0.0,1.0.1',
+    ).timeout(const Duration(seconds: 30));
 
     expect(result.exitCode, 0, reason: '${result.stdout}\n${result.stderr}');
     expect(result.stdout, contains('Verified published package and archive'));
@@ -216,8 +233,12 @@ void main() {
       paths.add(request.uri.path);
       authorizations.add(request.headers.value('authorization'));
       if (request.uri.path == '/archive') {
-        await _replyArchive(request, '',
-            status: HttpStatus.temporaryRedirect, location: 'grant');
+        await _replyArchive(
+          request,
+          '',
+          status: HttpStatus.temporaryRedirect,
+          location: 'grant',
+        );
       } else {
         await _replyArchive(request, 'archive bytes');
       }
@@ -229,46 +250,52 @@ void main() {
     expect(authorizations, [token, isNull]);
   });
 
-  test('rejects a cross-origin archive redirect before contacting its grant',
-      () async {
-    final grantServer = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-    addTearDown(() => grantServer.close(force: true));
-    var grantRequests = 0;
-    grantServer.listen((request) async {
-      grantRequests++;
-      await _replyArchive(request, 'must not download');
-    });
-
-    final archiveServer =
-        await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-    addTearDown(() => archiveServer.close(force: true));
-    const token = 'cross-origin-archive-secret';
-    String? authorization;
-    archiveServer.listen((request) async {
-      authorization = request.headers.value('authorization');
-      await _replyArchive(
-        request,
-        '',
-        status: HttpStatus.temporaryRedirect,
-        location: 'http://127.0.0.1:${grantServer.port}/grant',
+  test(
+    'rejects a cross-origin archive redirect before contacting its grant',
+    () async {
+      final grantServer = await HttpServer.bind(
+        InternetAddress.loopbackIPv4,
+        0,
       );
-    });
+      addTearDown(() => grantServer.close(force: true));
+      var grantRequests = 0;
+      grantServer.listen((request) async {
+        grantRequests++;
+        await _replyArchive(request, 'must not download');
+      });
 
-    await expectLater(
-      verifyPublishedArchive(_archiveUrl(archiveServer), token),
-      throwsA(isA<StateError>().having(
-        (error) => error.toString(),
-        'error',
-        allOf(
-          contains('isolated test stack'),
-          isNot(contains(token)),
+      final archiveServer = await HttpServer.bind(
+        InternetAddress.loopbackIPv4,
+        0,
+      );
+      addTearDown(() => archiveServer.close(force: true));
+      const token = 'cross-origin-archive-secret';
+      String? authorization;
+      archiveServer.listen((request) async {
+        authorization = request.headers.value('authorization');
+        await _replyArchive(
+          request,
+          '',
+          status: HttpStatus.temporaryRedirect,
+          location: 'http://127.0.0.1:${grantServer.port}/grant',
+        );
+      });
+
+      await expectLater(
+        verifyPublishedArchive(_archiveUrl(archiveServer), token),
+        throwsA(
+          isA<StateError>().having(
+            (error) => error.toString(),
+            'error',
+            allOf(contains('isolated test stack'), isNot(contains(token))),
+          ),
         ),
-      )),
-    );
+      );
 
-    expect(authorization, token);
-    expect(grantRequests, 0);
-  });
+      expect(authorization, token);
+      expect(grantRequests, 0);
+    },
+  );
 
   test('rejects an archive after the redirect limit', () async {
     final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
@@ -279,17 +306,23 @@ void main() {
     server.listen((request) async {
       requests++;
       authorizations.add(request.headers.value('authorization'));
-      await _replyArchive(request, '',
-          status: HttpStatus.temporaryRedirect, location: '/archive');
+      await _replyArchive(
+        request,
+        '',
+        status: HttpStatus.temporaryRedirect,
+        location: '/archive',
+      );
     });
 
     await expectLater(
       verifyPublishedArchive(_archiveUrl(server), token),
-      throwsA(isA<StateError>().having(
-        (error) => error.message,
-        'message',
-        'Published archive exceeded the redirect limit.',
-      )),
+      throwsA(
+        isA<StateError>().having(
+          (error) => error.message,
+          'message',
+          'Published archive exceeded the redirect limit.',
+        ),
+      ),
     );
 
     expect(requests, 6);
@@ -305,38 +338,47 @@ void main() {
 
     await expectLater(
       verifyPublishedArchive(_archiveUrl(server), 'empty-archive-secret'),
-      throwsA(isA<StateError>().having(
-        (error) => error.message,
-        'message',
-        'Published archive is empty.',
-      )),
-    );
-  });
-
-  test('reports an archive HTTP status without exposing response content',
-      () async {
-    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-    addTearDown(() => server.close(force: true));
-    const token = 'status-archive-secret';
-    const responseSecret = 'response-secret-must-not-leak';
-    server.listen((request) async {
-      await _replyArchive(request, responseSecret,
-          status: HttpStatus.serviceUnavailable);
-    });
-
-    await expectLater(
-      verifyPublishedArchive(_archiveUrl(server), token),
-      throwsA(isA<StateError>().having(
-        (error) => error.toString(),
-        'error',
-        allOf(
-          contains('HTTP 503'),
-          isNot(contains(token)),
-          isNot(contains(responseSecret)),
+      throwsA(
+        isA<StateError>().having(
+          (error) => error.message,
+          'message',
+          'Published archive is empty.',
         ),
-      )),
+      ),
     );
   });
+
+  test(
+    'reports an archive HTTP status without exposing response content',
+    () async {
+      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      addTearDown(() => server.close(force: true));
+      const token = 'status-archive-secret';
+      const responseSecret = 'response-secret-must-not-leak';
+      server.listen((request) async {
+        await _replyArchive(
+          request,
+          responseSecret,
+          status: HttpStatus.serviceUnavailable,
+        );
+      });
+
+      await expectLater(
+        verifyPublishedArchive(_archiveUrl(server), token),
+        throwsA(
+          isA<StateError>().having(
+            (error) => error.toString(),
+            'error',
+            allOf(
+              contains('HTTP 503'),
+              isNot(contains(token)),
+              isNot(contains(responseSecret)),
+            ),
+          ),
+        ),
+      );
+    },
+  );
 
   test('rejects a redirect without a location', () async {
     final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
@@ -347,11 +389,13 @@ void main() {
 
     await expectLater(
       verifyPublishedArchive(_archiveUrl(server), 'missing-location-secret'),
-      throwsA(isA<StateError>().having(
-        (error) => error.message,
-        'message',
-        'Published archive redirect has no location.',
-      )),
+      throwsA(
+        isA<StateError>().having(
+          (error) => error.message,
+          'message',
+          'Published archive redirect has no location.',
+        ),
+      ),
     );
   });
 
@@ -369,11 +413,13 @@ void main() {
 
     await expectLater(
       verifyPublishedArchive(_archiveUrl(server), 'userinfo-secret'),
-      throwsA(isA<StateError>().having(
-        (error) => error.message,
-        'message',
-        'Archive redirect is not on the isolated test stack.',
-      )),
+      throwsA(
+        isA<StateError>().having(
+          (error) => error.message,
+          'message',
+          'Archive redirect is not on the isolated test stack.',
+        ),
+      ),
     );
   });
 }
@@ -417,10 +463,7 @@ Future<HttpServer> _startVerificationServer({
         'version': version,
         'retracted': false,
         'archive_url': 'http://127.0.0.1:${server.port}/archive/$version',
-        'pubspec': {
-          'name': _verificationPackage,
-          'version': version,
-        },
+        'pubspec': {'name': _verificationPackage, 'version': version},
       },
   ];
 
@@ -465,8 +508,12 @@ Future<HttpServer> _startVerificationServer({
             },
             status: HttpStatus.notFound);
       } else {
-        await _replyArchive(request, '',
-            status: HttpStatus.temporaryRedirect, location: '/grant/$version');
+        await _replyArchive(
+          request,
+          '',
+          status: HttpStatus.temporaryRedirect,
+          location: '/grant/$version',
+        );
       }
       return;
     }
@@ -479,12 +526,11 @@ Future<HttpServer> _startVerificationServer({
     }
 
     await _reply(
-      request,
-      {
-        'error': {'message': 'Unexpected verification route'}
-      },
-      status: HttpStatus.notFound,
-    );
+        request,
+        {
+          'error': {'message': 'Unexpected verification route'},
+        },
+        status: HttpStatus.notFound);
   });
   return server;
 }

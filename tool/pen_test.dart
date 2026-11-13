@@ -9,6 +9,7 @@ import 'package:dcli/posix.dart' as dcli;
 import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
+import '../test/fixture_oauth.dart';
 import 'beta_ready_watch.dart' as readiness;
 import 'pen_test_target.dart';
 
@@ -56,6 +57,7 @@ Future<void> main(List<String> arguments) async {
   final root = p.dirname(p.dirname(Platform.script.toFilePath()));
   final runId = DateTime.now().toUtc().microsecondsSinceEpoch.toRadixString(36);
   final runner = PenTestRunner(root, directory, runId)..save();
+  FixtureOAuthBroker? fixtureBroker;
   try {
     final version = await targetVersion();
     runner.version = version;
@@ -69,7 +71,18 @@ Future<void> main(List<String> arguments) async {
     await runner.run('search', 'beta_search_inputs.dart', []);
     await runner.run('lookup', 'beta_injection_inputs.dart', []);
     if (options['packages'] as bool) {
-      await runner.packages();
+      if (Platform.environment.containsKey(FixtureOAuth.authorizationKey)) {
+        fixtureBroker = await FixtureOAuth.startHarness(penTestTarget.url);
+        runner.childEnvironment =
+            fixtureBroker.workerEnvironment(Platform.environment);
+        await runner.packages();
+      } else if (Platform.environment.containsKey(FixtureOAuth.brokerKey)) {
+        await runner.packages();
+      } else {
+        runner.record('packages', 'blocked',
+            detail: 'Fixture OAuth authorization is required for package '
+                'creation and cleanup.');
+      }
     }
     if (options['stress'] as bool) {
       if (runner.results.any((result) => result['status'] == 'blocked')) {
@@ -93,6 +106,7 @@ Future<void> main(List<String> arguments) async {
     // Exception text may contain credentials. Keep only the type.
     runner.record('assessment', 'blocked', detail: '${error.runtimeType}');
   } finally {
+    await fixtureBroker?.close();
     runner
       ..finished = DateTime.now().toUtc().toIso8601String()
       ..save();
@@ -136,6 +150,8 @@ class PenTestRunner {
   final results = <Map<String, Object?>>[];
   String? version;
   String? finished;
+  Map<String, String> childEnvironment = Map.of(Platform.environment)
+    ..remove(FixtureOAuth.authorizationKey);
 
   void record(String name, String status, {String? detail, int? code}) {
     results.add({
@@ -162,7 +178,7 @@ class PenTestRunner {
             'results': results,
             'coverageLimits': [
               'Only listed cases ran; this is not a complete security audit.',
-              'Organisation/role/token suites await cleanup and SCIM adaptation.',
+              'Organisation/role/token suites require the separate isolated provisioning harness.',
               'Browser, XSS, payment and JWKS tests need separate fixtures.',
               'HTTP search responses do not establish search result isolation.',
             ],
@@ -183,7 +199,9 @@ class PenTestRunner {
       process = await Process.start(
           'setsid', [p.join(root, 'tool', script), ...arguments],
           workingDirectory: root,
+          includeParentEnvironment: false,
           environment: {
+            ...childEnvironment,
             'ONEPUB_PENTEST_RUN_ID': runId,
             'ONEPUB_PENTEST_TARGET': penTestTarget.url
           });

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:dcli/dcli.dart' as dcli;
 import 'package:dcli_core/dcli_core.dart' as core;
 import 'package:onepub/src/api/api.dart';
@@ -8,6 +9,8 @@ import 'package:onepub/src/onepub_settings.dart';
 import 'package:onepub/src/util/one_pub_token_store.dart';
 import 'package:path/path.dart';
 import 'package:settings_yaml/settings_yaml.dart';
+
+import '../tool/pen_test_target.dart';
 import 'fixture_oauth.dart';
 
 const _explicitSafeOnePubTestHosts = <String>{
@@ -51,8 +54,10 @@ class TestSettings {
         // Parsing diagnostics may contain the credential-bearing input.
         throw StateError('Invalid isolated system-test settings.');
       }
-      assertSafeOnePubTestUrl(onepubUrl,
-          source: 'isolated system-test settings');
+      assertSafeOnePubTestUrl(
+        onepubUrl,
+        source: 'isolated system-test settings',
+      );
     } else {
       _settings = SettingsYaml.load(pathToSettings: pathToTestSettings);
     }
@@ -123,7 +128,7 @@ String assertSafeOnePubTestUrl(String url, {String source = 'test settings'}) {
     );
   }
 
-  if (!_isSafeOnePubTestHost(host)) {
+  if (!_isSafeOnePubTestHost(host) && !penTestTarget.owns(uri)) {
     throw StateError(
       'OnePub integration tests must never run against production '
       'https://onepub.dev. $source resolved to $url.',
@@ -176,38 +181,39 @@ Future<T> withTestServer<T>(
 }) {
   final testSettings = TestSettings();
   return core.withTempDirAsync(
-      (tempSettingsDir) => OnePubSettings.withPathTo(tempSettingsDir, () async {
-            final settings = OnePubSettings.use()
-              ..operatorEmail = testSettings.member
-              ..organisationName = testSettings.organisationName
-              ..obfuscatedOrganisationId = testSettings.organisationId
-              ..onepubUrl = TestSettings.resolveOnePubUrl(
-                override: onepubUrlOverride,
-              );
-            await settings.save();
+    (tempSettingsDir) => OnePubSettings.withPathTo(tempSettingsDir, () async {
+      final settings = OnePubSettings.use()
+        ..operatorEmail = testSettings.member
+        ..organisationName = testSettings.organisationName
+        ..obfuscatedOrganisationId = testSettings.organisationId
+        ..onepubUrl = TestSettings.resolveOnePubUrl(
+          override: onepubUrlOverride,
+        );
+      await settings.save();
 
-            late T result;
-            await OnePubTokenStore.withPathTo(tempSettingsDir, () async {
-              await OnePubTokenStore().addToken(
-                onepubApiUrl: settings.onepubApiUrlAsString,
-                onepubToken: testSettings.onepubToken,
-              );
-              if (resolveOrganisationToken) {
-                final onepubToken = await _resolveTestServerToken(
-                  testSettings: testSettings,
-                );
-                if (onepubToken != testSettings.onepubToken) {
-                  await OnePubTokenStore().addToken(
-                    onepubApiUrl: settings.onepubApiUrlAsString,
-                    onepubToken: onepubToken,
-                  );
-                }
-              }
-              result = await action();
-            });
+      late T result;
+      await OnePubTokenStore.withPathTo(tempSettingsDir, () async {
+        await OnePubTokenStore().addToken(
+          onepubApiUrl: settings.onepubApiUrlAsString,
+          onepubToken: testSettings.onepubToken,
+        );
+        if (resolveOrganisationToken) {
+          final onepubToken = await _resolveTestServerToken(
+            testSettings: testSettings,
+          );
+          if (onepubToken != testSettings.onepubToken) {
+            await OnePubTokenStore().addToken(
+              onepubApiUrl: settings.onepubApiUrlAsString,
+              onepubToken: onepubToken,
+            );
+          }
+        }
+        result = await action();
+      });
 
-            return result;
-          }));
+      return result;
+    }),
+  );
 }
 
 Future<T> retryTestSetup<T>(
@@ -349,12 +355,14 @@ File _organisationTokenCacheFile({
 }) {
   final sourceTokenPrefix =
       sourceToken.length <= 16 ? sourceToken : sourceToken.substring(0, 16);
-  final key = _safeCacheKey([
-    testSettings.onepubUrl,
-    testSettings.organisationId,
-    testSettings.member,
-    sourceTokenPrefix,
-  ].join('_'));
+  final key = _safeCacheKey(
+    [
+      testSettings.onepubUrl,
+      testSettings.organisationId,
+      testSettings.member,
+      sourceTokenPrefix,
+    ].join('_'),
+  );
   return File('${Directory.systemTemp.path}/onepub_test_token_cache/$key');
 }
 
@@ -365,7 +373,8 @@ String _safeCacheKey(String input) {
     final isUpper = codeUnit >= 65 && codeUnit <= 90;
     final isLower = codeUnit >= 97 && codeUnit <= 122;
     buffer.write(
-        isDigit || isUpper || isLower ? String.fromCharCode(codeUnit) : '_');
+      isDigit || isUpper || isLower ? String.fromCharCode(codeUnit) : '_',
+    );
   }
   return buffer.toString();
 }

@@ -5,9 +5,11 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
+
 import 'package:onepub/src/util/one_pub_token_store.dart';
 import 'package:onepub/src/util/send_command.dart';
 import 'package:test/test.dart';
+
 import '../../../fixture_oauth.dart';
 import 'staging_common.dart';
 
@@ -19,16 +21,14 @@ class _DownloadLimitTarget {
   final String plan;
   final int packageSizeMb;
 
-  const _DownloadLimitTarget({
-    required this.plan,
-    required this.packageSizeMb,
-  });
+  const _DownloadLimitTarget({required this.plan, required this.packageSizeMb});
 }
 
 void main() {
   final config = StagingConfig.fromEnv();
   final overridePackageSizeMb = int.tryParse(
-      Platform.environment['ONEPUB_DOWNLOAD_LIMIT_PACKAGE_SIZE_MB'] ?? '');
+    Platform.environment['ONEPUB_DOWNLOAD_LIMIT_PACKAGE_SIZE_MB'] ?? '',
+  );
   final remainingDownloadsBeforeLimit = int.tryParse(
         Platform.environment['ONEPUB_DOWNLOAD_LIMIT_REMAINING_DOWNLOADS'] ?? '',
       ) ??
@@ -36,7 +36,8 @@ void main() {
   if (remainingDownloadsBeforeLimit < 1 ||
       (overridePackageSizeMb != null && overridePackageSizeMb < 1)) {
     throw ArgumentError(
-        'Download fixture sizes and remaining downloads must be positive.');
+      'Download fixture sizes and remaining downloads must be positive.',
+    );
   }
   final targets = <_DownloadLimitTarget>[
     _DownloadLimitTarget(
@@ -74,20 +75,22 @@ void main() {
   });
 
   for (final target in targets) {
-    test('download limits: byte quota ${target.plan}', () async {
-      if (!canProvision) {
-        stdout.writeln(
-          'Skipping byte-limit ${target.plan} test: requires a system-admin '
-          'token to provision test organisations.',
-        );
-        return;
-      }
-      final organisation = provisioned[target.plan];
-      if (organisation == null) {
-        throw StateError('Provisioned ${target.plan} organisation missing.');
-      }
+    test(
+      'download limits: byte quota ${target.plan}',
+      () async {
+        if (!canProvision) {
+          stdout.writeln(
+            'Skipping byte-limit ${target.plan} test: requires a system-admin '
+            'token to provision test organisations.',
+          );
+          return;
+        }
+        final organisation = provisioned[target.plan];
+        if (organisation == null) {
+          throw StateError('Provisioned ${target.plan} organisation missing.');
+        }
 
-      await withScopedOrganisationToken(
+        await withScopedOrganisationToken(
           onepubUrl: organisation.onepubUrl,
           operatorEmail: organisation.operatorEmail,
           organisationName: organisation.organisationName,
@@ -143,10 +146,12 @@ recoverable429=${summary.recoverable429Count}
                 'download-limit response.',
               );
             }
-          });
-    },
-        timeout: const Timeout(Duration(hours: 2)),
-        skip: config.skipDownloadLimit || config.skipPublish);
+          },
+        );
+      },
+      timeout: const Timeout(Duration(hours: 2)),
+      skip: config.skipDownloadLimit || config.skipPublish,
+    );
   }
 }
 
@@ -188,11 +193,12 @@ class _ArchiveDownloadResult {
   final int bytes;
   final int? errorStatusCode;
 
-  _ArchiveDownloadResult(
-      {required this.limited,
-      required this.recoverable429,
-      required this.bytes,
-      this.errorStatusCode});
+  _ArchiveDownloadResult({
+    required this.limited,
+    required this.recoverable429,
+    required this.bytes,
+    this.errorStatusCode,
+  });
 }
 
 class _DownloadSummary {
@@ -211,8 +217,12 @@ class _DownloadSummary {
   });
 }
 
-Future<_ArchiveDownloadResult> _downloadArchive(HttpClient client,
-    String archiveUrl, String token, String limitMessage) async {
+Future<_ArchiveDownloadResult> _downloadArchive(
+  HttpClient client,
+  String archiveUrl,
+  String token,
+  String limitMessage,
+) async {
   final request = await client.getUrl(Uri.parse(archiveUrl));
   request.headers.set('authorization', token);
   final response = await request.close();
@@ -291,8 +301,9 @@ Future<_DownloadSummary> _runDownloadWorkers({
       }
       if (totalBytes > maximumBytes) {
         firstError ??= StateError(
-            'Quota seed did not take effect: downloaded $totalBytes bytes '
-            '(bound $maximumBytes).');
+          'Quota seed did not take effect: downloaded $totalBytes bytes '
+          '(bound $maximumBytes).',
+        );
         stopAll();
       }
     } else if (type == 'limited') {
@@ -341,13 +352,15 @@ Future<_DownloadSummary> _runDownloadWorkers({
 
   final progress = Timer.periodic(const Duration(seconds: 30), (_) {
     stdout.writeln(
-        'Byte quota progress: elapsedMs=${elapsed.elapsedMilliseconds} '
-        'downloads=$downloads bytes=$totalBytes '
-        'rateLimits=$recoverable429Count');
+      'Byte quota progress: elapsedMs=${elapsed.elapsedMilliseconds} '
+      'downloads=$downloads bytes=$totalBytes '
+      'rateLimits=$recoverable429Count',
+    );
     if (elapsed.elapsedMilliseconds - lastByteProgressMs >
         const Duration(minutes: 5).inMilliseconds) {
-      firstError ??=
-          StateError('Byte quota made no download progress for five minutes.');
+      firstError ??= StateError(
+        'Byte quota made no download progress for five minutes.',
+      );
       stopAll();
     }
   });
@@ -370,11 +383,15 @@ Future<_DownloadSummary> _runDownloadWorkers({
       }
     }
 
-    return await done.future.timeout(const Duration(minutes: 20),
-        onTimeout: () {
-      throw StateError('Byte quota exceeded 20 minutes: downloads=$downloads '
-          'bytes=$totalBytes rateLimits=$recoverable429Count');
-    });
+    return await done.future.timeout(
+      const Duration(minutes: 20),
+      onTimeout: () {
+        throw StateError(
+          'Byte quota exceeded 20 minutes: downloads=$downloads '
+          'bytes=$totalBytes rateLimits=$recoverable429Count',
+        );
+      },
+    );
   } finally {
     progress.cancel();
     stopAll();
@@ -398,8 +415,12 @@ Future<void> _downloadWorkerEntry(Map<String, Object> args) async {
 
   try {
     while (true) {
-      final result =
-          await _downloadArchive(client, archiveUrl, token, limitMessage);
+      final result = await _downloadArchive(
+        client,
+        archiveUrl,
+        token,
+        limitMessage,
+      );
       if (result.limited) {
         sendPort.send(<String, Object>{'type': 'limited'});
         return;

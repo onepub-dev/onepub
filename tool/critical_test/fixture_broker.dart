@@ -19,11 +19,13 @@ Future<void> main(List<String> args) async {
     }
     final state = Directory(args.single);
     await FixtureOAuth.requirePrivateState(state);
-    final seed =
-        jsonDecode(Platform.environment[FixtureOAuth.authorizationKey] ?? '')
-            as Map<String, dynamic>;
-    broker = await FixtureOAuth.startHarness(seed['onepubUrl'] as String,
-        authorization: seed);
+    final seed = jsonDecode(
+      Platform.environment[FixtureOAuth.authorizationKey] ?? '',
+    ) as Map<String, dynamic>;
+    broker = await FixtureOAuth.startHarness(
+      seed['onepubUrl'] as String,
+      authorization: seed,
+    );
     final published = p.join(state.path, 'broker.json');
     if (FileSystemEntity.typeSync(published, followLinks: false) !=
         FileSystemEntityType.notFound) {
@@ -33,11 +35,12 @@ Future<void> main(List<String> args) async {
       ..createSync(exclusive: true);
     chmod(handoff.path, permission: '600');
     await handoff.writeAsString(
-        jsonEncode({
-          'origin': seed['onepubUrl'],
-          'broker': broker.workerEnvironment({})[FixtureOAuth.brokerKey],
-        }),
-        flush: true);
+      jsonEncode({
+        'origin': seed['onepubUrl'],
+        'broker': broker.workerEnvironment({})[FixtureOAuth.brokerKey],
+      }),
+      flush: true,
+    );
     handoff = await handoff.rename(published);
     await stdin.drain<void>();
   } on Object {

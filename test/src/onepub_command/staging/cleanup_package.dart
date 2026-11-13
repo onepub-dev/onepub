@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:io';
+
 import 'package:onepub/src/util/send_command.dart';
+
 import '../../../fixture_oauth.dart';
 
 Future<void> cleanupPackage(String packageName) async {
@@ -18,8 +20,9 @@ Future<void> cleanupPackage(String packageName) async {
       if (attempt < maxAttempts) {
         final backoffMs = 400 * attempt;
         stderr.writeln(
-            'Cleanup transport warning (attempt $attempt/$maxAttempts): '
-            '$e. Retrying in ${backoffMs}ms...');
+          'Cleanup transport warning (attempt $attempt/$maxAttempts): '
+          '$e. Retrying in ${backoffMs}ms...',
+        );
         await Future<void>.delayed(Duration(milliseconds: backoffMs));
         continue;
       }
@@ -41,8 +44,10 @@ Future<void> cleanupPackage(String packageName) async {
     final transient = response.status >= HttpStatus.internalServerError ||
         message.contains('ticket raised');
     if (deletePermissionDenied) {
-      stderr.writeln('''
-Cleanup skipped for $packageName: delete permission is not available on this environment.''');
+      stderr.writeln(
+        '''
+Cleanup skipped for $packageName: delete permission is not available on this environment.''',
+      );
       return;
     }
     if (transient && attempt < maxAttempts) {

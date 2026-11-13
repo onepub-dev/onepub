@@ -1,10 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
+
 import 'package:onepub/src/api/onepub_token.dart';
 import 'package:onepub/src/onepub_settings.dart';
 import 'package:onepub/src/util/one_pub_token_store.dart';
 import 'package:onepub/src/util/send_command.dart';
+
 import 'scim_test_client.dart';
 import 'test_settings.dart';
 
@@ -16,8 +18,13 @@ class FixtureOAuth {
   static const brokerKey = 'ONEPUB_TEST_FIXTURE_BROKER';
   static FixtureOAuth? _local;
 
-  FixtureOAuth._(this.origin, this._clientId, this._clientSecret,
-      this._rootActor, String refreshToken) {
+  FixtureOAuth._(
+    this.origin,
+    this._clientId,
+    this._clientSecret,
+    this._rootActor,
+    String refreshToken,
+  ) {
     _register(_rootActor, refreshToken);
   }
 
@@ -34,13 +41,14 @@ class FixtureOAuth {
     if (authorization['onepubUrl'] is! String ||
         _safeOrigin(authorization['onepubUrl'] as String) != origin) {
       throw const ScimTestException(
-          'Fixture OAuth seed origin does not match.');
+        'Fixture OAuth seed origin does not match.',
+      );
     }
     for (final key in [
       'clientId',
       'clientSecret',
       'refreshToken',
-      'onepubToken'
+      'onepubToken',
     ]) {
       if (authorization[key] is! String ||
           (authorization[key] as String).isEmpty) {
@@ -51,18 +59,20 @@ class FixtureOAuth {
       throw const ScimTestException('Fixture OAuth scope is required.');
     }
     _local = FixtureOAuth._(
-        origin,
-        authorization['clientId'] as String,
-        authorization['clientSecret'] as String,
-        authorization['onepubToken'] as String,
-        authorization['refreshToken'] as String);
+      origin,
+      authorization['clientId'] as String,
+      authorization['clientSecret'] as String,
+      authorization['onepubToken'] as String,
+      authorization['refreshToken'] as String,
+    );
   }
 
   static void reset() => _local = null;
 
   static String _safeOrigin(String url) {
-    final uri =
-        Uri.parse(assertSafeOnePubTestUrl(url, source: 'fixture OAuth'));
+    final uri = Uri.parse(
+      assertSafeOnePubTestUrl(url, source: 'fixture OAuth'),
+    );
     if (uri.userInfo.isNotEmpty ||
         uri.hasQuery ||
         uri.hasFragment ||
@@ -80,10 +90,11 @@ class FixtureOAuth {
       return;
     }
     _clients[actor] = ScimTestClient.refreshToken(
-        onepubUrl: origin,
-        clientId: _clientId,
-        clientSecret: _clientSecret,
-        refreshToken: refreshToken);
+      onepubUrl: origin,
+      clientId: _clientId,
+      clientSecret: _clientSecret,
+      refreshToken: refreshToken,
+    );
   }
 
   Future<String> _access(String url, String actor, bool root) {
@@ -128,8 +139,11 @@ class FixtureOAuth {
     }
   }
 
-  static Future<String> token(
-      {String? actor, bool root = false, String? onepubUrl}) async {
+  static Future<String> token({
+    String? actor,
+    bool root = false,
+    String? onepubUrl,
+  }) async {
     final settings = OnePubSettings.use();
     final url =
         onepubUrl ?? settings.onepubUrl ?? OnePubSettings.defaultOnePubUrl;
@@ -151,8 +165,10 @@ class FixtureOAuth {
     return token;
   }
 
-  static Future<void> accept(Map<String, dynamic> body,
-      {String? onepubUrl}) async {
+  static Future<void> accept(
+    Map<String, dynamic> body, {
+    String? onepubUrl,
+  }) async {
     if (body['testFixtureRefreshToken'] == null ||
         body['onepubToken'] == null) {
       return;
@@ -164,19 +180,24 @@ class FixtureOAuth {
     if (local != null) {
       local._accept(url, body);
     } else {
-      await _brokerCall(
-          {'operation': 'register', 'origin': _safeOrigin(url), 'body': body});
+      await _brokerCall({
+        'operation': 'register',
+        'origin': _safeOrigin(url),
+        'body': body,
+      });
     }
   }
 
   static Future<Map<String, dynamic>> _brokerCall(
-      Map<String, dynamic> body) async {
+    Map<String, dynamic> body,
+  ) async {
     // An explicit malformed broker never falls back to a different authority.
     final encoded = Platform.environment[brokerKey] ??
         await _criticalBroker(body['origin'] as String);
     if (encoded == null) {
       throw const ScimTestException(
-          'Fixture OAuth harness authorization is required.');
+        'Fixture OAuth harness authorization is required.',
+      );
     }
     final client = HttpClient()..connectionTimeout = const Duration(seconds: 5);
     try {
@@ -193,13 +214,16 @@ class FixtureOAuth {
       return await (() async {
         final request = await client.postUrl(uri);
         request.followRedirects = false;
-        request.headers
-            .set(HttpHeaders.authorizationHeader, config['secret'] as String);
+        request.headers.set(
+          HttpHeaders.authorizationHeader,
+          config['secret'] as String,
+        );
         request.write(jsonEncode(body));
         final response = await request.close();
         if (response.statusCode != HttpStatus.ok) {
           throw const ScimTestException(
-              'Fixture OAuth broker rejected request.');
+            'Fixture OAuth broker rejected request.',
+          );
         }
         return await _readJson(response);
       })()
@@ -231,13 +255,16 @@ class FixtureOAuth {
   }
 
   static Future<String?> _criticalBroker(String origin) async {
-    final state =
-        Directory('${Directory.current.path}/.dart_tool/critical_test_server');
+    final state = Directory(
+      '${Directory.current.path}/.dart_tool/critical_test_server',
+    );
     return await readCriticalBroker(state, origin);
   }
 
   static Future<String?> readCriticalBroker(
-      Directory state, String origin) async {
+    Directory state,
+    String origin,
+  ) async {
     final file = File('${state.path}/broker.json');
     if (FileSystemEntity.typeSync(file.path, followLinks: false) ==
         FileSystemEntityType.notFound) {
@@ -266,12 +293,14 @@ class FixtureOAuth {
   }
 
   static Future<Map<String, dynamic>> _readJson(
-      Stream<List<int>> stream) async {
+    Stream<List<int>> stream,
+  ) async {
     final bytes = <int>[];
     await for (final chunk in stream) {
       if (bytes.length + chunk.length > 65536) {
         throw const ScimTestException(
-            'Fixture OAuth request exceeds size limit.');
+          'Fixture OAuth request exceeds size limit.',
+        );
       }
       bytes.addAll(chunk);
     }
@@ -284,23 +313,28 @@ class FixtureOAuth {
 
   /// Called once by the process which launches test workers. Never initialize
   /// independent owners in test isolates from the same rotating seed.
-  static Future<FixtureOAuthBroker> startHarness(String onepubUrl,
-      {Map<String, dynamic>? authorization}) async {
+  static Future<FixtureOAuthBroker> startHarness(
+    String onepubUrl, {
+    Map<String, dynamic>? authorization,
+  }) async {
     if (authorization == null) {
       try {
-        authorization = jsonDecode(Platform.environment[authorizationKey] ?? '')
-            as Map<String, dynamic>;
+        authorization = jsonDecode(
+          Platform.environment[authorizationKey] ?? '',
+        ) as Map<String, dynamic>;
       } on Object {
         throw const ScimTestException(
-            'Fixture OAuth authorization is required.');
+          'Fixture OAuth authorization is required.',
+        );
       }
     }
     configure(onepubUrl, authorization);
     final owner = _local!;
     final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     final random = Random.secure();
-    final secret =
-        base64UrlEncode(List.generate(32, (_) => random.nextInt(256)));
+    final secret = base64UrlEncode(
+      List.generate(32, (_) => random.nextInt(256)),
+    );
     server.listen((request) async {
       try {
         if (request.method != 'POST' ||
@@ -318,7 +352,10 @@ class FixtureOAuth {
           case 'token':
             result = {
               'accessToken': await owner._access(
-                  url, body['actor'] as String, body['root'] as bool)
+                url,
+                body['actor'] as String,
+                body['root'] as bool,
+              ),
             };
           case 'register':
             owner._accept(url, body['body'] as Map<String, dynamic>);
@@ -371,13 +408,14 @@ Future<EndpointResponse> sendFixtureCommand({
   Duration? timeout,
 }) =>
     _sendFixtureCommand(
-        command: command,
-        commandType: commandType,
-        actor: actor,
-        onepubUrl: onepubUrl,
-        body: body,
-        method: method,
-        timeout: timeout);
+      command: command,
+      commandType: commandType,
+      actor: actor,
+      onepubUrl: onepubUrl,
+      body: body,
+      method: method,
+      timeout: timeout,
+    );
 
 Future<EndpointResponse> _sendFixtureCommand({
   required String command,
@@ -391,15 +429,20 @@ Future<EndpointResponse> _sendFixtureCommand({
 }) async {
   final path = Uri.parse(command).path;
   if (!RegExp(
-          r'^test/(?:whoami|member/exportToken/[^/]+/[^/]+|auth/completeCliLogin/[^/]+|package/(?:create|delete)/[^/]+|download/seed/[0-9]+)$')
-      .hasMatch(path)) {
+    r'^test/(?:whoami|member/exportToken/[^/]+/[^/]+|auth/completeCliLogin/[^/]+|package/(?:create|delete)/[^/]+|download/seed/[0-9]+)$',
+  ).hasMatch(path)) {
     throw ArgumentError('Unsupported fixture helper.');
   }
-  final origin = FixtureOAuth._safeOrigin(onepubUrl ??
-      OnePubSettings.use().onepubUrl ??
-      OnePubSettings.defaultOnePubUrl);
-  final token =
-      await FixtureOAuth.token(actor: actor, root: root, onepubUrl: origin);
+  final origin = FixtureOAuth._safeOrigin(
+    onepubUrl ??
+        OnePubSettings.use().onepubUrl ??
+        OnePubSettings.defaultOnePubUrl,
+  );
+  final token = await FixtureOAuth.token(
+    actor: actor,
+    root: root,
+    onepubUrl: origin,
+  );
   final client = HttpClient()
     ..connectionTimeout = const Duration(seconds: 5)
     ..userAgent = 'onepub 2.15.0';
@@ -410,8 +453,10 @@ Future<EndpointResponse> _sendFixtureCommand({
       if (uri.origin != origin) {
         throw const ScimTestException('Invalid fixture helper origin.');
       }
-      final request =
-          await client.openUrl(method == Method.post ? 'POST' : 'GET', uri);
+      final request = await client.openUrl(
+        method == Method.post ? 'POST' : 'GET',
+        uri,
+      );
       request.followRedirects = false;
       request.headers.set(HttpHeaders.authorizationHeader, 'Bearer $token');
       if (body != null) {
@@ -430,7 +475,10 @@ Future<EndpointResponse> _sendFixtureCommand({
         throw const ScimTestException('Fixture helper redirect rejected.');
       }
       return EndpointResponse(
-          result.statusCode, StringBuffer(utf8.decode(bytes)), commandType);
+        result.statusCode,
+        StringBuffer(utf8.decode(bytes)),
+        commandType,
+      );
     })()
         .timeout(timeout ?? const Duration(seconds: 30));
   } on ScimTestException {
@@ -454,8 +502,11 @@ Future<OnePubToken> exportTestMemberToken({
   required String obfuscatedOrganisationId,
   required String memberEmail,
 }) async =>
-    OnePubToken(await _sendFixtureCommand(
+    OnePubToken(
+      await _sendFixtureCommand(
         command: 'test/member/exportToken/$obfuscatedOrganisationId/'
             '${Uri.encodeComponent(memberEmail)}',
         commandType: CommandType.cli,
-        root: true));
+        root: true,
+      ),
+    );
