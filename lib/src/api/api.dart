@@ -10,6 +10,7 @@ import '../util/send_command.dart';
 import '../version/version.g.dart';
 import 'auth_response.dart';
 import 'cli_models.dart';
+import 'login_request.dart';
 import 'logout.dart';
 import 'member_create.dart';
 import 'member_response.dart';
@@ -50,6 +51,7 @@ dart pub global activate onepub
         response.status,
         message,
         version,
+        capabilities: body.capabilities,
       );
     } on IOException {
       return Status(500, 'Connection failed', null);
@@ -57,9 +59,13 @@ dart pub global activate onepub
   }
 
   /// See if the user has completed the oauth login
-  Future<AuthResponse> awaitLogin(String authToken) async {
+  Future<AuthResponse> awaitLogin(String authToken,
+      {LoginRequest? routing}) async {
+    final endpoint = Uri(
+        pathSegments: ['member', 'awaitLogin', authToken],
+        queryParameters: routing?.queryParameters);
     final response = await sendCommand(
-        command: 'member/awaitLogin/$authToken',
+        command: endpoint.toString(),
         commandType: CommandType.cli,
         authorised: false);
 

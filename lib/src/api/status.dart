@@ -8,8 +8,13 @@ class Status {
   String message;
 
   late final Version version;
+  final Set<String> capabilities;
 
-  Status(this.statusCode, this.message, String? version) {
+  bool get supportsEnterpriseSso => capabilities.contains('enterprise-sso-v1');
+
+  Status(this.statusCode, this.message, String? version,
+      {Set<String> capabilities = const {}})
+      : capabilities = Set.unmodifiable(capabilities) {
     if (version == null) {
       this.version = Version.parse('1.0.0');
     } else {

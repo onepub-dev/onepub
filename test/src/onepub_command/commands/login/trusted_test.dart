@@ -31,12 +31,15 @@ void main() {
         'Requires trusted publishing to be configured in OnePub.');
   });
 
-  test('bare login is normalized to the browser login method', () {
-    expect(MyRunner.normalizeArgs(['login']), ['login', 'browser']);
+  test('bare login preserves remembered routing and explicit methods', () {
+    expect(MyRunner.normalizeArgs(['login']), ['login', '_interactive']);
     expect(
       MyRunner.normalizeArgs(['--debug', 'login']),
-      ['--debug', 'login', 'browser'],
+      ['--debug', 'login', '_interactive'],
     );
+    expect(MyRunner.normalizeArgs(['login', '--choose']),
+        ['login', '--choose', '_interactive']);
+    expect(MyRunner.normalizeArgs(['login', 'browser']), ['login', 'browser']);
     expect(
       MyRunner.normalizeArgs(['login', 'trusted']),
       ['login', 'trusted'],

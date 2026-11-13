@@ -3,12 +3,17 @@ import '../exceptions.dart';
 class CliStatusBody {
   final String message;
   final String version;
+  final Set<String> capabilities;
 
-  CliStatusBody({required this.message, required this.version});
+  CliStatusBody(
+      {required this.message,
+      required this.version,
+      this.capabilities = const {}});
 
   factory CliStatusBody.fromJson(Map<String, dynamic> json) => CliStatusBody(
         message: requiredResponseString(json, 'message'),
         version: requiredResponseString(json, 'version'),
+        capabilities: _stringSet(json['capabilities']),
       );
 }
 

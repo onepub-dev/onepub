@@ -20,7 +20,19 @@ dart pub global activate onepub
 onepub login
 ```
 
-`onepub login` opens a browser to sign in to your OnePub account. If you are setting up CI with trusted publishing, configure it in OnePub and use `onepub login trusted`. Run `onepub login trusted --help` for its options.
+`onepub login` prints a URL. Open it in a browser and complete sign-in within five minutes. You can open the URL on another device when using SSH or a terminal without a browser.
+
+For enterprise SSO, use the organisation code supplied by your administrator:
+
+```sh
+onepub login sso acme
+```
+
+After a successful sign-in, `onepub login` remembers the method and organisation for that OnePub server. Use `onepub login --choose` to choose again, or `onepub login browser` for ordinary browser sign-in. Enterprise SSO requires a supporting OnePub server.
+
+`onepub logout` retains the remembered method. Use `onepub logout --forget` to remove it too. A failed sign-in keeps your previous login.
+
+For CI with trusted publishing, configure it in OnePub and use `onepub login trusted`. Run `onepub login trusted --help` for its options.
 
 Trusted Publishing is configured 'per package' on the My OnePub | Managed Packages page. Select a package then click the 'Trusted Publishing' tab.
 

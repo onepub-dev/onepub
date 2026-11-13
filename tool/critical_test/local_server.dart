@@ -13,8 +13,11 @@ Future<void> startLocalServer() async {
 A critical_test server is already active. Run the post-hook to stop it first.''');
   }
   state.createSync(recursive: true);
-  final deploy = p.normalize(p.join(_root, '..', 'onepub-deploy'));
   try {
+    // The deploy checkout may be linked into an isolated CLI worktree.
+    // Its fixture resolves the Java checkout relative to this directory.
+    final deploy = Directory(p.join(_root, '..', 'onepub-deploy'))
+        .resolveSymbolicLinksSync();
     final process = await Process.start(
         Platform.resolvedExecutable,
         [

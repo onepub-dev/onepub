@@ -2,6 +2,7 @@
  * licensed under the GPL v2.
  * Written by Brett Sutton <bsutton@onepub.dev>, Jan 2022
  */
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:dcli_core/dcli_core.dart';
@@ -229,6 +230,26 @@ Fix the YAML syntax, or move the file aside and rerun OnePub to recreate it.''')
   String get operatorEmail => _settings.asString('operatorEmail');
 
   Future<void> save() => _settings.save();
+
+  /// Refresh cached values after an interrupted login update is recovered.
+  void reload() {
+    final recovered = _loadSettingsFile(pathToSettings);
+    _settings.valueMap
+      ..clear()
+      ..addAll(recovered.valueMap);
+  }
+
+  /// JSON is valid YAML. Stage account details without changing live settings.
+  String loginContents(
+          {required String organisationId,
+          required String organisationName,
+          required String operatorEmail}) =>
+      jsonEncode({
+        ..._settings.valueMap,
+        'organisationId': organisationId,
+        'organisationName': organisationName,
+        'operatorEmail': operatorEmail,
+      });
 
   Future<void> saveTo(String tempSettingsDir) async {
     _settings.filePath = join(tempSettingsDir, defaultSettingsFilename);
