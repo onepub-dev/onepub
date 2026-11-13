@@ -11,6 +11,7 @@ import 'package:onepub/src/token_store/io.dart';
 import 'package:onepub/src/util/one_pub_token_store.dart';
 import 'package:onepub/src/util/role_enum.dart';
 
+import 'provisioning_fixture.dart';
 import 'test_settings.dart';
 
 /// to call this the host system must be logged into OnePub with
@@ -23,11 +24,11 @@ Future<void> impersonateMemberByEmail({
     var onepubTokenResponse = await API().exportMemberToken(userEmailAddress);
     if (!onepubTokenResponse.success) {
       // member doesn't exists so lets create them.
-      await API().createMember(
+      await ProvisioningFixture().createMember(
           userEmail: userEmailAddress,
           firstname: 'Test',
           lastname: 'User',
-          role: RoleEnum.Collaborator);
+          role: RoleEnum.Collaborator.name);
       onepubTokenResponse = await API().exportMemberToken(userEmailAddress);
     }
 
@@ -105,11 +106,11 @@ Future<void> withTestZone({
   await withTestServer(() async {
     var onepubTokenResponse = await API().exportMemberToken(userEmailAddress);
     if (!onepubTokenResponse.success) {
-      await API().createMember(
+      await ProvisioningFixture().createMember(
           userEmail: userEmailAddress,
           firstname: 'Test',
           lastname: 'User',
-          role: RoleEnum.Collaborator);
+          role: RoleEnum.Collaborator.name);
       onepubTokenResponse = await API().exportMemberToken(userEmailAddress);
     }
 

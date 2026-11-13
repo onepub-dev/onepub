@@ -5,14 +5,12 @@ import 'package:pub_semver/pub_semver.dart';
 
 import '../auth/token_source.dart';
 import '../exceptions.dart';
-import '../util/role_enum.dart';
 import '../util/send_command.dart';
 import '../version/version.g.dart';
 import 'auth_response.dart';
 import 'cli_models.dart';
 import 'login_request.dart';
 import 'logout.dart';
-import 'member_create.dart';
 import 'member_response.dart';
 import 'onepub_token.dart';
 import 'organisation.dart';
@@ -91,21 +89,6 @@ dart pub global activate onepub
     return OnePubToken(response);
   }
 
-  /// Test-only endpoint for obtaining a member token scoped to
-  /// [obfuscatedOrganisationId]. Requires test endpoints and a System
-  /// Administrator token on the server.
-  Future<OnePubToken> exportTestMemberToken({
-    required String obfuscatedOrganisationId,
-    required String memberEmail,
-  }) async {
-    final endpoint = 'test/member/exportToken/$obfuscatedOrganisationId/'
-        '${Uri.encodeComponent(memberEmail)}';
-    final response =
-        await sendCommand(command: endpoint, commandType: CommandType.cli);
-
-    return OnePubToken(response);
-  }
-
   /// Fetches the organisation details associated with the [onepubToken]
   Future<Organisation> fetchOrganisation(String onepubToken) async {
     // the import is an alternate (from login) form of getting
@@ -130,11 +113,12 @@ dart pub global activate onepub
   Future<MemberResponse> fetchMember(
     String onepubTokenOfTargetMember,
   ) async {
-    final endpoint =
-        'test/member/details/${Uri.encodeComponent(onepubTokenOfTargetMember)}';
-
-    final response =
-        await sendCommand(command: endpoint, commandType: CommandType.cli);
+    final response = await sendCommand(
+      command: 'member/whoami',
+      commandType: CommandType.cli,
+      authorised: false,
+      headers: {'authorization': onepubTokenOfTargetMember},
+    );
 
     return MemberResponse(response, onepubTokenOfTargetMember);
   }
@@ -219,25 +203,6 @@ dart pub global activate onepub
   Future<void> createPackage(String packageName, String team) async {
     final endpoint = 'package/create/$packageName/team/$team';
     await sendCommand(command: endpoint, commandType: CommandType.cli);
-  }
-
-  /// Creates a member which belongs to the same organisation
-  /// as the current logged in user.
-  /// The user must be a SystemAdministrator to make this call.
-  Future<MemberCreate> createMember(
-      {required String userEmail,
-      required String firstname,
-      required String lastname,
-      required RoleEnum role}) async {
-    final endpoint = 'test/member/create'
-        '?email=${Uri.encodeQueryComponent(userEmail)}'
-        '&firstname=${Uri.encodeQueryComponent(firstname)}'
-        '&lastname=${Uri.encodeQueryComponent(lastname)}'
-        '&role=${Uri.encodeQueryComponent(role.name)}';
-    final response =
-        await sendCommand(command: endpoint, commandType: CommandType.cli);
-
-    return MemberCreate(response);
   }
 
   /// Fetches the list of published version for [packageName]

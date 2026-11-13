@@ -11,6 +11,7 @@ import 'package:onepub/src/token_store/io.dart';
 import 'package:onepub/src/util/one_pub_token_store.dart';
 import 'package:onepub/src/util/send_command.dart';
 
+import '../../../provisioning_fixture.dart';
 import '../../../test_settings.dart';
 import '../../../test_users.dart';
 import 'publish_test_package.dart';
@@ -396,21 +397,9 @@ Future<ProvisionedTestOrganisation> createProvisionedTestOrganisation(
       timestamp,
       Platform.environment['ONEPUB_PENTEST_RUN_ID'],
     );
-    final response = await sendCommand(
-      command:
-          'test/organisation/create/${Uri.encodeComponent(organisationName)}'
-          '?plan=${Uri.encodeQueryComponent(plan)}&dedicatedOwner=true',
-      commandType: CommandType.cli,
-    );
-    if (!response.success) {
-      throw StateError(
-        'Unable to create $plan test organisation: ${response.errorMessage}',
-      );
-    }
-    final body = response.parseCli(CliTestOrganisationBody.fromJson).body;
-    if (body == null) {
-      throw StateError('Missing body while creating $plan test organisation.');
-    }
+    final resource = await ProvisioningFixture()
+        .createOrganisation(name: organisationName, plan: plan);
+    final body = CliTestOrganisationBody.fromJson(resource);
     if (body.onepubToken.isEmpty ||
         body.obfuscatedId.isEmpty ||
         body.organisationName.isEmpty ||
@@ -486,7 +475,7 @@ Future<List<CliTeamInfo>> listAvailableTeams() async {
   const maxAttempts = 4;
   for (var attempt = 1; attempt <= maxAttempts; attempt++) {
     final response = await sendCommand(
-      command: 'test/team/list',
+      command: 'team/list',
       commandType: CommandType.cli,
     );
     if (response.success) {

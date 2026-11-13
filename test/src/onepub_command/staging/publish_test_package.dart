@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:math';
-
 import 'package:dcli/dcli.dart';
 import 'package:dcli_core/dcli_core.dart' as core;
 import 'package:onepub/src/api/cli_models.dart';
@@ -10,7 +9,7 @@ import 'package:onepub/src/util/one_pub_token_store.dart';
 import 'package:onepub/src/util/send_command.dart';
 import 'package:path/path.dart';
 import 'package:uuid/uuid.dart';
-
+import '../../../fixture_oauth.dart';
 import 'publish_result.dart';
 
 Future<PublishResult> publishTestPackage({
@@ -178,7 +177,7 @@ Future<void> _ensurePackageCreated(String packageName, String? team) async {
   var attempt = 0;
   while (true) {
     attempt++;
-    response = await sendCommand(
+    response = await sendFixtureCommand(
       command: 'test/package/create/$packageName?team=$encodedTeam',
       commandType: CommandType.cli,
       method: Method.post,
@@ -230,7 +229,7 @@ package "$packageName"; retrying with attempt ${attempt + 1} in ${backoffMs}ms..
 Future<void> _listTeamsAndExit() async {
   stdout.writeln('Listing teams via test endpoint...');
   final response = await sendCommand(
-    command: 'test/team/list',
+    command: 'team/list',
     commandType: CommandType.cli,
   );
 

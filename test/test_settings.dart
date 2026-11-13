@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-
 import 'package:dcli/dcli.dart' as dcli;
 import 'package:dcli_core/dcli_core.dart' as core;
 import 'package:onepub/src/api/api.dart';
@@ -9,6 +8,7 @@ import 'package:onepub/src/onepub_settings.dart';
 import 'package:onepub/src/util/one_pub_token_store.dart';
 import 'package:path/path.dart';
 import 'package:settings_yaml/settings_yaml.dart';
+import 'fixture_oauth.dart';
 
 const _explicitSafeOnePubTestHosts = <String>{
   'beta.onepub.dev',
@@ -269,7 +269,7 @@ Future<OnePubToken> _exportTestMemberTokenWithRetry({
   const maxAttempts = 5;
   OnePubToken? lastResponse;
   for (var attempt = 1; attempt <= maxAttempts; attempt++) {
-    final response = await API().exportTestMemberToken(
+    final response = await exportTestMemberToken(
       obfuscatedOrganisationId: testSettings.organisationId,
       memberEmail: testSettings.member,
     );

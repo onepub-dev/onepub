@@ -5,6 +5,7 @@ import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 import '../../../tool/prepare_trusted_publishing_test.dart';
+import '../../fixture_oauth.dart';
 import '../../test_settings.dart';
 
 void main() {
@@ -19,10 +20,39 @@ void main() {
     const token = 'bootstrap-token';
     const packageName = 'onepub_test_trusted_deadbeef';
     final requests = <String>[];
+    final broker = await FixtureOAuth.startHarness(url, authorization: {
+      'onepubUrl': url,
+      'clientId': 'fixture-client',
+      'clientSecret': 'fixture-secret',
+      'refreshToken': 'fixture-refresh',
+      'onepubToken': token,
+      'scopes': 'test:fixtures',
+    });
+    addTearDown(broker.close);
 
     server.listen((request) async {
       requests.add('${request.method} ${request.uri.path}');
       final authorization = request.headers.value('authorization');
+
+      if (request.uri.path == '/api/provisioning/oauth/token') {
+        final basic =
+            base64Encode(utf8.encode('fixture-client:fixture-secret'));
+        expect(authorization, 'Basic $basic');
+        final form =
+            Uri.splitQueryString(await utf8.decoder.bind(request).join());
+        expect(form, {
+          'grant_type': 'refresh_token',
+          'refresh_token': 'fixture-refresh'
+        });
+        await _reply(request, {
+          'access_token': 'fixture-access',
+          'refresh_token': 'fixture-next',
+          'token_type': 'Bearer',
+          'expires_in': 300,
+          'scope': 'test:fixtures'
+        });
+        return;
+      }
 
       if (request.uri.path == '/api/organisation/details') {
         expect(request.method, 'GET');
@@ -36,7 +66,7 @@ void main() {
         return;
       }
 
-      if (request.uri.path == '/api/test/team/list') {
+      if (request.uri.path == '/api/team/list') {
         expect(request.method, 'GET');
         expect(authorization, token);
         await _reply(request, {
@@ -55,7 +85,7 @@ void main() {
       }
 
       if (request.uri.path == '/api/test/package/create/$packageName') {
-        expect(authorization, token);
+        expect(authorization, 'Bearer fixture-access');
         expect(request.uri.queryParameters['team'], 'Everyone Team');
         if (request.method == 'GET') {
           await _reply(
@@ -92,10 +122,10 @@ void main() {
       Platform.resolvedExecutable,
       [script, url, packageName],
       workingDirectory: Directory.current.path,
-      environment: {
+      environment: broker.workerEnvironment({
         ...Platform.environment,
         'ONEPUB_BOOTSTRAP_TEST_TOKEN': token,
-      },
+      }),
     ).timeout(const Duration(seconds: 30));
 
     expect(result.exitCode, 0, reason: '${result.stdout}\n${result.stderr}');
@@ -103,7 +133,7 @@ void main() {
       requests,
       containsAllInOrder([
         'GET /api/organisation/details',
-        'GET /api/test/team/list',
+        'GET /api/team/list',
         'POST /api/test/package/create/$packageName',
       ]),
     );

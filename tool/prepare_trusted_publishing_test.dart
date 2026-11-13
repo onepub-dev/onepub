@@ -1,17 +1,20 @@
-import 'dart:io';
+#! /usr/bin/env dcli
 
+import 'dart:io';
+import 'package:dcli/dcli.dart' show env;
 import 'package:onepub/src/api/api.dart';
 import 'package:onepub/src/api/cli_models.dart';
 import 'package:onepub/src/onepub_settings.dart';
 import 'package:onepub/src/util/one_pub_token_store.dart';
 import 'package:onepub/src/util/send_command.dart';
 import 'package:path/path.dart' as p;
-
+import '../test/fixture_oauth.dart';
 import '../test/test_settings.dart';
 
 /// Creates the empty package for the isolated build's GitHub publishing test.
 Future<void> main(List<String> args) async {
   Directory? temp;
+  FixtureOAuthBroker? fixtureBroker;
   try {
     final verify = args.length == 3 && args[2] == '--verify';
     if ((!verify && args.length != 2) ||
@@ -25,9 +28,12 @@ Future<void> main(List<String> args) async {
       throw ArgumentError(
           'The build bootstrap requires its isolated loopback stack.');
     }
-    final token = Platform.environment['ONEPUB_BOOTSTRAP_TEST_TOKEN'];
+    final token = env['ONEPUB_BOOTSTRAP_TEST_TOKEN'];
     if (token == null || token.isEmpty) {
       throw StateError('Missing isolated test bootstrap token.');
+    }
+    if (!verify && !Platform.environment.containsKey(FixtureOAuth.brokerKey)) {
+      fixtureBroker = await FixtureOAuth.startHarness(url);
     }
     temp = Directory.systemTemp.createTempSync('onepub-trusted-bootstrap-');
     await OnePubSettings.withPathTo(p.join(temp.path, 'settings'), () async {
@@ -69,14 +75,14 @@ Future<void> main(List<String> args) async {
           return;
         }
         final teams = (await sendCommand(
-          command: 'test/team/list',
+          command: 'team/list',
           commandType: CommandType.cli,
           timeout: const Duration(seconds: 15),
         ))
             .requireCliBody(CliTeamListBody.fromJson)
             .teams;
         final team = teams.firstWhere((team) => team.everyoneTeam);
-        final result = await sendCommand(
+        final result = await sendFixtureCommand(
           command:
               'test/package/create/${args[1]}?team=${Uri.encodeQueryComponent(team.name)}',
           commandType: CommandType.cli,
@@ -92,6 +98,7 @@ Future<void> main(List<String> args) async {
     stderr.writeln('Trusted publishing test setup failed: $e');
     exitCode = 1;
   } finally {
+    await fixtureBroker?.close();
     temp?.deleteSync(recursive: true);
   }
 }

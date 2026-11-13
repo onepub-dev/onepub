@@ -6,7 +6,6 @@ library;
  */
 
 import 'dart:io';
-
 import 'package:dcli/dcli.dart';
 import 'package:onepub/src/api/api.dart';
 import 'package:onepub/src/entry_point.dart';
@@ -17,7 +16,7 @@ import 'package:pub_semver/pub_semver.dart' as ps;
 import 'package:pubspec_manager/pubspec_manager.dart';
 import 'package:scope/scope.dart';
 import 'package:test/test.dart';
-
+import '../../../../fixture_oauth.dart';
 import '../../../../impersonate_user.dart';
 import '../../../../test_users.dart';
 import '../test_utils.dart';
@@ -118,7 +117,7 @@ void main() {
 }
 
 Future<void> _ensurePackageExists(String packageName) async {
-  final response = await sendCommand(
+  final response = await sendFixtureCommand(
     command: 'test/package/create/$packageName?team=everyone',
     commandType: CommandType.cli,
     method: Method.post,

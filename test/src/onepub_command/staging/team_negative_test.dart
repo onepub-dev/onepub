@@ -2,10 +2,9 @@
 library;
 
 import 'dart:io';
-
 import 'package:onepub/src/util/send_command.dart';
 import 'package:test/test.dart';
-
+import '../../../fixture_oauth.dart';
 import '../../../test_users.dart';
 import 'staging_common.dart';
 
@@ -20,7 +19,7 @@ Future<void> teamNegativeTest({
   stdout.writeln(
       'Testing team scoping with invalid team "$teamName" for $packageName...');
   final encodedTeam = Uri.encodeQueryComponent(teamName);
-  final response = await sendCommand(
+  final response = await sendFixtureCommand(
     command: 'test/package/create/$packageName?team=$encodedTeam',
     commandType: CommandType.cli,
     method: Method.post,

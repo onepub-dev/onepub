@@ -1,15 +1,16 @@
 @Tags(['onepub_command', 'integration', 'staging'])
 library;
 
+import 'dart:convert';
 import 'dart:io';
-
-import 'package:onepub/src/api/api.dart';
 import 'package:onepub/src/api/cli_models.dart';
 import 'package:onepub/src/api/member.dart';
 import 'package:onepub/src/util/send_command.dart';
 import 'package:test/test.dart';
-
+import '../../../fixture_oauth.dart';
 import '../../../fixture_retry.dart';
+import '../../../provisioning_fixture.dart';
+import '../../../scim_test_client.dart';
 import '../../../test_users.dart';
 import 'staging_common.dart';
 
@@ -56,7 +57,7 @@ Future<String> _exportTokenOrThrow(String email, String organisationId) async {
   // Provisioning uses the administrator fixture and can exhaust its short
   // request window. Retry only transient setup failures, never auth assertions.
   final tokenResponse = await retryFixture(
-    () => API().exportTestMemberToken(
+    () => exportTestMemberToken(
       obfuscatedOrganisationId: organisationId,
       memberEmail: email,
     ),
@@ -78,33 +79,25 @@ Future<Member> _createMemberByRoleName({
   required String email,
   required String roleName,
 }) async {
-  final command = 'test/member/create'
-      '?email=${Uri.encodeQueryComponent(email)}'
-      '&firstname=Permission'
-      '&lastname=${Uri.encodeQueryComponent(roleName)}'
-      '&role=${Uri.encodeQueryComponent(roleName)}';
-  final response = await sendCommand(
-    command: command,
-    commandType: CommandType.cli,
-  );
+  final response = await ProvisioningFixture().createMember(
+      userEmail: email,
+      firstname: 'Permission',
+      lastname: roleName,
+      role: roleName);
   if (!response.success) {
     throw StateError(
       'Unable to create $roleName member $email: ${response.errorMessage}',
     );
   }
-  final body = response.parseCli(CliMemberBody.fromJson).body;
-  if (body == null) {
-    throw StateError('Missing body while creating $roleName member $email.');
-  }
   return Member(
-    email: body.email,
-    firstname: body.firstname,
-    lastname: body.lastname,
+    email: response.email,
+    firstname: response.firstname,
+    lastname: response.lastname,
     roles: {},
-    organisationName: body.organisationName,
-    obfuscatedOrganisationId: body.obfuscateOrganisationId,
-    onepubToken:
-        await _exportTokenOrThrow(body.email, body.obfuscateOrganisationId),
+    organisationName: response.organisationName,
+    obfuscatedOrganisationId: response.obfuscateOrganisationId,
+    onepubToken: await _exportTokenOrThrow(
+        response.email, response.obfuscateOrganisationId),
   );
 }
 
@@ -371,7 +364,7 @@ void main() {
       timeout: const Timeout(Duration(minutes: 5)),
       skip: config.skipUnauthorizedTest);
 
-  test('team members cannot create members', () async {
+  test('member credentials cannot provision SCIM users', () async {
     if (!_hasProvisionedRoleCoverage()) {
       stdout.writeln(
         'Skipping permission test: requires system-admin provisioned users '
@@ -386,19 +379,26 @@ void main() {
         final roleSlug = restricted.roleLabel.replaceAll(' ', '_');
         final timestamp = DateTime.now().microsecondsSinceEpoch;
         final email = 'forbidden_${roleSlug}_$timestamp@testdomain.com';
-        final command = 'test/member/create'
-            '?email=${Uri.encodeQueryComponent(email)}'
-            '&firstname=Denied'
-            '&lastname=User'
-            '&role=Collaborator';
         await withScopedMemberToken(
           onepubUrl: context.onepubUrl,
           member: restricted.member,
           token: restricted.token,
           action: (_) async {
             final response = await sendCommand(
-              command: command,
-              commandType: CommandType.cli,
+              command: 'scim/v2/Users',
+              commandType: CommandType.pub,
+              method: Method.post,
+              authorised: false,
+              headers: {
+                'content-type': 'application/scim+json',
+                'authorization': 'Bearer ${restricted.token}',
+              },
+              body: jsonEncode({
+                'schemas': [ScimTestClient.userSchema],
+                'userName': email,
+                'name': {'givenName': 'Denied', 'familyName': 'User'},
+                'active': true,
+              }),
             );
             await _expectDenied(
               response,

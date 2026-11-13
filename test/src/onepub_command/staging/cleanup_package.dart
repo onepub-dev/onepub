@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:io';
-
 import 'package:onepub/src/util/send_command.dart';
+import '../../../fixture_oauth.dart';
 
 Future<void> cleanupPackage(String packageName) async {
   stdout.writeln('Cleaning up package $packageName...');
@@ -9,7 +9,7 @@ Future<void> cleanupPackage(String packageName) async {
   for (var attempt = 1; attempt <= maxAttempts; attempt++) {
     EndpointResponse response;
     try {
-      response = await sendCommand(
+      response = await sendFixtureCommand(
         command: 'test/package/delete/$packageName',
         commandType: CommandType.cli,
         method: Method.post,

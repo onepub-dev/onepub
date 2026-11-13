@@ -2,13 +2,11 @@
 library;
 
 import 'dart:io';
-
-import 'package:onepub/src/api/api.dart';
 import 'package:onepub/src/api/member.dart';
 import 'package:onepub/src/util/one_pub_token_store.dart';
 import 'package:onepub/src/util/send_command.dart';
 import 'package:test/test.dart';
-
+import '../../../fixture_oauth.dart';
 import '../../../test_users.dart';
 import 'staging_common.dart';
 
@@ -57,7 +55,7 @@ void main() {
     }
     await withAdmin(config, (context) async {
       final member = await _memberForTokenInvalidation();
-      final tokenResponse = await API().exportTestMemberToken(
+      final tokenResponse = await exportTestMemberToken(
         obfuscatedOrganisationId: member.obfuscatedOrganisationId,
         memberEmail: member.email,
       );

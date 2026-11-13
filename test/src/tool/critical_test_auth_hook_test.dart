@@ -41,6 +41,8 @@ void main() {
       'tool/critical_test/pre_hook/auth.dart',
       'tool/check_system_test_prereqs.dart',
       'test/test_settings.dart',
+      'test/fixture_oauth.dart',
+      'test/scim_test_client.dart',
     ]) {
       final destination = File(p.join(fixture.path, path));
       destination.parent.createSync(recursive: true);
@@ -95,10 +97,7 @@ organisationId: production-org
     final result = await runHook();
     expect(result.exitCode, 0, reason: '${result.stdout}\n${result.stderr}');
     expect(requests, isNotEmpty);
-    expect(
-        requests
-            .every((path) => path == '/api/test/member/details/fixture-token'),
-        isTrue);
+    expect(requests.every((path) => path == '/api/member/whoami'), isTrue);
     expect(operatorSettings.readAsStringSync(), originalSettings);
     expect(operatorTokens.readAsStringSync(), originalTokens);
   });

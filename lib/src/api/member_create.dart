@@ -35,7 +35,7 @@ class MemberCreate {
   var forbidden = false;
 
   /// if [success] is false this will contain the error message.
-  late final String? errorMessage;
+  String? errorMessage;
 
   /// Builds a [MemberCreate] from a raw API [response].
   MemberCreate(EndpointResponse response) {

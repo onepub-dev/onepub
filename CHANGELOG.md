@@ -8,6 +8,7 @@
 - Keep the remembered method on logout; use `onepub logout --forget` to remove it.
 - Allow five minutes to complete browser sign-in. Keep the previous login when
   sign-in fails, and recover interrupted credential saves before the next login.
+- Check the current member using their authenticated session without putting their access token in the request URL. Requires the updated OnePub server.
 
 # 7.1.2
 
