@@ -42,6 +42,7 @@ void main() {
     for (final path in [
       'tool/critical_test/pre_hook/auth.dart',
       'tool/check_system_test_prereqs.dart',
+      'tool/pen_test_target.dart',
       'test/test_settings.dart',
       'test/fixture_oauth.dart',
       'test/scim_test_client.dart',
