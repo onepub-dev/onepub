@@ -35,15 +35,25 @@ Future<({int status, Map<String, dynamic> body})> _request(
   return (status: response.statusCode, body: json);
 }
 
-Future<int> _complete(Uri origin, String challenge, String actor) async =>
-    (await sendFixtureCommand(
+Future<EndpointResponse> _complete(
+        Uri origin, String challenge, String actor) =>
+    sendFixtureCommand(
       command: 'test/auth/completeCliLogin/$challenge',
       commandType: CommandType.cli,
       onepubUrl: origin.origin,
       actor: actor,
       method: Method.post,
-    ))
-        .status;
+    );
+
+void _expectConflict(EndpointResponse response) {
+  // JsonConflict uses HTTP 400 with the conflict category in the error body.
+  // Check both so an unrelated bad request cannot satisfy a security denial.
+  expect(response.status, HttpStatus.badRequest);
+  expect(response.success, isFalse);
+  final error = response.parseCli((json) => json).error;
+  expect(error?.code, '${HttpStatus.conflict}');
+  expect(error?.message, 'The CLI login is not pending.');
+}
 
 String? _challengeStatus(Map<String, dynamic> response) {
   final body = response['body'];
@@ -62,7 +72,7 @@ void main() {
       try {
         final unknown = const Uuid().v4();
         final unknownComplete = await _complete(origin, unknown, token);
-        expect(unknownComplete, HttpStatus.conflict);
+        _expectConflict(unknownComplete);
 
         final challenge = const Uuid().v4();
         final waitPath = '/api/member/awaitLogin/$challenge';
@@ -71,9 +81,10 @@ void main() {
         expect(_challengeStatus(first.body), 'retry');
 
         final complete = await _complete(origin, challenge, token);
-        expect(complete, HttpStatus.ok);
+        expect(complete.status, HttpStatus.ok);
+        expect(complete.success, isTrue);
         final duplicate = await _complete(origin, challenge, token);
-        expect(duplicate, HttpStatus.conflict);
+        _expectConflict(duplicate);
         // Do not poll the completed challenge: that would mint an additional
         // System Administrator token in beta. The local dispatch test covers
         // successful delivery, while this beta test checks duplicate denial.
@@ -97,7 +108,7 @@ void main() {
         // Match the shipped five-minute browser completion window.
         await Future<void>.delayed(const Duration(minutes: 5, seconds: 1));
         final complete = await _complete(origin, challenge, token);
-        expect(complete, HttpStatus.conflict);
+        _expectConflict(complete);
         final expired = await _request(client, origin, 'GET', waitPath);
         expect(expired.status, HttpStatus.ok);
         expect(_challengeStatus(expired.body), 'timeout');
