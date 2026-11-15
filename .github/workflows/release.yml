@@ -48,13 +48,10 @@ jobs:
       # Your project will need to have tests in test/ and a dependency on
       # package:test for this step to succeed. Note that Flutter projects will
       # want to change this to 'flutter test'.
-      - name: Run compile opub
-        run: dart compile exe bin/opub.dart -o bin/${{ runner.os }}/opub
-
       - name: Run compile onepub
         run: dart compile exe bin/onepub.dart -o bin/${{ runner.os }}/onepub
         
-      - name: Release opub and onepub
+      - name: Release onepub
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
@@ -62,7 +59,6 @@ jobs:
           name: ${{ runner.os }}/${{github.ref_name}}
           tag_name: ${{ runner.os }}/${{github.ref_name}}
           files: |
-            bin/${{ runner.os }}/opub
             bin/${{ runner.os }}/onepub
             
       - name: Delete old latest so we can replace
@@ -73,7 +69,7 @@ jobs:
           delete_release: true
           tag_name: ${{ runner.os }}/latest # tag name to delete
           
-      - name: Release opub and onepub as latest
+      - name: Release onepub as latest
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
@@ -81,7 +77,6 @@ jobs:
           name: ${{ runner.os }}/latest
           tag_name: ${{ runner.os }}/latest
           files: |
-            bin/${{ runner.os }}/opub
             bin/${{ runner.os }}/onepub
           
         
