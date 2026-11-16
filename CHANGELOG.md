@@ -1,17 +1,11 @@
-# Unreleased
-
-- Add `onepub login sso <organisation-code>` for enterprise SSO on supported
-  OnePub servers. The publishing token continues to work with Dart and Flutter.
-- Remember the last successful sign-in method for each OnePub server. Use
+# 7.2.0
+- Add sso support via`onepub login sso <organisation-code>` for enterprise SSO
+- Remembers the last successful sign-in method for each OnePub server. Use
   `onepub login --choose` to choose again, or `onepub login browser` for ordinary
   browser sign-in.
 - Keep the remembered method on logout; use `onepub logout --forget` to remove it.
-- Allow five minutes to complete browser sign-in. Keep the previous login when
-  sign-in fails, and recover interrupted credential saves before the next login.
-- Check the current member using their authenticated session without putting their access token in the request URL. Requires the updated OnePub server.
 
 # 7.1.2
-
 - Automatically use the publishing identity supplied by Azure Pipelines' AzureCLI
   task. With workload identity and `addSpnToEnvironment` enabled, run
   `onepub login trusted` without passing a token or provider.
