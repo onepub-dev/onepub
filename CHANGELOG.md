@@ -1,3 +1,6 @@
+# Unreleased
+- Publish CLI binaries and replace the latest downloads only on version tags.
+
 # 7.2.0
 - Add sso support via`onepub login sso <organisation-code>` for enterprise SSO
 - Remembers the last successful sign-in method for each OnePub server. Use

@@ -52,6 +52,7 @@ jobs:
         run: dart compile exe bin/onepub.dart -o bin/${{ runner.os }}/onepub
         
       - name: Release onepub
+        if: github.ref_type == 'tag'
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
@@ -62,6 +63,7 @@ jobs:
             bin/${{ runner.os }}/onepub
             
       - name: Delete old latest so we can replace
+        if: github.ref_type == 'tag'
         # v1.1: pin the reviewed implementation because the upstream is archived.
         uses: dev-drprasad/delete-tag-and-release@82600feb9527126eca69833f07bafe53279bd9b4
         with:
@@ -70,6 +72,7 @@ jobs:
           tag_name: ${{ runner.os }}/latest # tag name to delete
           
       - name: Release onepub as latest
+        if: github.ref_type == 'tag'
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
