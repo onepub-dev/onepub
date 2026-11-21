@@ -1,0 +1,38 @@
+name: Windows TPM capability
+on:
+  push:
+    branches: [probe/windows-tpm-4314]
+permissions: {}
+jobs:
+  probe:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [windows-2022, windows-2025, windows-11-arm]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 8
+    steps:
+      - name: Check TPM status
+        shell: powershell
+        run: |
+          Get-Tpm | Select-Object TpmPresent,TpmReady,ManufacturerIdTxt | Format-List
+      - name: Create a P-256 platform key and verify a challenge signature
+        if: always()
+        shell: powershell
+        run: |
+          $params = [Security.Cryptography.CngKeyCreationParameters]::new()
+          $params.Provider = [Security.Cryptography.CngProvider]::new('Microsoft Platform Crypto Provider')
+          $params.ExportPolicy = [Security.Cryptography.CngExportPolicies]::None
+          $name = 'onepub-test-' + [guid]::NewGuid().ToString()
+          $key = [Security.Cryptography.CngKey]::Create([Security.Cryptography.CngAlgorithm]::ECDsaP256, $name, $params)
+          try {
+            $signer = [Security.Cryptography.ECDsaCng]::new($key)
+            $challenge = [guid]::NewGuid().ToByteArray()
+            $signature = $signer.SignData($challenge)
+            if (!$signer.VerifyData($challenge, $signature)) { throw 'Signature verification failed' }
+            Write-Output "P-256 sign and verify succeeded with $($key.Provider.Provider)"
+          } finally {
+            if ($signer) { $signer.Dispose() }
+            $key.Delete()
+            $key.Dispose()
+          }
