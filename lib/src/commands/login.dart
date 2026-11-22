@@ -3,6 +3,9 @@
  * Written by Brett Sutton <bsutton@onepub.dev>, Jan 2022
  */
 import 'dart:async';
+import 'dart:convert';
+
+import 'package:crypto/crypto.dart';
 import 'dart:io';
 import 'package:path/path.dart' as path;
 import 'package:uuid/uuid.dart';
@@ -14,6 +17,7 @@ import 'package:dcli_terminal/dcli_terminal.dart';
 import 'package:url_builder/url_builder.dart';
 
 import '../api/api.dart';
+import '../api/auth_response.dart';
 import '../api/login_request.dart';
 import '../exceptions.dart';
 import '../onepub_settings.dart';
@@ -75,11 +79,30 @@ class OnePubLoginCommand extends Command<int> {
             const Uuid().v4()));
         final deviceKey =
             deviceEnabled ? await DeviceKey.create(storage) : null;
-        final bb = BreadButter();
-        final auth = await bb.auth(routing: routing, deviceKey: deviceKey);
-
-        await persistence.save(auth,
-            deviceStorage: deviceKey == null ? null : storage);
+        final AuthResponse auth;
+        try {
+          auth =
+              await BreadButter().auth(routing: routing, deviceKey: deviceKey);
+          if (deviceKey != null) {
+            final jwk = deviceKey.publicJwk;
+            // RFC 7638 orders the required EC members lexicographically.
+            final canonical = jsonEncode({
+              for (final field in ['crv', 'kty', 'x', 'y']) field: jwk[field]
+            });
+            final fingerprint = base64Url
+                .encode(sha256.convert(utf8.encode(canonical)).bytes)
+                .replaceAll('=', '');
+            if (auth.deviceEnrollment?['deviceId'] != fingerprint) {
+              throw const FormatException(
+                  'OnePub did not register the requested device key.');
+            }
+          }
+          await persistence.save(auth,
+              deviceStorage: deviceKey == null ? null : storage);
+        } on Object {
+          await deviceKey?.delete();
+          rethrow;
+        }
 
         showWelcome(
             firstLogin: auth.firstLogin,
