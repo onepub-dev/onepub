@@ -99,7 +99,8 @@ Use `onepub export` to obtain the OnePub token.
     try {
       final tokenStore = OnePubTokenStore();
       if (await tokenStore.isLoggedIn(OnePubSettings.use().onepubApiUrl)) {
-        initiatorOnepubToken = await tokenStore.load();
+        initiatorOnepubToken = await tokenStore
+            .getToken(OnePubSettings.use().onepubApiUrl.toString());
       }
     } catch (_) {
       // ignore: inability to resolve existing login should not block import.

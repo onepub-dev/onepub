@@ -8,6 +8,7 @@ import 'package:dcli_terminal/dcli_terminal.dart';
 import 'package:validators2/validators2.dart';
 
 import '../api/api.dart';
+import '../device/device_session.dart';
 import '../exceptions.dart';
 import '../onepub_settings.dart';
 import '../util/one_pub_token_store.dart';
@@ -74,6 +75,13 @@ run: onepub login
         throw ExitException(exitCode: 1, message: response.errorMessage!);
       }
     } else {
+      final settings = OnePubSettings.use();
+      if (await DeviceSession.load(settings, settings.onepubApiUrl) != null) {
+        throw ExitException(
+            exitCode: 1,
+            message: 'Device sign-ins cannot be exported. '
+                'Use onepub export --user <CI/CD member email> for a CI/CD account.');
+      }
       onepubToken = await OnePubTokenStore().load();
     }
     print(orange('Exporting OnePub token for '

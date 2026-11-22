@@ -10,6 +10,7 @@ import 'package:dcli_core/dcli_core.dart';
 import 'package:dcli_terminal/dcli_terminal.dart';
 
 import '../exceptions.dart';
+import '../device/device_session.dart';
 import '../onepub_settings.dart';
 import 'one_pub_token_store.dart';
 
@@ -115,6 +116,9 @@ Future<EndpointResponse> sendCommand(
 Future<HttpClientResponse> _startRequest(HttpClient client, Method method,
     Uri uri, Map<String, String> headers, String? body, bool authorised) async {
   final headers0 = <String, String>{}..addAll(headers);
+  DeviceSession? proofDevice;
+  String? proofToken;
+  var proofInternalCli = false;
 
   if (authorised) {
     if (!await OnePubTokenStore()
@@ -124,25 +128,80 @@ You must be logged in to run this command.
 run: onepub login
   ''');
     }
-    final onepubToken = await OnePubTokenStore().load();
-
-    headers0.addAll({'authorization': onepubToken});
+    final device = await DeviceSession.load(
+        OnePubSettings.use(), OnePubSettings.use().onepubApiUrl);
+    if (device == null) {
+      final onepubToken = await OnePubTokenStore().load();
+      headers0.addAll({'authorization': onepubToken});
+    } else {
+      Map<String, dynamic> grant;
+      var internalCli = false;
+      if (device.permitsCli(uri)) {
+        internalCli = true;
+        grant = await device.acquire({'operation': 'cli'}, internalCli: true);
+      } else if (device.contains(uri) &&
+          method == Method.get &&
+          RegExp(r'/api/packages/[a-zA-Z0-9_]+$').hasMatch(uri.path)) {
+        grant = await device
+            .acquire({'operation': 'read', 'package': uri.pathSegments.last});
+      } else {
+        throw ExitException(
+            exitCode: 1,
+            message:
+                'This command is not available with device authentication.');
+      }
+      final proof = await device.prove({
+        'uri': uri.toString(),
+        'method': method.name.toUpperCase(),
+        'token': grant['token']
+      }, internalCli: internalCli);
+      proofDevice = device;
+      proofToken = grant['token'] as String;
+      proofInternalCli = internalCli;
+      headers0.addAll({
+        'authorization': 'DPoP ${grant['token']}',
+        'dpop': proof['proof'] as String
+      });
+    }
   }
 
   final HttpClientRequest request;
   switch (method) {
     case Method.get:
       request = await client.getUrl(uri);
+      request.followRedirects = false;
       _addHeaders(headers0, request);
     case Method.post:
       request = await client.postUrl(uri);
+      request.followRedirects = false;
       _addHeaders(headers0, request);
       if (body != null) {
         request.write(body);
       }
   }
 
-  final response = await request.close();
+  var response = await request.close();
+  if (proofDevice != null &&
+      response.statusCode == HttpStatus.unauthorized &&
+      (response.headers.value(HttpHeaders.wwwAuthenticateHeader) ?? '')
+          .contains('use_dpop_nonce')) {
+    final nonce = response.headers.value('dpop-nonce');
+    if (nonce != null && nonce.isNotEmpty && nonce.length <= 4096) {
+      await response.drain<void>();
+      final proof = await proofDevice.prove({
+        'uri': uri.toString(),
+        'method': method.name.toUpperCase(),
+        'token': proofToken,
+        'nonce': nonce
+      }, internalCli: proofInternalCli);
+      headers0['dpop'] = proof['proof'] as String;
+      final retry = await client.openUrl(method.name.toUpperCase(), uri);
+      retry.followRedirects = false;
+      _addHeaders(headers0, retry);
+      if (body != null && method == Method.post) retry.write(body);
+      response = await retry.close();
+    }
+  }
 
   final responseHeaders = <String, List<String>>{};
   response.headers.forEach((name, values) => responseHeaders[name] = values);

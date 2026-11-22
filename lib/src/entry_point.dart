@@ -7,6 +7,7 @@ import 'package:dcli_terminal/dcli_terminal.dart';
 import 'package:scope/scope.dart';
 
 import 'exceptions.dart';
+import 'device/device_session.dart';
 import 'my_runner.dart';
 import 'util/log.dart' as ulog;
 import 'util/printerr.dart';
@@ -28,6 +29,15 @@ Future<void> entrypoint({
   required List<String> args,
   required String executableName,
 }) async {
+  if (args.isNotEmpty && args.first == '_pub-auth') {
+    if (!(args.length == 1 || (args.length == 3 && args[1] == '--settings'))) {
+      exitCode = 1;
+      return;
+    }
+    exitCode =
+        await runPubAuth(settingsPath: args.length == 3 ? args[2] : null);
+    return;
+  }
   try {
     final runner = MyRunner(args, executableName, _description);
     try {

@@ -64,10 +64,11 @@ dart pub global activate onepub
 
   /// See if the user has completed the oauth login
   Future<AuthResponse> awaitLogin(String authToken,
-      {LoginRequest? routing}) async {
+      {LoginRequest? routing,
+      Map<String, String> deviceParameters = const {}}) async {
     final endpoint = Uri(
         pathSegments: ['member', 'awaitLogin', authToken],
-        queryParameters: routing?.queryParameters);
+        queryParameters: {...?routing?.queryParameters, ...deviceParameters});
     final response = await sendCommand(
         command: endpoint.toString(),
         commandType: CommandType.cli,

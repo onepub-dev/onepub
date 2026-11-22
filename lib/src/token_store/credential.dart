@@ -139,7 +139,9 @@ class Credential {
   /// This method might return `false` when a `pub-tokens.json` file created by
   /// future SDK used by pub tool from old SDK.
   // Either [token] or [env] should be defined to be valid.
-  bool isValid() => (token == null) ^ (env == null);
+  bool isValid() =>
+      ((token == null) ^ (env == null)) ||
+      (token == null && env == null && unknownFields['authHelper'] is List);
 
   static String _normalizeUrl(String url) =>
       (url.endsWith('/') ? url : '$url/').toLowerCase();

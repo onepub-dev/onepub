@@ -3,6 +3,10 @@
  * Written by Brett Sutton <bsutton@onepub.dev>, Jan 2022
  */
 import 'dart:async';
+import 'dart:io';
+import 'package:path/path.dart' as path;
+import 'package:uuid/uuid.dart';
+import '../device/device_key.dart';
 
 import 'package:args/command_runner.dart';
 import 'package:dcli_core/dcli_core.dart';
@@ -72,10 +76,20 @@ class OnePubLoginCommand extends Command<int> {
         }
         await API().checkVersion();
 
+        final status = await API().status();
+        final deviceEnabled =
+            status.capabilities.contains('device-authentication-v1');
+        final storage = Directory(path.join(
+            path.dirname(persistence.settings.pathToSettings),
+            'device-keys',
+            const Uuid().v4()));
+        final deviceKey =
+            deviceEnabled ? await DeviceKey.create(storage) : null;
         final bb = BreadButter();
-        final auth = await bb.auth(routing: routing);
+        final auth = await bb.auth(routing: routing, deviceKey: deviceKey);
 
-        await persistence.save(auth);
+        await persistence.save(auth,
+            deviceStorage: deviceKey == null ? null : storage);
 
         showWelcome(
             firstLogin: auth.firstLogin,

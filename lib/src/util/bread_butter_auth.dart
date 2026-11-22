@@ -4,6 +4,9 @@
  */
 
 import 'dart:async';
+import 'dart:convert';
+import '../device/device_key.dart';
+import '../device/device_session.dart';
 import 'dart:io';
 
 import 'package:dcli_terminal/dcli_terminal.dart';
@@ -21,7 +24,8 @@ class BreadButter {
   late final Completer<EndpointResponse?> completer;
 
   /// Return the auth token or null if the auth failed.
-  Future<AuthResponse> auth({LoginRequest? routing}) async {
+  Future<AuthResponse> auth(
+      {LoginRequest? routing, DeviceKey? deviceKey}) async {
     final settings = OnePubSettings.use();
     final authToken = const Uuid().v4();
     final authUrl = settings.resolveWebEndPoint('clilogin/$authToken');
@@ -30,8 +34,32 @@ class BreadButter {
     final effectiveRouting = routing?.forServer(
         supportsEnterpriseSso: (await api.status()).supportsEnterpriseSso);
 
+    String? proof;
+    String? challenge;
     final result = await waitForLoginResponse(
-      () => api.awaitLogin(authToken, routing: effectiveRouting),
+      () async {
+        final response = await api.awaitLogin(authToken,
+            routing: effectiveRouting,
+            deviceParameters: deviceKey == null
+                ? {}
+                : {
+                    'deviceJwk': deviceBase64(
+                        utf8.encode(jsonEncode(deviceKey.publicJwk))),
+                    'deviceHostname': Platform.localHostname,
+                    'deviceOs': Platform.operatingSystem,
+                    if (proof != null) 'deviceProof': proof!,
+                  });
+        if (deviceKey != null && response.deviceChallenge != null) {
+          if (challenge != null && challenge != response.deviceChallenge) {
+            throw const FormatException(
+                'Server changed device enrollment challenge');
+          }
+          challenge = response.deviceChallenge;
+          proof = deviceBase64(await deviceKey
+              .sign(base64Url.decode(base64Url.normalize(challenge!))));
+        }
+        return response;
+      },
       onReady: () => print('''
 To login to OnePub...
 
@@ -50,6 +78,9 @@ Waiting for your authorisation...'''),
           message:
               'The server did not confirm SSO for the requested organisation. '
               'Your existing login has not been changed.');
+    }
+    if (deviceKey != null && result.deviceEnrollment == null) {
+      throw const FormatException('Server did not confirm device enrollment');
     }
     return result;
   }

@@ -3,6 +3,8 @@
  * Written by Brett Sutton <bsutton@onepub.dev>, Jan 2022
  */
 
+import 'dart:convert';
+import '../device/device_session.dart';
 import 'package:dcli_core/dcli_core.dart';
 import 'package:scope/scope.dart';
 
@@ -22,6 +24,12 @@ class OnePubTokenStore {
     final normalisedUrl = validateAndNormalizeHostedUrl(onepubApiUrl);
     await tokenStore
         .addCredential(Credential.token(normalisedUrl, onepubToken));
+    final settings = OnePubSettings.use();
+    final devices = await DeviceSession.readRegistry(settings);
+    if (devices.remove(normalisedUrl.toString()) != null) {
+      await DeviceSession.registry(settings)
+          .writeAsString(jsonEncode(devices), flush: true);
+    }
   }
 
 // True if we have a onepub token for the given [onepubApiUrl]

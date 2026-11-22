@@ -1,4 +1,12 @@
 # Unreleased
+- Register a device key during browser sign-in when the server supports device
+  authentication. Pub helper registrations keep private keys out of exported
+  credentials and support multiple repositories. Requires a helper-enabled Dart
+  pub client and a supported platform key provider.
+- Bind package reads and publishes to signed, short-lived grants, including
+  publish archive metadata, and authenticate requests with DPoP proofs.
+- Keep CI token imports and trusted login available; device users can export a
+  designated CI/CD member token but cannot export their device sign-in.
 - Publish CLI binaries and replace the latest downloads only on version tags.
 
 # 7.2.0

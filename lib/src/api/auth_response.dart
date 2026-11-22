@@ -18,6 +18,8 @@ class AuthResponse {
   late final String obfuscatedOrganisationId;
 
   VerifiedLoginRouting? loginRouting;
+  String? deviceChallenge;
+  Map<String, dynamic>? deviceEnrollment;
 
   AuthResponse._internal();
 
@@ -33,9 +35,12 @@ class AuthResponse {
     if (response.success) {
       final body = response.requireCliBody((json) {
         final status = requiredResponseString(json, 'status');
+        auth.deviceChallenge = json['deviceChallenge'] as String?;
+        auth.deviceEnrollment =
+            json['deviceEnrollment'] as Map<String, dynamic>?;
         if (parseStatus(status) == AwaitLoginStatus.authSucceeded) {
           for (final field in [
-            'onePubToken',
+            if (auth.deviceEnrollment == null) 'onePubToken',
             'operatorEmail',
             'organisationName',
             'obfuscatedOrganisationId',
