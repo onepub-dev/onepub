@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -85,8 +86,15 @@ class DeviceSession {
         request.headers.contentType = ContentType.json;
         request.write(jsonEncode(body));
         final response = await request.close();
-        if (response.statusCode != 200)
-          throw const DeviceSessionException('sign_in_required');
+        if (response.statusCode != 200) {
+          throw DeviceSessionException(switch (response.statusCode) {
+            401 => 'sign_in_required',
+            403 => 'access_denied',
+            429 => 'rate_limited',
+            >= 500 => 'temporarily_unavailable',
+            _ => 'invalid_response',
+          });
+        }
         var count = 0;
         final bytes = <int>[];
         await for (final chunk in response) {
@@ -262,11 +270,29 @@ Future<int> runPubAuth({String? settingsPath}) async {
     };
     stdout.writeln(jsonEncode(result));
     return 0;
-  } on Object {
-    stdout.writeln(jsonEncode({
-      'error': 'sign_in_required',
-      'message': 'Run onepub login, then retry.'
-    }));
+  } on Object catch (error) {
+    final code = switch (error) {
+      DeviceSessionException() => error.code,
+      DeviceKeyException() => 'key_unavailable',
+      TimeoutException() || SocketException() => 'temporarily_unavailable',
+      FormatException() => 'invalid_request',
+      _ => 'helper_failed',
+    };
+    final message = switch (code) {
+      'sign_in_required' => 'Run onepub login, then retry.',
+      'access_denied' =>
+        'OnePub denied this operation. Check package access and device approval with your administrator.',
+      'rate_limited' =>
+        'OnePub received too many requests. Wait a minute, then retry.',
+      'temporarily_unavailable' =>
+        'Could not reach OnePub. Retry when the service is available.',
+      'key_unavailable' =>
+        'Cannot use the enrolled key. Check the device key provider or run onepub login on this device.',
+      'invalid_request' =>
+        'Pub and OnePub could not agree on the device request. Check their versions.',
+      _ => 'The OnePub helper could not complete the request.',
+    };
+    stdout.writeln(jsonEncode({'error': code, 'message': message}));
     return 1;
   }
 }

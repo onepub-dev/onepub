@@ -4,7 +4,10 @@
   credentials and support multiple repositories. Requires a helper-enabled Dart
   pub client and a supported platform key provider.
 - Bind package reads and publishes to signed, short-lived grants, including
-  publish archive metadata, and authenticate requests with DPoP proofs.
+  the package archive and any supplied attestation. A repository can require
+  DPoP proofs for private reads.
+- Use `onepub login --legacy` with an older Dart SDK when your organisation
+  allows member tokens.
 - Keep CI token imports and trusted login available; device users can export a
   designated CI/CD member token but cannot export their device sign-in.
 - Publish CLI binaries and replace the latest downloads only on version tags.
