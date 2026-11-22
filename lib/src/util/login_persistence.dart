@@ -91,8 +91,14 @@ class LoginPersistence {
       final tokenContents = await _tokenContents(tokens, server, result,
           device: session != null, settingsFile: settings.pathToSettings);
       final devices = await DeviceSession.readRegistry(settings);
-      if (session != null)
+      if (session != null) {
         devices[session.repository.toString()] = session.metadata;
+      } else {
+        final path = server.path.replaceFirst(RegExp(r'/+$'), '');
+        devices.remove(server
+            .replace(path: '$path/${result.obfuscatedOrganisationId}/')
+            .toString());
+      }
       await transaction.commit({
         'tokens': tokenContents,
         'devices': jsonEncode(devices),
@@ -151,7 +157,8 @@ class LoginPersistence {
           uri.path.startsWith(prefix);
       final sameRepository =
           uri.path == '$prefix${result.obfuscatedOrganisationId}/';
-      if (!sameServer || (device && !sameRepository)) {
+      if (!sameServer ||
+          ((device || entry.containsKey('authHelper')) && !sameRepository)) {
         hosted.add(entry);
       }
     }

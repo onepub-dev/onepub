@@ -40,7 +40,9 @@ class MyRunner extends CommandRunner<int> {
     final normalized = List<String>.of(arguments);
     final loginIndex = normalized.indexOf('login');
     if (loginIndex != -1 &&
-        normalized.skip(loginIndex + 1).every((arg) => arg == '--choose')) {
+        normalized
+            .skip(loginIndex + 1)
+            .every((arg) => arg == '--choose' || arg == '--legacy')) {
       normalized.add('_interactive');
     }
     return normalized;

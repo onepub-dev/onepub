@@ -150,18 +150,22 @@ run: onepub login
             message:
                 'This command is not available with device authentication.');
       }
-      final proof = await device.prove({
-        'uri': uri.toString(),
-        'method': method.name.toUpperCase(),
-        'token': grant['token']
-      }, internalCli: internalCli);
-      proofDevice = device;
-      proofToken = grant['token'] as String;
-      proofInternalCli = internalCli;
-      headers0.addAll({
-        'authorization': 'DPoP ${grant['token']}',
-        'dpop': proof['proof'] as String
-      });
+      if (grant['tokenType'] == 'Bearer') {
+        headers0['authorization'] = "Bearer ${grant['token']}";
+      } else {
+        final proof = await device.prove({
+          'uri': uri.toString(),
+          'method': method.name.toUpperCase(),
+          'token': grant['token']
+        }, internalCli: internalCli);
+        proofDevice = device;
+        proofToken = grant['token'] as String;
+        proofInternalCli = internalCli;
+        headers0.addAll({
+          'authorization': 'DPoP ${grant['token']}',
+          'dpop': proof['proof'] as String
+        });
+      }
     }
   }
 

@@ -23,23 +23,13 @@ import '../util/printerr.dart';
 import '../util/send_command.dart';
 import 'login/trusted.dart';
 
-/// onepub login
-/// We trigger oauth by showing url
-// We then do a long poll to the server and wait for oauth to complete
-// The long poll adds a pending request to a guava cache (with expiry)
-
-// The oath completes on the server
-// The server checks if there is an existing onepub token for the member
-// If so we return the token as this allows mulitple devices to be authed.
-// If not we create a new onepub token
-// We return the onpub token to the cli and it stores it.
-// The cli then passed the onepub token each time it needs to interact.
-// No oauth is required we just check the onepub token is invalid.
-// A logout on any device will invalidate the token.
-// A manager can invalidate the token from the web site.
+/// Signs in using the repository's browser or workload authentication flow.
 class OnePubLoginCommand extends Command<int> {
   ///
   OnePubLoginCommand() {
+    argParser.addFlag('legacy',
+        negatable: false,
+        help: 'Use a member token if your organisation permits it.');
     argParser.addFlag('choose',
         negatable: false,
         help:
@@ -77,7 +67,7 @@ class OnePubLoginCommand extends Command<int> {
         await API().checkVersion();
 
         final status = await API().status();
-        final deviceEnabled =
+        final deviceEnabled = argResults?['legacy'] != true &&
             status.capabilities.contains('device-authentication-v1');
         final storage = Directory(path.join(
             path.dirname(persistence.settings.pathToSettings),
@@ -96,11 +86,17 @@ class OnePubLoginCommand extends Command<int> {
             organisationName: auth.organisationName,
             operator: auth.operatorEmail);
       });
+    } on DeviceKeyException catch (error) {
+      throw ExitException(
+          exitCode: 1,
+          message: '$error\n'
+              'If your organisation permits legacy access, use onepub login --legacy.');
     } on FetchException catch (e) {
       printerr(red('Unable to connect to '
           '${OnePubSettings.use().onepubApiUrlAsString}. '
           'Error: $e '
           'Check your internet connection.'));
+      return 1;
     }
     return 0;
   }
@@ -152,8 +148,8 @@ class _BrowserLoginCommand extends Command<int> {
   String get name => 'browser';
 
   @override
-  Future<int> run() =>
-      OnePubLoginCommand().login(routing: const LoginRequest.ordinary());
+  Future<int> run() => (parent! as OnePubLoginCommand)
+      .login(routing: const LoginRequest.ordinary());
 }
 
 class _SsoLoginCommand extends Command<int> {

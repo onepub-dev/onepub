@@ -158,13 +158,14 @@ class DeviceSession {
     final expiry = DateTime.tryParse(result['expiresAt'] as String? ?? '');
     if (result['token'] is! String ||
         (result['token'] as String).isEmpty ||
-        result['tokenType'] != 'DPoP' ||
+        (result['tokenType'] != 'DPoP' &&
+            (internalCli || result['tokenType'] != 'Bearer')) ||
         expiry == null ||
         !expiry.isAfter(DateTime.now()))
       throw const FormatException('Invalid device grant');
     return {
       'token': result['token'],
-      'tokenType': 'DPoP',
+      'tokenType': result['tokenType'],
       'expiresAt': result['expiresAt']
     };
   }
