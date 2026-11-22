@@ -1,0 +1,37 @@
+name: Native device keys
+
+on:
+  pull_request:
+    paths:
+      - 'lib/src/device/**'
+      - 'test/src/device_key_test.dart'
+      - 'tool/test_device_key_native.dart'
+      - 'pubspec.*'
+      - '.github/workflows/device-keys.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-key:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - run: dart pub get
+      - run: dart test test/src/device_key_test.dart
+      - name: Compile normal CLI entrypoint with native backend
+        run: dart compile exe bin/onepub.dart -o onepub-native-test
+      - name: Install isolated Linux TPM test prerequisites
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y swtpm tpm2-tools tpm2-abrmd libtss2-tcti-tabrmd0 dbus
+          dart pub global activate dcli
+      - name: Verify TPM create, reopen and ES256 signatures through resource manager
+        if: runner.os == 'Linux'
+        run: ./tool/test_device_key_native.dart
