@@ -1,0 +1,37 @@
+name: macOS Secure Enclave capability
+on:
+  push:
+    branches: [probe/macos-enclave-4314]
+permissions: {}
+jobs:
+  probe:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [macos-15, macos-26, macos-15-intel, macos-26-intel]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 8
+    steps:
+      - name: Check hardware and software signing
+        run: |
+          sw_vers
+          uname -m
+          swift - <<'SWIFT'
+          import CryptoKit
+          import Foundation
+          let challenge = Data(UUID().uuidString.utf8)
+          let control = P256.Signing.PrivateKey()
+          let controlSignature = try control.signature(for: challenge)
+          precondition(control.publicKey.isValidSignature(controlSignature, for: challenge))
+          print("Software P-256 signing succeeded")
+          print("SecureEnclave.isAvailable = \(SecureEnclave.isAvailable)")
+          do {
+              let key = try SecureEnclave.P256.Signing.PrivateKey()
+              let signature = try key.signature(for: challenge)
+              precondition(key.publicKey.isValidSignature(signature, for: challenge))
+              print("Secure Enclave P-256 signing succeeded")
+          } catch {
+              let details = error as NSError
+              print("Secure Enclave signing unavailable: \(details.domain) \(details.code) \(details.localizedDescription)")
+          }
+          SWIFT
