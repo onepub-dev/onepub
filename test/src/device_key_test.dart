@@ -1,8 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
-import 'package:cryptography/cryptography.dart';
 import 'package:onepub/src/device/device_key.dart';
+import 'package:pointycastle/export.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -181,13 +182,20 @@ void main() {
 Future<void> verifySignature(
     DeviceKey key, List<int> message, List<int> bytes) async {
   final jwk = key.publicJwk;
-  final public = EcPublicKey(
-      x: base64Url.decode(base64Url.normalize(jwk['x'] as String)),
-      y: base64Url.decode(base64Url.normalize(jwk['y'] as String)),
-      type: KeyPairType.p256);
-  final algorithm = Ecdsa.p256(Sha256());
-  final signature = Signature(bytes, publicKey: public);
-  expect(await algorithm.verify(message, signature: signature), isTrue);
+  BigInt integer(List<int> encoded) => BigInt.parse(
+      encoded.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join(),
+      radix: 16);
+  final curve = ECCurve_secp256r1();
+  final point = curve.curve.createPoint(
+      integer(base64Url.decode(base64Url.normalize(jwk['x'] as String))),
+      integer(base64Url.decode(base64Url.normalize(jwk['y'] as String))));
+  final verifier = ECDSASigner(SHA256Digest())
+    ..init(false, PublicKeyParameter<ECPublicKey>(ECPublicKey(point, curve)));
+  final signature =
+      ECSignature(integer(bytes.sublist(0, 32)), integer(bytes.sublist(32)));
   expect(
-      await algorithm.verify([...message, 0], signature: signature), isFalse);
+      verifier.verifySignature(Uint8List.fromList(message), signature), isTrue);
+  expect(
+      verifier.verifySignature(Uint8List.fromList([...message, 0]), signature),
+      isFalse);
 }

@@ -1,11 +1,20 @@
 name: Native device keys
 
 on:
+  push:
+    paths:
+      - 'lib/src/device/**'
+      - 'test/src/device_key_test.dart'
+      - 'tool/test_device_key_native.dart'
+      - 'tool/test_device_key_hardware.dart'
+      - 'pubspec.*'
+      - '.github/workflows/device-keys.yml'
   pull_request:
     paths:
       - 'lib/src/device/**'
       - 'test/src/device_key_test.dart'
       - 'tool/test_device_key_native.dart'
+      - 'tool/test_device_key_hardware.dart'
       - 'pubspec.*'
       - '.github/workflows/device-keys.yml'
   workflow_dispatch:
@@ -17,15 +26,29 @@ jobs:
   native-key:
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, macos-26, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: dart-lang/setup-dart@v1
       - run: dart pub get
       - run: dart test test/src/device_key_test.dart
+      - name: Verify real Secure Enclave key creation and signing
+        if: runner.os == 'macOS'
+        env:
+          ONEPUB_TEST_HARDWARE_DEVICE_KEY: '1'
+        run: dart test test/src/device_key_test.dart
       - name: Compile normal CLI entrypoint with native backend
         run: dart compile exe bin/onepub.dart -o onepub-native-test
+      - name: Compile portable native hardware test
+        run: dart compile exe tool/test_device_key_hardware.dart -o onepub-hardware-test.exe
+      - name: Verify compiled Secure Enclave backend
+        if: runner.os == 'macOS'
+        run: ./onepub-hardware-test.exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-hardware-test-${{ runner.os }}
+          path: onepub-hardware-test.exe
       - name: Install isolated Linux TPM test prerequisites
         if: runner.os == 'Linux'
         run: |
