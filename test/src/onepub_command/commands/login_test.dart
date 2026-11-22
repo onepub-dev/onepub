@@ -22,7 +22,8 @@ import '../../../fixture_oauth.dart';
 import '../../../test_settings.dart';
 
 void main() {
-  test('onepub login completes through the running test server', () async {
+  test('onepub login --legacy completes through the running test server',
+      () async {
     await withTestServer(() async {
       final targetUrl = TestSettings.resolveOnePubUrl();
       final bootstrapToken =
@@ -41,7 +42,8 @@ void main() {
             final output = <String>[];
             final login = runZoned(
               () => withEnvironmentAsync(
-                () => entrypoint(args: ['login'], executableName: 'onepub'),
+                () => entrypoint(
+                    args: ['login', '--legacy'], executableName: 'onepub'),
                 environment: {'ONEPUB_PATH': join(tempDir, 'settings')},
               ),
               zoneSpecification: ZoneSpecification(
