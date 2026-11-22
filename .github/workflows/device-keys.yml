@@ -7,6 +7,7 @@ on:
       - 'test/src/device_key_test.dart'
       - 'tool/test_device_key_native.dart'
       - 'tool/test_device_key_hardware.dart'
+      - 'tool/test_device_cli_hardware.dart'
       - 'pubspec.*'
       - '.github/workflows/device-keys.yml'
   pull_request:
@@ -15,6 +16,7 @@ on:
       - 'test/src/device_key_test.dart'
       - 'tool/test_device_key_native.dart'
       - 'tool/test_device_key_hardware.dart'
+      - 'tool/test_device_cli_hardware.dart'
       - 'pubspec.*'
       - '.github/workflows/device-keys.yml'
   workflow_dispatch:
@@ -45,6 +47,13 @@ jobs:
       - name: Verify compiled Secure Enclave backend
         if: runner.os == 'macOS'
         run: ./onepub-hardware-test.exe
+      - name: Verify pub-global and compiled CLI native auth helpers
+        if: runner.os == 'macOS'
+        run: |
+          dart pub global activate --source path .
+          dart pub global activate dcli
+          ./tool/test_device_cli_hardware.dart "$HOME/.pub-cache/bin/onepub"
+          ./tool/test_device_cli_hardware.dart "$PWD/onepub-native-test"
       - uses: actions/upload-artifact@v4
         with:
           name: native-hardware-test-${{ runner.os }}

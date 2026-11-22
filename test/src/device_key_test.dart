@@ -43,40 +43,6 @@ void main() {
     expect(signature.sublist(62), [0x12, 0x34]);
   });
 
-  test('DER signature conversion handles positive integer sign padding', () {
-    final encoded = [
-      0x30,
-      0x26,
-      2,
-      33,
-      0,
-      0x80,
-      ...List.filled(31, 0),
-      2,
-      1,
-      1
-    ];
-    final signature = joseSignatureFromDer(encoded);
-    expect(signature.length, 64);
-    expect(signature[0], 0x80);
-    expect(signature.sublist(1, 63), everyElement(0));
-    expect(signature[63], 1);
-  });
-
-  test('DER conversion rejects truncated, negative and noncanonical integers',
-      () {
-    for (final encoded in <List<int>>[
-      [],
-      [0x30, 6, 2, 1, 0x80, 2, 1, 1],
-      [0x30, 7, 2, 2, 0, 1, 2, 1, 1],
-      [0x30, 6, 2, 1, 1, 2, 2, 1],
-      [0x30, 7, 2, 1, 1, 2, 1, 1, 0],
-    ]) {
-      expect(() => joseSignatureFromDer(encoded),
-          throwsA(isA<DeviceKeyException>()));
-    }
-  });
-
   test('TPM signature conversion rejects malformed and other algorithms', () {
     for (final signature in <List<int>>[
       [],

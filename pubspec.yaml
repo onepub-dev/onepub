@@ -14,7 +14,6 @@ dependencies:
   dcli_core: ^10.4.0
   dcli_input: ^10.4.1
   dcli_terminal: ^10.4.0
-  ffi: ^2.1.0
   path: 1.9.1
   pub_semver: ^2.2.1
   pubspec_manager: ^4.1.1

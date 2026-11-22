@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -24,9 +25,22 @@ class DeviceKey {
   final Map<String, dynamic> publicJwk;
 
   static const _metadataName = 'key.json';
+  static final _testBackendZoneKey = Object();
+
+  /// Injects an isolated simulator for integration tests, including CLI flows.
+  /// Production entrypoints never call this or inspect test environment values.
+  static Future<T> withLinuxBackendForTesting<T>(
+          LinuxTpmBackend backend, Future<T> Function() body) =>
+      runZoned(body, zoneValues: {_testBackendZoneKey: backend});
+
+  static LinuxTpmBackend _resolveBackend(LinuxTpmBackend? explicit) =>
+      explicit ??
+      Zone.current[_testBackendZoneKey] as LinuxTpmBackend? ??
+      const LinuxTpmBackend.hardware();
 
   static Future<DeviceKey> create(Directory storage,
-      {LinuxTpmBackend linuxBackend = const LinuxTpmBackend.hardware()}) async {
+      {LinuxTpmBackend? linuxBackend}) async {
+    final backend = _resolveBackend(linuxBackend);
     await storage.create(recursive: true);
     final metadata = File(p.join(storage.path, _metadataName));
     if (metadata.existsSync()) {
@@ -35,8 +49,8 @@ class DeviceKey {
     if (!Platform.isWindows) {
       await _run('/bin/chmod', ['700', storage.absolute.path]);
     }
-    final key = DeviceKey._(
-        storage.absolute, const Uuid().v4(), const {}, linuxBackend);
+    final key =
+        DeviceKey._(storage.absolute, const Uuid().v4(), const {}, backend);
     final point = await key._operate('create');
     final jwk = publicJwkFromPoint(point);
     await metadata.writeAsString(
@@ -47,11 +61,12 @@ class DeviceKey {
           'publicJwk': jwk,
         }),
         flush: true);
-    return DeviceKey._(storage.absolute, key.reference, jwk, linuxBackend);
+    return DeviceKey._(storage.absolute, key.reference, jwk, backend);
   }
 
   static Future<DeviceKey> open(Directory storage,
-      {LinuxTpmBackend linuxBackend = const LinuxTpmBackend.hardware()}) async {
+      {LinuxTpmBackend? linuxBackend}) async {
+    final backend = _resolveBackend(linuxBackend);
     try {
       final metadata = jsonDecode(
               await File(p.join(storage.path, _metadataName)).readAsString())
@@ -64,7 +79,7 @@ class DeviceKey {
             'Invalid or incompatible key reference.');
       }
       final saved = metadata['publicJwk'] as Map<String, dynamic>;
-      final key = DeviceKey._(storage.absolute, reference, saved, linuxBackend);
+      final key = DeviceKey._(storage.absolute, reference, saved, backend);
       final actual = publicJwkFromPoint(await key._operate('open'));
       if (saved['kty'] != actual['kty'] ||
           saved['crv'] != actual['crv'] ||
@@ -73,7 +88,7 @@ class DeviceKey {
         throw const DeviceKeyException(
             'Hardware key does not match its registration.');
       }
-      return DeviceKey._(storage.absolute, reference, actual, linuxBackend);
+      return DeviceKey._(storage.absolute, reference, actual, backend);
     } on DeviceKeyException {
       rethrow;
     } on Object catch (error) {
@@ -93,7 +108,7 @@ class DeviceKey {
 
   /// Removes this local key. Server-side revocation is a separate action.
   Future<void> delete() async {
-    if (Platform.isWindows || Platform.isMacOS) {
+    if (Platform.isWindows) {
       await _operate('delete');
     }
     // Remove backend files only; never recursively delete caller data.
@@ -108,9 +123,8 @@ class DeviceKey {
   Future<Uint8List> _operate(String operation, [List<int>? message]) async {
     if (Platform.isMacOS) {
       try {
-        final result =
-            SecureEnclaveKey().operate(operation, reference, message);
-        return operation == 'sign' ? joseSignatureFromDer(result) : result;
+        return await SecureEnclaveKey()
+            .operate(operation, p.join(_storage.path, 'key.blob'), message);
       } on Object catch (error) {
         throw DeviceKeyException('Secure Enclave operation failed: $error');
       }
@@ -346,48 +360,6 @@ class LinuxTpmBackend {
   final String _tcti;
   final String _toolsDirectory;
   final bool _requiresHardware;
-}
-
-/// Converts the X9.62 DER signature returned by Security.framework to JOSE.
-Uint8List joseSignatureFromDer(List<int> encoded) {
-  if (encoded.length < 8 ||
-      encoded.length > 72 ||
-      encoded[0] != 0x30 ||
-      encoded[1] != encoded.length - 2) {
-    throw const DeviceKeyException('Invalid DER ECDSA signature.');
-  }
-  var offset = 2;
-  final signature = Uint8List(64);
-  for (var component = 0; component < 2; component++) {
-    if (offset + 2 > encoded.length || encoded[offset++] != 2) {
-      throw const DeviceKeyException('Invalid DER ECDSA integer.');
-    }
-    var length = encoded[offset++];
-    if (length == 0 ||
-        length > 33 ||
-        offset + length > encoded.length ||
-        encoded[offset] >= 0x80) {
-      throw const DeviceKeyException('Invalid DER ECDSA scalar.');
-    }
-    if (length > 1 && encoded[offset] == 0) {
-      if (encoded[offset + 1] < 0x80) {
-        throw const DeviceKeyException('Non-canonical DER ECDSA scalar.');
-      }
-      offset++;
-      length--;
-    }
-    if (length > 32) {
-      throw const DeviceKeyException('Oversized DER ECDSA scalar.');
-    }
-    signature.setRange(component * 32 + 32 - length, component * 32 + 32,
-        encoded.sublist(offset, offset + length));
-    offset += length;
-  }
-  if (offset != encoded.length) {
-    throw const DeviceKeyException(
-        'Unexpected data after DER ECDSA signature.');
-  }
-  return signature;
 }
 
 class DeviceKeyException implements Exception {

@@ -1,278 +1,128 @@
 import 'dart:convert';
 import 'dart:ffi';
+import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:ffi/ffi.dart';
+import 'package:crypto/crypto.dart';
+import 'package:path/path.dart' as p;
 
-/// Uses the system Security framework directly, including in AOT/pub installs.
-/// Only public keys and signatures cross the FFI boundary. Keys persist in the
-/// user's keychain with a ThisDeviceOnly policy and Secure Enclave token.
+import 'native_sources.dart';
+
+/// CryptoKit uses an encrypted, device-bound key reference without requiring
+/// keychain entitlements on the Dart executable. Setup is permitted only when
+/// creating a key during explicit enrollment, never when opening or signing.
 class SecureEnclaveKey {
-  SecureEnclaveKey()
-      : _security = DynamicLibrary.open(
-            '/System/Library/Frameworks/Security.framework/Security'),
-        _cf = DynamicLibrary.open(
-            '/System/Library/Frameworks/CoreFoundation.framework/'
-            'CoreFoundation');
-
-  final DynamicLibrary _security;
-  final DynamicLibrary _cf;
-
-  late final void Function(Pointer<Void>) _release = _cf.lookupFunction<
-      Void Function(Pointer<Void>), void Function(Pointer<Void>)>('CFRelease');
-  late final Pointer<Void> Function(Pointer<Void>, Pointer<Pointer<Void>>,
-          Pointer<Pointer<Void>>, int, Pointer<Void>, Pointer<Void>)
-      _dictionary = _cf.lookupFunction<
-          Pointer<Void> Function(Pointer<Void>, Pointer<Pointer<Void>>,
-              Pointer<Pointer<Void>>, IntPtr, Pointer<Void>, Pointer<Void>),
-          Pointer<Void> Function(
-              Pointer<Void>,
-              Pointer<Pointer<Void>>,
-              Pointer<Pointer<Void>>,
-              int,
-              Pointer<Void>,
-              Pointer<Void>)>('CFDictionaryCreate');
-  late final Pointer<Void> Function(Pointer<Void>, Pointer<Uint8>, int)
-      _dataCreate = _cf.lookupFunction<
-          Pointer<Void> Function(Pointer<Void>, Pointer<Uint8>, IntPtr),
-          Pointer<Void> Function(
-              Pointer<Void>, Pointer<Uint8>, int)>('CFDataCreate');
-  late final int Function(Pointer<Void>) _dataLength = _cf.lookupFunction<
-      IntPtr Function(Pointer<Void>),
-      int Function(Pointer<Void>)>('CFDataGetLength');
-  late final Pointer<Uint8> Function(Pointer<Void>) _dataBytes =
-      _cf.lookupFunction<Pointer<Uint8> Function(Pointer<Void>),
-          Pointer<Uint8> Function(Pointer<Void>)>('CFDataGetBytePtr');
-  late final int Function(Pointer<Void>, Pointer<Void>) _equal =
-      _cf.lookupFunction<Uint8 Function(Pointer<Void>, Pointer<Void>),
-          int Function(Pointer<Void>, Pointer<Void>)>('CFEqual');
-  late final Pointer<Void> Function(Pointer<Void>, Pointer<Void>)
-      _dictionaryValue = _cf.lookupFunction<
-          Pointer<Void> Function(Pointer<Void>, Pointer<Void>),
-          Pointer<Void> Function(
-              Pointer<Void>, Pointer<Void>)>('CFDictionaryGetValue');
-  late final _RefWithError _create = _security.lookupFunction<
-      Pointer<Void> Function(Pointer<Void>, Pointer<Pointer<Void>>),
-      Pointer<Void> Function(
-          Pointer<Void>, Pointer<Pointer<Void>>)>('SecKeyCreateRandomKey');
-  late final int Function(Pointer<Void>, Pointer<Pointer<Void>>) _copyMatching =
-      _security.lookupFunction<
-          Int32 Function(Pointer<Void>, Pointer<Pointer<Void>>),
-          int Function(
-              Pointer<Void>, Pointer<Pointer<Void>>)>('SecItemCopyMatching');
-  late final int Function(Pointer<Void>) _delete = _security.lookupFunction<
-      Int32 Function(Pointer<Void>),
-      int Function(Pointer<Void>)>('SecItemDelete');
-  late final Pointer<Void> Function(Pointer<Void>) _attributes =
-      _security.lookupFunction<Pointer<Void> Function(Pointer<Void>),
-          Pointer<Void> Function(Pointer<Void>)>('SecKeyCopyAttributes');
-  late final Pointer<Void> Function(Pointer<Void>) _publicKey =
-      _security.lookupFunction<Pointer<Void> Function(Pointer<Void>),
-          Pointer<Void> Function(Pointer<Void>)>('SecKeyCopyPublicKey');
-  late final _RefWithError _external = _security.lookupFunction<
-      Pointer<Void> Function(Pointer<Void>, Pointer<Pointer<Void>>),
-      Pointer<Void> Function(Pointer<Void>,
-          Pointer<Pointer<Void>>)>('SecKeyCopyExternalRepresentation');
-  late final Pointer<Void> Function(
-          Pointer<Void>, Pointer<Void>, Pointer<Void>, Pointer<Pointer<Void>>)
-      _sign = _security.lookupFunction<
-          Pointer<Void> Function(Pointer<Void>, Pointer<Void>, Pointer<Void>,
-              Pointer<Pointer<Void>>),
-          Pointer<Void> Function(Pointer<Void>, Pointer<Void>, Pointer<Void>,
-              Pointer<Pointer<Void>>)>('SecKeyCreateSignature');
-  late final Pointer<Void> Function(
-          Pointer<Void>, Pointer<Void>, int, Pointer<Pointer<Void>>) _access =
-      _security.lookupFunction<
-          Pointer<Void> Function(
-              Pointer<Void>, Pointer<Void>, UintPtr, Pointer<Pointer<Void>>),
-          Pointer<Void> Function(Pointer<Void>, Pointer<Void>, int,
-              Pointer<Pointer<Void>>)>('SecAccessControlCreateWithFlags');
-
-  Pointer<Void> _constant(String name) =>
-      _security.lookup<Pointer<Void>>(name).value;
-
-  Pointer<Void> get _true => _cf.lookup<Pointer<Void>>('kCFBooleanTrue').value;
-
-  Pointer<Void> _map(Map<Pointer<Void>, Pointer<Void>> values) {
-    final keys = calloc<Pointer<Void>>(values.length);
-    final entries = calloc<Pointer<Void>>(values.length);
+  Future<Uint8List> operate(
+      String operation, String referencePath, List<int>? message) async {
+    final sourceHash =
+        sha256.convert(utf8.encode(secureEnclaveSource)).toString();
+    final home = Platform.environment['HOME'];
+    if (home == null || !p.isAbsolute(home)) {
+      throw StateError(
+          'An absolute HOME directory is required for native setup.');
+    }
+    final root = Directory(
+        p.join(home, 'Library', 'Application Support', 'OnePub', 'native'));
+    final cache = Directory(p.join(root.path, '$sourceHash-${Abi.current()}'));
+    if (operation == 'create') {
+      await _setup(root, cache, sourceHash);
+    }
+    final executable = await _validate(cache, sourceHash);
+    final temporary = await Directory.systemTemp.createTemp('onepub-enclave-');
     try {
-      var i = 0;
-      for (final entry in values.entries) {
-        keys[i] = entry.key;
-        entries[i++] = entry.value;
+      final input = File(p.join(temporary.path, 'message'));
+      if (message != null) {
+        await input.writeAsBytes(message);
       }
-      return _dictionary(
-          nullptr,
-          keys,
-          entries,
-          values.length,
-          _cf.lookup<Void>('kCFTypeDictionaryKeyCallBacks'),
-          _cf.lookup<Void>('kCFTypeDictionaryValueCallBacks'));
+      final result =
+          await _run(executable.path, [operation, referencePath, input.path]);
+      return base64Decode(result.trim());
     } finally {
-      calloc
-        ..free(keys)
-        ..free(entries);
+      await temporary.delete(recursive: true);
     }
   }
 
-  Pointer<Void> _data(List<int> bytes) {
-    final buffer = calloc<Uint8>(bytes.isEmpty ? 1 : bytes.length);
+  Future<void> _setup(
+      Directory root, Directory cache, String sourceHash) async {
+    if (cache.existsSync()) {
+      try {
+        await _validate(cache, sourceHash);
+        return;
+      } on Object {
+        // Explicit enrollment may rebuild its own disposable compiler output.
+        // Open/sign never reaches this repair or invokes a compiler.
+        await cache.delete(recursive: true);
+      }
+    }
+    await root.create(recursive: true);
+    await _run('/bin/chmod', ['700', root.path]);
+    final staging = await root.createTemp('build-');
     try {
-      buffer.asTypedList(bytes.length).setAll(0, bytes);
-      return _dataCreate(nullptr, buffer, bytes.length);
-    } finally {
-      calloc.free(buffer);
-    }
-  }
-
-  Uint8List _copyData(Pointer<Void> data) =>
-      Uint8List.fromList(_dataBytes(data).asTypedList(_dataLength(data)));
-
-  Never _fail(String operation, Pointer<Pointer<Void>> error) {
-    var code = 0;
-    if (error.value != nullptr) {
-      code = _cf.lookupFunction<IntPtr Function(Pointer<Void>),
-          int Function(Pointer<Void>)>('CFErrorGetCode')(error.value);
-    }
-    throw StateError('Secure Enclave $operation failed (OS status $code).');
-  }
-
-  Uint8List operate(String operation, String reference, List<int>? message) {
-    final tag = _data(utf8.encode('dev.onepub.device.$reference'));
-    final error = calloc<Pointer<Void>>();
-    var key = nullptr.cast<Void>();
-    try {
-      if (operation == 'create') {
-        // kSecAccessControlPrivateKeyUsage = 1 << 30.
-        final access = _access(
-            nullptr,
-            _constant('kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly'),
-            1 << 30,
-            error);
-        if (access == nullptr) {
-          _fail('access control creation', error);
-        }
-        final privateAttributes = _map({
-          _constant('kSecAttrIsPermanent'): _true,
-          _constant('kSecAttrApplicationTag'): tag,
-          _constant('kSecAttrAccessControl'): access,
-        });
-        final number = calloc<Int32>()..value = 256;
-        final bits = _cf.lookupFunction<
-                Pointer<Void> Function(Pointer<Void>, IntPtr, Pointer<Void>),
-                Pointer<Void> Function(Pointer<Void>, int, Pointer<Void>)>(
-            'CFNumberCreate')(nullptr, 3, number.cast()); // kCFNumberSInt32Type
-        final attributes = _map({
-          _constant('kSecAttrKeyType'):
-              _constant('kSecAttrKeyTypeECSECPrimeRandom'),
-          _constant('kSecAttrKeySizeInBits'): bits,
-          _constant('kSecAttrTokenID'):
-              _constant('kSecAttrTokenIDSecureEnclave'),
-          _constant('kSecPrivateKeyAttrs'): privateAttributes,
-        });
-        try {
-          key = _create(attributes, error);
-        } finally {
-          _release(attributes);
-          _release(bits);
-          calloc.free(number);
-          _release(privateAttributes);
-          _release(access);
-        }
-        if (key == nullptr) {
-          _fail('key creation', error);
-        }
+      final source = File(p.join(staging.path, 'secure_enclave.swift'));
+      final executable = File(p.join(staging.path, 'secure-enclave'));
+      await source.writeAsString(secureEnclaveSource);
+      try {
+        await _run('/usr/bin/xcrun',
+            ['swiftc', '-O', source.path, '-o', executable.path]);
+        await _run(
+            '/usr/bin/codesign', ['--force', '--sign', '-', executable.path]);
+      } on Object catch (error) {
+        throw StateError('macOS device enrollment needs Xcode Command Line '
+            'Tools once to build the Secure Enclave helper. Install them with '
+            '`xcode-select --install`, then run `onepub login` again. $error');
+      }
+      final binaryHash =
+          sha256.convert(await executable.readAsBytes()).toString();
+      await File(p.join(staging.path, 'identity.json')).writeAsString(
+          jsonEncode({'source': sourceHash, 'binary': binaryHash}),
+          flush: true);
+      await _run('/bin/chmod', ['500', executable.path]);
+      await _run('/bin/chmod', ['400', p.join(staging.path, 'identity.json')]);
+      // Keep the exact reviewable source next to its locally built executable.
+      await _run('/bin/chmod', ['400', source.path]);
+      if (cache.existsSync()) {
+        await _validate(cache, sourceHash);
       } else {
-        final query = _map({
-          _constant('kSecClass'): _constant('kSecClassKey'),
-          _constant('kSecAttrApplicationTag'): tag,
-          _constant('kSecAttrKeyType'):
-              _constant('kSecAttrKeyTypeECSECPrimeRandom'),
-          _constant('kSecAttrKeyClass'): _constant('kSecAttrKeyClassPrivate'),
-          if (operation != 'delete') _constant('kSecReturnRef'): _true,
-        });
-        final result = calloc<Pointer<Void>>();
-        try {
-          final status = operation == 'delete'
-              ? _delete(query)
-              : _copyMatching(query, result);
-          if (status != 0) {
-            throw StateError(
-                'Secure Enclave $operation failed (OS status $status).');
-          }
-          if (operation == 'delete') {
-            return Uint8List(0);
-          }
-          key = result.value;
-        } finally {
-          calloc.free(result);
-          _release(query);
-        }
-      }
-      final attributes = _attributes(key);
-      if (attributes == nullptr) {
-        _fail('reading key attributes', error);
-      }
-      try {
-        final token =
-            _dictionaryValue(attributes, _constant('kSecAttrTokenID'));
-        if (token == nullptr ||
-            _equal(token, _constant('kSecAttrTokenIDSecureEnclave')) == 0) {
-          throw StateError('Key is not held by the Secure Enclave.');
-        }
-      } finally {
-        _release(attributes);
-      }
-      if (operation == 'sign') {
-        final input = _data(message!);
-        try {
-          final signature = _sign(
-              key,
-              _constant('kSecKeyAlgorithmECDSASignatureMessageX962SHA256'),
-              input,
-              error);
-          if (signature == nullptr) {
-            _fail('signing', error);
-          }
-          try {
-            return _copyData(signature);
-          } finally {
-            _release(signature);
-          }
-        } finally {
-          _release(input);
-        }
-      }
-      final public = _publicKey(key);
-      if (public == nullptr) {
-        _fail('reading public key', error);
-      }
-      try {
-        final data = _external(public, error);
-        if (data == nullptr) {
-          _fail('exporting public key', error);
-        }
-        try {
-          return _copyData(data);
-        } finally {
-          _release(data);
-        }
-      } finally {
-        _release(public);
+        await staging.rename(cache.path);
       }
     } finally {
-      if (key != nullptr) {
-        _release(key);
+      if (staging.existsSync()) {
+        await staging.delete(recursive: true);
       }
-      if (error.value != nullptr) {
-        _release(error.value);
-      }
-      calloc.free(error);
-      _release(tag);
     }
+  }
+
+  Future<File> _validate(Directory cache, String sourceHash) async {
+    try {
+      final executable = File(p.join(cache.path, 'secure-enclave'));
+      final identity = jsonDecode(
+              await File(p.join(cache.path, 'identity.json')).readAsString())
+          as Map<String, dynamic>;
+      final source =
+          await File(p.join(cache.path, 'secure_enclave.swift')).readAsBytes();
+      if (identity['source'] != sourceHash ||
+          sha256.convert(source).toString() != sourceHash ||
+          identity['binary'] !=
+              sha256.convert(await executable.readAsBytes()).toString()) {
+        throw StateError('Native helper identity does not match its build.');
+      }
+      await _run(
+          '/usr/bin/codesign', ['--verify', '--strict', executable.path]);
+      return executable;
+    } on Object catch (error) {
+      throw StateError('Secure Enclave helper is missing or invalid. '
+          'Run interactive `onepub login` to set up this CLI version. $error');
+    }
+  }
+
+  Future<String> _run(String executable, List<String> arguments) async {
+    final result = await Process.run(executable, arguments,
+        workingDirectory: Directory.systemTemp.path,
+        environment: const {'PATH': '/usr/bin:/bin'});
+    if (result.exitCode != 0) {
+      throw StateError('${p.basename(executable)} failed: '
+          '${result.stderr.toString().trim()}');
+    }
+    return result.stdout as String;
   }
 }
-
-typedef _RefWithError = Pointer<Void> Function(
-    Pointer<Void>, Pointer<Pointer<Void>>);

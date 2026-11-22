@@ -1,5 +1,46 @@
 // Native sources are embedded in the CLI artifact, never read from the cwd.
 // These helpers use only hardware providers and never export private keys.
+// Source is embedded so source, pub-global and AOT installations use exactly
+// the same reviewed version, without looking in the working directory.
+const secureEnclaveSource = r'''
+import Foundation
+import CryptoKit
+import Security
+
+do {
+    guard SecureEnclave.isAvailable else {
+        throw NSError(domain: "OnePub: Secure Enclave unavailable", code: 1)
+    }
+    let args = CommandLine.arguments
+    let operation = args[1]
+    let keyURL = URL(fileURLWithPath: args[2])
+    let key: SecureEnclave.P256.Signing.PrivateKey
+    if operation == "create" {
+        var error: Unmanaged<CFError>?
+        guard let access = SecAccessControlCreateWithFlags(nil,
+            kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly, .privateKeyUsage, &error) else {
+            throw error!.takeRetainedValue()
+        }
+        key = try SecureEnclave.P256.Signing.PrivateKey(accessControl: access)
+        // CryptoKit exports only an encrypted, device-bound key reference.
+        // This does not contain a transferable plaintext private scalar.
+        try key.dataRepresentation.write(to: keyURL, options: .atomic)
+    } else {
+        key = try SecureEnclave.P256.Signing.PrivateKey(
+            dataRepresentation: Data(contentsOf: keyURL))
+    }
+    if operation == "sign" {
+        let data = try Data(contentsOf: URL(fileURLWithPath: args[3]))
+        print(try key.signature(for: data).rawRepresentation.base64EncodedString())
+    } else {
+        print(key.publicKey.x963Representation.base64EncodedString())
+    }
+} catch {
+    FileHandle.standardError.write(Data("Secure Enclave operation failed: \(error)\n".utf8))
+    exit(1)
+}
+''';
+
 const platformCryptoSource = r'''
 param([string]$Operation, [string]$KeyName, [string]$InputPath)
 $ErrorActionPreference = 'Stop'
