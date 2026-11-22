@@ -31,6 +31,13 @@ void main() {
         tcti: tpmA.tcti,
         bridge: bridge,
       );
+      final b = await _enroll(
+        temporary: temporary,
+        label: 'b',
+        origin: origin,
+        tcti: tpmB.tcti,
+        bridge: bridge,
+      );
       final packageName =
           'onepub_test_device_e2e_${DateTime.now().microsecondsSinceEpoch}';
       final apiUrl = a.settings.onepubApiUrlAsString;
@@ -40,6 +47,7 @@ void main() {
 name: $packageName
 version: 1.0.0
 publish_to: $apiUrl
+repository: https://example.test/device-e2e
 description: Temporary local device-authentication E2E package.
 environment:
   sdk: '>=3.5.0 <4.0.0'
@@ -87,13 +95,6 @@ dependencies:
       ).readAsBytes();
       expect(await aPackage.readAsBytes(), sourceBytes);
 
-      final b = await _enroll(
-        temporary: temporary,
-        label: 'b',
-        origin: origin,
-        tcti: tpmB.tcti,
-        bridge: bridge,
-      );
       expect(b.session.deviceId, isNot(a.session.deviceId));
       expect(
         b.pubCache,
@@ -140,6 +141,59 @@ dependencies:
       expect(File(p.join(consumerB.path, 'pubspec.lock')).existsSync(), isTrue);
       final bPackage = await _cachedPackageFile(b.pubCache, packageName);
       expect(await bPackage.readAsBytes(), sourceBytes);
+
+      // Exercise archive creation, attestation upload, and a second hosted
+      // release through the same device-authenticated Pub helper.
+      const secondVersion = 'const deviceE2eFixture = "attested-v2";\n';
+      final packageSpec = File(p.join(package.path, 'pubspec.yaml'));
+      await packageSpec
+          .writeAsString(packageSpec.readAsStringSync().replaceFirst(
+                'version: 1.0.0',
+                'version: 1.0.1',
+              ));
+      await File(p.join(package.path, 'lib', '$packageName.dart'))
+          .writeAsString(secondVersion);
+      await File(p.join(package.path, 'CHANGELOG.md'))
+          .writeAsString('## 1.0.1\n- Attested local test fixture.\n');
+      final archive = p.join(temporary.path, '$packageName-1.0.1.tar.gz');
+      await _runPatchedPub(
+        ['publish', '--skip-validation', '--to-archive=$archive'],
+        workingDirectory: package.path,
+        environment: environmentA,
+      );
+      final attestation = File(p.join(temporary.path, 'attestation.json'))
+        ..writeAsStringSync('{"mediaType":"sigstore"}\n');
+      await _runPatchedPub(
+        [
+          'publish',
+          '--force',
+          '--from-archive=$archive',
+          '--with-attestation=${attestation.path}',
+        ],
+        workingDirectory: package.path,
+        environment: environmentA,
+      );
+      final consumerC = Directory(p.join(temporary.path, 'consumer-c'))
+        ..createSync();
+      final cacheC = Directory(p.join(temporary.path, 'pub-cache-c'))
+        ..createSync();
+      await File(p.join(consumerC.path, 'pubspec.yaml')).writeAsString(
+        await File(p.join(consumer.path, 'pubspec.yaml')).readAsString(),
+      );
+      await _runPatchedPub(
+        ['get'],
+        workingDirectory: consumerC.path,
+        environment: {
+          ...b.environment(tcti: tpmB.tcti),
+          'PUB_CACHE': cacheC.path,
+        },
+      );
+      expect(File(p.join(consumerC.path, 'pubspec.lock')).existsSync(), isTrue);
+      expect(
+        await (await _cachedPackageFile(cacheC.path, packageName))
+            .readAsString(),
+        secondVersion,
+      );
     } finally {
       await tpmB.close();
       await tpmA.close();
@@ -308,6 +362,10 @@ Future<void> _runPatchedPub(
     environment: environment,
     includeParentEnvironment: false,
   );
+  if (arguments.first == 'publish' && !arguments.contains('--force')) {
+    process.stdin.writeln('y');
+  }
+  await process.stdin.close();
   final output = process.stdout.transform(utf8.decoder).join();
   final errors = process.stderr.transform(utf8.decoder).join();
   final code =
