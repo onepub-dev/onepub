@@ -194,6 +194,40 @@ dependencies:
             .readAsString(),
         secondVersion,
       );
+      final parallelTimer = Stopwatch()..start();
+      await Future.wait(List.generate(4, (index) async {
+        final consumer = Directory(
+          p.join(temporary.path, 'parallel-consumer-$index'),
+        )..createSync();
+        final cache = Directory(
+          p.join(temporary.path, 'parallel-cache-$index'),
+        )..createSync();
+        await File(p.join(consumer.path, 'pubspec.yaml')).writeAsString(
+          await File(p.join(consumerC.path, 'pubspec.yaml')).readAsString(),
+        );
+        await _runPatchedPub(
+          ['get'],
+          workingDirectory: consumer.path,
+          environment: {
+            ...b.environment(tcti: tpmB.tcti),
+            'PUB_CACHE': cache.path,
+          },
+        );
+        expect(
+          File(p.join(consumer.path, 'pubspec.lock')).existsSync(),
+          isTrue,
+        );
+        expect(
+          await (await _cachedPackageFile(cache.path, packageName))
+              .readAsString(),
+          secondVersion,
+        );
+      }));
+      parallelTimer.stop();
+      stdout.writeln(
+        'DEVICE_PUB_E2E_PARALLEL_READS=4 '
+        'elapsed_ms=${parallelTimer.elapsedMilliseconds}',
+      );
     } finally {
       await tpmB.close();
       await tpmA.close();
@@ -203,7 +237,7 @@ dependencies:
   },
       skip: enabled ? false : 'Set ONEPUB_DEVICE_PUB_E2E=true to run.',
       tags: 'integration',
-      timeout: const Timeout(Duration(minutes: 12)));
+      timeout: const Timeout(Duration(minutes: 20)));
 }
 
 Future<File> _cachedPackageFile(String cache, String packageName) async {
