@@ -27,7 +27,7 @@ void main() {
     expect(login.subcommands, isNot(contains('oidc')));
     expect(
         login.subcommands['trusted']!.description,
-        'Log in from CI/CD without storing a OnePub token. '
+        'Exchange a CI identity for a short-lived OnePub token. '
         'Requires trusted publishing to be configured in OnePub.');
   });
 
@@ -44,6 +44,22 @@ void main() {
       MyRunner.normalizeArgs(['login', 'trusted']),
       ['login', 'trusted'],
     );
+  });
+
+  test('installing a CI token preserves nested repository credentials',
+      () async {
+    final temp = Directory.systemTemp.createTempSync('onepub-ci-store-');
+    addTearDown(() => temp.deleteSync(recursive: true));
+    await OnePubTokenStore.withPathTo(temp.path, () async {
+      final store = OnePubTokenStore();
+      final parent = '$testUrl/api/team/';
+      final child = '${parent}internal/';
+      await store.addToken(onepubApiUrl: child, onepubToken: 'child');
+      await store.addToken(onepubApiUrl: parent, onepubToken: 'old');
+      await store.addToken(onepubApiUrl: parent, onepubToken: 'new');
+      expect(await store.getToken(child), 'child');
+      expect(await store.getToken(parent), 'new');
+    });
   });
 
   test('auto-detects the provider, exchanges, and installs the token',

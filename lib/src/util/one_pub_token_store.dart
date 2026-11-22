@@ -20,7 +20,6 @@ class OnePubTokenStore {
     required String onepubToken,
   }) async {
     final normalisedUrl = validateAndNormalizeHostedUrl(onepubApiUrl);
-    await clearOldTokens(normalisedUrl);
     await tokenStore
         .addCredential(Credential.token(normalisedUrl, onepubToken));
   }

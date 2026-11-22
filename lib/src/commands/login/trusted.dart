@@ -69,7 +69,8 @@ class TrustedLoginCommand extends Command<int> {
   final OnePubTokenStore tokenStore;
 
   @override
-  String get description => 'Log in from CI/CD without storing a OnePub token. '
+  String get description =>
+      'Exchange a CI identity for a short-lived OnePub token. '
       'Requires trusted publishing to be configured in OnePub.';
 
   @override
