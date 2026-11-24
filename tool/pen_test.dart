@@ -10,6 +10,7 @@ import 'package:path/path.dart' as p;
 import 'package:pub_semver/pub_semver.dart';
 
 import '../test/fixture_oauth.dart';
+import 'beta_fixture_credentials.dart';
 import 'beta_ready_watch.dart' as readiness;
 import 'pen_test_target.dart';
 
@@ -58,6 +59,7 @@ Future<void> main(List<String> arguments) async {
   final runId = DateTime.now().toUtc().microsecondsSinceEpoch.toRadixString(36);
   final runner = PenTestRunner(root, directory, runId)..save();
   FixtureOAuthBroker? fixtureBroker;
+  Directory? privateTokens;
   try {
     final version = await targetVersion();
     runner.version = version;
@@ -65,6 +67,19 @@ Future<void> main(List<String> arguments) async {
       throw StateError('Deployed version does not match --version.');
     }
     print('Pen test $runId: ${penTestTarget.url}, version $version');
+    if (penTestTarget.url == 'https://beta.onepub.dev' &&
+        !Platform.environment.containsKey(FixtureOAuth.authorizationKey) &&
+        !Platform.environment.containsKey(FixtureOAuth.brokerKey)) {
+      final name = 'onepub_staging_test_${runId}_assessment';
+      final authorization =
+          await issueBetaAssessmentCredentials(penTestTarget.url, name);
+      privateTokens =
+          await Directory.systemTemp.createTemp('onepub-assessment-');
+      dcli.chmod(privateTokens.path, permission: '700');
+      await storeAssessmentToken(privateTokens.path, penTestTarget.url,
+          authorization['onepubToken'] as String);
+      runner.childEnvironment['_PUB_TEST_CONFIG_DIR'] = privateTokens.path;
+    }
     await runner.run(
         'security', 'beta_pentest.dart', ['--security', '--authenticated']);
     await runner.run('surface', 'beta_surface_paths.dart', []);
@@ -77,6 +92,18 @@ Future<void> main(List<String> arguments) async {
             fixtureBroker.workerEnvironment(Platform.environment);
         await runner.packages();
       } else if (Platform.environment.containsKey(FixtureOAuth.brokerKey)) {
+        await runner.packages();
+      } else if (penTestTarget.url == 'https://beta.onepub.dev') {
+        final name = 'onepub_staging_test_${runId}_assessment';
+        final authorization =
+            await issueBetaAssessmentCredentials(penTestTarget.url, name);
+        await storeAssessmentToken(privateTokens!.path, penTestTarget.url,
+            authorization['onepubToken'] as String);
+        fixtureBroker = await FixtureOAuth.startHarness(penTestTarget.url,
+            authorization: authorization);
+        runner.childEnvironment = fixtureBroker
+            .workerEnvironment(Platform.environment)
+          ..['_PUB_TEST_CONFIG_DIR'] = privateTokens.path;
         await runner.packages();
       } else {
         runner.record('packages', 'blocked',
@@ -107,6 +134,7 @@ Future<void> main(List<String> arguments) async {
     runner.record('assessment', 'blocked', detail: '${error.runtimeType}');
   } finally {
     await fixtureBroker?.close();
+    await privateTokens?.delete(recursive: true);
     runner
       ..finished = DateTime.now().toUtc().toIso8601String()
       ..save();

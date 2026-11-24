@@ -224,8 +224,9 @@ void main() {
       expect(result.exitCode, 0, reason: '${result.stderr}');
       final events = (result.stdout as String)
           .split('\n')
-          .where((line) => line.isNotEmpty)
-          .map((line) => jsonDecode(line) as Map<String, dynamic>)
+          .where((line) => line.contains('{'))
+          .map((line) => jsonDecode(line.substring(line.indexOf('{')))
+              as Map<String, dynamic>)
           .toList();
       expect(
         events.where((event) => event['type'] == 'done').single['success'],

@@ -16,6 +16,7 @@ dependencies:
   path: 1.9.1
   pub_semver: ^2.2.1
   pubspec_manager: ^4.1.1
+  revault_api: ^0.6.0
   scope: 5.1.0
   settings_yaml: ^8.3.2
   stack_trace: ^1.12.2
