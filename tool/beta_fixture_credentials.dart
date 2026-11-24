@@ -82,9 +82,26 @@ Future<String> _operatorSecret() async {
     throw StateError('A beta Lockbox path is required.');
   }
   await Revault.load();
-  final lockbox = AgentSession.instance.tryAcquireOpenLockbox(path);
+  var lockbox = AgentSession.instance.tryAcquireOpenLockbox(path);
   if (lockbox == null) {
-    throw StateError('Open the beta Lockbox in your reVault session first.');
+    if (home == null || home.isEmpty) {
+      throw StateError('HOME is required to locate the reVault vault.');
+    }
+    final sessionBusAddress = Platform.environment['DBUS_SESSION_BUS_ADDRESS'];
+    final vault = Vault.open(
+      pathTo: p.join(home, '.local', 'share', 'lockbox', 'vault'),
+      platformCredentialContext:
+          Platform.isLinux && (sessionBusAddress?.isNotEmpty ?? false)
+              ? PlatformCredentialContext.linux(
+                  sessionBusAddress: sessionBusAddress!,
+                )
+              : null,
+    );
+    try {
+      lockbox = Lockbox.open(path, vault: vault);
+    } finally {
+      vault.close();
+    }
   }
   try {
     if (lockbox.variableSensitivity(betaFixtureSecretPath) != 'secret') {
