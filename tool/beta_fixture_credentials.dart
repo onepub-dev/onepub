@@ -127,14 +127,14 @@ Future<Map<String, dynamic>> _post(
       throw StateError(
           'Beta fixture request failed (HTTP ${response.statusCode}).');
     }
-    final body = await response
-        .transform(utf8.decoder)
-        .join()
-        .timeout(const Duration(seconds: 45));
-    if (body.length > 65536) {
-      throw StateError('Beta fixture response exceeded the limit.');
+    final bytes = <int>[];
+    await for (final chunk in response.timeout(const Duration(seconds: 45))) {
+      if (bytes.length + chunk.length > 65536) {
+        throw StateError('Beta fixture response exceeded the limit.');
+      }
+      bytes.addAll(chunk);
     }
-    return jsonDecode(body) as Map<String, dynamic>;
+    return jsonDecode(utf8.decode(bytes)) as Map<String, dynamic>;
   } finally {
     client.close(force: true);
   }
